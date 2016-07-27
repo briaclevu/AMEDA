@@ -51,10 +51,21 @@
 %  |--> mod_eddy_shapes.m
 %  |     |
 %  |     |--> eddy_dim.m
-%  |           |
-%  |           |--> compute_psi.m
-%  |           |
-%  |           |--> max_curve.m
+%  |     |     |
+%  |     |     |--> compute_psi.m
+%  |     |     |
+%  |     |     |--> max_curve.m
+%  |     |           |
+%  |     |           |--> integrate_vel.m
+%  |     |           |
+%  |     |           |--> mean_radius.m
+%  |     |
+%  |     |--> mean_radius.m
+%  |     |
+%  |     |--> compute_ellip.m
+%  |     |
+%  |     |--> min_dist_shapes.m
 %  |
 %  |
 %  |--> mod_eddy_tracks.m
+
