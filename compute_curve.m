@@ -1,4 +1,4 @@
-function [C,P] = curvature(xy,Rd,grid_ll)
+function [C,P] = compute_curve(xy,Rd,grid_ll)
 % calculate curvature for each point of contour xy using segment of Rd size
 % x = xy(1,:) and y = xy(2,:)
 

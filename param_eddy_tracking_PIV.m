@@ -1,4 +1,4 @@
-% param_eddy_tracking_AVISO.m
+%param_eddy_tracking_PIV.m
 %
 %   param_eddy_tracking sets user defined paths and parameters for a
 %   degradation coefficient of 'deg' which goes from 1 (default)
@@ -17,7 +17,7 @@
 %            (longitude and latitude) and the velocity mask (land-points=0;
 %             ocean-points=1)
 %
-% User option keys:
+% User parameters definition:
 %   - type_detection: flag to choose the field use as streamlines
 %           1 : using velocity fields
 %           2 : using ssh
@@ -34,6 +34,20 @@
 %               (e.g. global fields or idealized simulations) domains.
 %               IMPORTANT: first and last columns of the domain must be
 %                          identical for this to work properly!!!!!
+%
+% Fixed parmeter:
+%   - res: factor of interpolation of the fields (velocity and ssh)
+%       to compute center detection. 2 or 3 seems reasonable in term of
+%       computation time for 1/8° AVISO fields.
+%   - K: LNAM(LOW<0) threshold to detect the potential eddy centers
+%   - b: parameter for the computation of LNAM and Local Okubo-Weiss
+%       (number of grid points in one of the 4 directions to define
+%       the length of the box area used normalize Angular Momentum
+%       and Okubo-Weiss fields)
+%   - box: number of grid points to define the initial area to scan
+%       streamlines
+%   - r: distance in km to define the area used to derive eddy
+%        tracks
 %
 %-------------------------
 % IMPORTANT - Input file requirements:
@@ -66,70 +80,123 @@
 %% Experiment setings
 
 % name for the experiment
-name = '2016_apr';
-
-% set name of the domain
-domname='MED';
-
-% use to diferenciate source field of surface height (adt, ssh, psi,...)
-sshname='adt'; % adt or sla
+name='EXP19';
 
 % set the paths
-path_in=['/home/blevu/DATA/AVISO/',domname,'/'];
-path_out=['/home/blevu/Resultats/AVISO/',domname,'/',sshname,'/'];
-path_tracks='/home/blevu/DATA/AVISO/nrt/adt/tracks/';
-path_data='/home/blevu/DATA/CORIOLIS/';
+global path_in
+global path_out
+path_in = ['/home/blevu/DATA/',name,'_Data/'];
+path_out = ['/home/blevu/Resultats/PIV/',name,'/tests/'];
+
+% use to diferenciate source field of surface height (adt, ssh, psi,...)
+global sshname
+sshname = []; % ex: adt_
 
 % use to submit parallel computation
+global runname
 runname = []; % ex: 1
 
 % input data file absolute name
-nc_dim=[path_in,'lon_lat_',sshname,'_',domname,'.nc'];
-nc_u=[path_in,'ssu_',sshname,'_',domname,'_',name,'.nc'];
-nc_v=[path_in,'ssv_',sshname,'_',domname,'_',name,'.nc'];
-nc_ssh=[path_in,'ssh_',sshname,'_',domname,'_',name,'.nc'];
+mat = [path_in,name,'.mat'];
 
-% variable names
-lat_name = 'lat';
-lon_name = 'lon';
+% mesh grid  size (xd), deformation radius (Rd)
+xd = 2.19*1e-6; % 2.19mm in km
+Rd = 23*1e-6; % 2.3cm in km
 
 % rotation period (T) per day and time step in days (dps)
-T = 3600*24; % day period in seconds
-dps = 1; % 24h time step
+T = 14.5; % day period in seconds
+dps = 1; % 1 time step
 
 % degradation factor to test the algorithm
 if ~exist('deg','var')
     deg = 1; % from 1 (default) to >10 in some experiment
 end
 
-%% Experiment option keys
+%% Experiment option
 
 % grid type
-grid_ll = 1;
+global grid_ll
+grid_ll = 0;
         % 0 : spatial grid in cartesian coordinates (x,y)
         % 1 : spatial grid in earth coordinates (lon,lat)
 
 % choose the field use as streamlines
-type_detection = 3;
+global type_detection
+type_detection = 1;
         % 1 : using velocity fields
-        % 2 : using ssh
-        % 3 : using both velocity fields and ssh, 
-        %     and keep max velocity along the eddy contour
+		% 2 : using ssh
+		% 3 : using both velocity fields and ssh, 
+		%     and keep max velocity along the eddy contour
 
 % if you want extended diags directly computed
+global extended_diags
 extended_diags = 1;
         % 0 : not computed
         % 1 : computed as the same time as eddy detection
-        % 2 : computed afterward  
+		% 2 : computed afterward  
 
 % save streamlines at days daystreamfunction and profil as well
-streamlines = 1;
-daystreamfunction = 1:90;
+global streamlines
+streamlines = 0;
+global daystreamfunction
+daystreamfunction = 150;
 
 % in case of periodic grid along x boundaries
+global periodic
 periodic = 0;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% End of user modification ---------------------------------------------
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% Algortihm parametrisation from the test with AVISO, ROMS and PIV
+
+% Resolution parameters:
+%----------------------------------------------
+% gama is resolution coefficient which is the number of pixels per Rd.
+% After test gama>3 is required to get the max number of eddies.
+gama = Rd / (xd*deg); % around 1 for AVISO 1/8
+
+% res is an integer and used to improve the precision of centers detection
+% close to 3 pixels per Rd. res can goes up to 3
+res = max(1,min(3,round(3/gama))); % [1 - 3]
+
+% Detection parameters:
+%----------------------------------------------
+% K is LNAM(LOW<0) threshold to fixed contours where to detect potential center
+% (one per contour). After test: no sensibility to K between 0.2 and 0.7
+% but 0.7 give better time performance
+K = 0.7; % [0 - 1]
+
+% b is half length of the box in pixels used to normalise the LNAM and LOW.
+% After test the optimal length of the box ( Lb = 2b*xd*deg )
+% is fixed to one and half the size of Rd (Lb/Rd=1.2).
+b = max(1,round((1.2*gama)/2));
+
+% Rb (=Lb/Rd) is to check that the b setting and the gama are optimal.
+% !!! Because optimal b is directly linked to gama, you start missing
+% smaller eddies when gama is below 2 even at b=1
+% (e.g. for AVISO 1/8 (gama~0.8) we have Rb~2.5) !!!
+Rb = 2*b / gama;
+
+% box is half length of the box used in pixels to find contour streamlines
+% in pixels box = 10 times the Rd is enough to start testing any eddies
+box = round(10*gama);
+
+% H is number of lines scanned in box during detection of potential centers
+% (centers0 to centers) and shapes (centers to centers2). After test 100
+% seems a good compromise. This parameter is directly link to the time
+% computation!
+global H
+H = 200; % number of line scanned
+
+% Tracking parameters:
+%----------------------------------------------
+% parameter for the eddy tracking distance between 2 time steps.
+% Not tested yet
+r = 7/10*Rd; % 7km/day for Rd = 10
+
+% parameter for the eddy tracking.
+% Not tested yet
+delay = 7; % in days
 

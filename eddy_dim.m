@@ -1,7 +1,7 @@
 function [CD,xy,allines,velmax,tau,deta,nrho,large,warn,calcul] =...
-    eddy_dim(u,v,ssh,mask,x,y,centers,ii,Rd,res,bx,plo)
+    eddy_dim(u,v,ssh,mask,x,y,centers,ii,bxarea,plo)
 %[CD,xy,allines,velmax,tau,deta,nrho,large,warn,calcul] =...
-%               eddy_dim(u,v,ssh,mask,x,y,centers,ii,Rd,res,bx {,plo})
+%               eddy_dim(u,v,ssh,mask,x,y,centers,ii {,bx,plo})
 %
 %  Computes the shape of the eddy defined by the iith center
 %
@@ -9,10 +9,8 @@ function [CD,xy,allines,velmax,tau,deta,nrho,large,warn,calcul] =...
 %  - ssh is the 2D ssh field of the step (can be = [])
 %  - centers is the potential eddy center structure
 %  - x and y are the grid coordinates in the all domain of any step
+%  - bxarea is used to define the area where the shape is computed
 %  - ii is the indice of the main eddy center
-%  - Rd is the deformation radius
-%  - res is the interpolation factor
-%  - bx is used to define the area where the shape is computed
 %  - plo is a debug mod to check result of max_curve on a plot.
 %       plot==0 by default
 %
@@ -43,36 +41,23 @@ function [CD,xy,allines,velmax,tau,deta,nrho,large,warn,calcul] =...
 %   Ver. 3.1 2014 LMD from Nencioli et al. routines
 %-------------------------
 %
-% Copyright (C) 2009-2012 Francesco Nencioli and Charles Dong
-%
-% This file is part of the Vector-Geometry Eddy Detection Algorithm.
-%
-% The Vector-Geometry Eddy Detection Algorithm is free software: 
-% you can redistribute it and/or modify it under the terms of the 
-% GNU General Public License as published by the Free Software Foundation, 
-% either version 3 of the License, or (at your option) any later version.
-% 
-% The Vector-Geometry Eddy Detection Algorithm is distributed in the 
-% hope that it will be useful, but WITHOUT ANY WARRANTY; without even 
-% the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR 
-% PURPOSE. See the GNU General Public License for more details.
-% 
-% You should have received a copy of the GNU General Public License
-% along with the Vector-Geometry Eddy Detection Algorithm.  
-% If not, see <http://www.gnu.org/licenses/>.
-%
 %=========================
 
-global type_detection
-global grid_ll
-global H
+% load key_source and parameters
+%----------------------------------------------
+load('param_eddy_tracking')
 
-if nargin==11
+% replace parameters by arguments
+%----------------------------------------
+if nargin==9
     plo = 0;
+    bx = bxarea;
+elseif nargin==10
+    bx = bxarea;
 end
 
-%-----------------------------------------------------------
 % main center coordinates
+%-----------------------------------------------------------
 c_y = centers.y(ii);
 c_x = centers.x(ii);
 
@@ -81,7 +66,7 @@ centers_y = centers.y;
 centers_x = centers.x;
 
 % find the indice of the main center in the coarse domain (C_J and C_I) 
-if res==1
+if resol==1
     C_I = centers.i(ii);
     C_J = centers.j(ii);
 else
@@ -137,25 +122,29 @@ switch type_detection
     case 1
         % compute eddy shape with psi
         [cd,eddy_lim,lines,velmax,tau,eta,nrho,large] =...
-            max_curve(x,y,psi,c_x,c_y,xy_ctsi,xy_ctsj,u,v,Rd,grid_ll);
+            max_curve(x,y,psi,c_x,c_y,xy_ctsi,xy_ctsj,u,v,Rd,...
+            H,n_min,k_vel_decay,R_lim,nrho_lim,grid_ll);
         calcul=1;
     
     case 2
         % compute eddy shape with ssh
         [cd,eddy_lim,lines,velmax,tau,eta,nrho,large] =...
-            max_curve(x,y,ssh,c_x,c_y,xy_ctsi,xy_ctsj,u,v,Rd,grid_ll);
+            max_curve(x,y,ssh,c_x,c_y,xy_ctsi,xy_ctsj,u,v,Rd,...
+            H,n_min,k_vel_decay,R_lim,nrho_lim,grid_ll);
         calcul=0;
 
     case 3
         % compute eddy shape with ssh
         [cd,eddy_lim,lines,velmax,tau,eta,nrho,large] =...
-            max_curve(x,y,ssh,c_x,c_y,xy_ctsi,xy_ctsj,u,v,Rd,grid_ll);
+            max_curve(x,y,ssh,c_x,c_y,xy_ctsi,xy_ctsj,u,v,Rd,...
+            H,n_min,k_vel_decay,R_lim,nrho_lim,grid_ll);
         calcul=0;
 
         if isnan(large(1))
             % compute eddy shape with psi
             [cd,eddy_lim,lines,velmax,tau,eta,nrho,large] =...
-                max_curve(x,y,psi,c_x,c_y,xy_ctsi,xy_ctsj,u,v,Rd,grid_ll);
+                max_curve(x,y,psi,c_x,c_y,xy_ctsi,xy_ctsj,u,v,Rd,...
+                H,n_min,k_vel_decay,R_lim,nrho_lim,grid_ll);
             calcul=1;
         end
 end

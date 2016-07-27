@@ -1,8 +1,6 @@
-% param_eddy_tracking_AVISO.m
+% keys_sources_AVISO.m
 %
-%   param_eddy_tracking sets user defined paths and parameters for a
-%   degradation coefficient of 'deg' which goes from 1 (default)
-%   to >10 in some experiment.
+%   keys_sources sets user defined paths and user keys
 %
 % Paths:
 %   - path_in: directory containing the input files;
@@ -54,7 +52,7 @@
 % Latitudinal and longitudinal grid spacing can vary within the grid domain.
 %
 %-------------------------
-%   Ver Apr 2015 Briac Le Vu
+%   June 2016 Briac Le Vu
 %-------------------------
 %
 %=========================
@@ -64,34 +62,50 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% Experiment setings
+%----------------------------------------------
 
-% name for the experiment
-name = '2016_apr';
+% postfix name of the data
+postname = '2013';
 
 % set name of the domain
-domname='MED';
+domain='MED';
 
 % use to diferenciate source field of surface height (adt, ssh, psi,...)
-sshname='adt'; % adt or sla
+sshtype='adt'; % adt or sla
 
 % set the paths
-path_in=['/home/blevu/DATA/AVISO/',domname,'/'];
-path_out=['/home/blevu/Resultats/AVISO/',domname,'/',sshname,'/'];
+path_ameda='/home/blevu/MATLAB/AMEDA_v2/';
+path_in=['/home/blevu/DATA/AVISO/',domain,'/'];
+path_out=['/home/blevu/Resultats/AVISO/',domain,'/',sshtype,'/'];
 path_tracks='/home/blevu/DATA/AVISO/nrt/adt/tracks/';
 path_data='/home/blevu/DATA/CORIOLIS/';
+path_rossby='/home/blevu/MATLAB/Rossby_radius/';
 
-% use to submit parallel computation
-runname = []; % ex: 1
+% select AMEDA path
+rmpath('/home/blevu/MATLAB/AMEDA')
+addpath(path_ameda)
 
 % input data file absolute name
-nc_dim=[path_in,'lon_lat_',sshname,'_',domname,'.nc'];
-nc_u=[path_in,'ssu_',sshname,'_',domname,'_',name,'.nc'];
-nc_v=[path_in,'ssv_',sshname,'_',domname,'_',name,'.nc'];
-nc_ssh=[path_in,'ssh_',sshname,'_',domname,'_',name,'.nc'];
+nc_dim=[path_in,'lon_lat_',sshtype,'_',domain,'.nc'];
+nc_u=[path_in,'ssu_',sshtype,'_',domain,'_',postname,'.nc'];
+nc_v=[path_in,'ssv_',sshtype,'_',domain,'_',postname,'.nc'];
+nc_ssh=[path_in,'ssh_',sshtype,'_',domain,'_',postname,'.nc'];
 
-% variable names
-lat_name = 'lat';
-lon_name = 'lon';
+% Rossby deformation radius file
+mat_Rd = [path_rossby,'Rossby_radius'];
+
+% variable names (could be automatised)
+y_name = 'lat';
+x_name = 'lon';
+m_name = 'mask';
+u_name = 'u';
+v_name = 'v';
+s_name = 'ssh';
+
+% duration experiment (should read a 'time' variable)
+u0 = squeeze(ncread(nc_u,u_name,[1 1 1],[1 1 Inf]));
+stepF = length(u0);
+clear u0
 
 % rotation period (T) per day and time step in days (dps)
 T = 3600*24; % day period in seconds
@@ -103,6 +117,7 @@ if ~exist('deg','var')
 end
 
 %% Experiment option keys
+%----------------------------------------------
 
 % grid type
 grid_ll = 1;
@@ -124,7 +139,7 @@ extended_diags = 1;
 
 % save streamlines at days daystreamfunction and profil as well
 streamlines = 1;
-daystreamfunction = 1:90;
+daystreamfunction = 1:stepF;
 
 % in case of periodic grid along x boundaries
 periodic = 0;
