@@ -48,6 +48,8 @@
 %  |--> mod_eddy_centers.m
 %  |     |
 %  |     |--> compute_psi.m
+%  |     |
+%  |     |--> scan_lines.m
 %  |
 %  |
 %  |--> mod_eddy_shapes.m
@@ -57,6 +59,8 @@
 %  |     |     |--> compute_psi.m
 %  |     |     |
 %  |     |     |--> max_curve.m
+%  |     |     |     |
+%  |     |     |     |--> scan_lines.m
 %  |     |     |     |
 %  |     |     |     |--> integrate_vel.m
 %  |     |     |     |

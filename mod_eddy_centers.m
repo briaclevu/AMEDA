@@ -289,36 +289,10 @@ for i=step0:stepF
         % concantene all streamlines
         CS = [CS1,CS2];
 
-        %-----------------------------------------------------------
         % rearrange all the contours in C to the structure array 'isolines'
-        % sort by maximum y coord. Each element of isolines contains
-        % all the vertices of a given contour level of PSI
-
-        % fill the structure 'isolines'
-        isolines = struct('x',{},'y',{},'l',{});
-
-        % begin two counters
-        k = 1;
-        kk = 1;
-
-        while k < size(CS,2)
-            npoints = CS(2,k);
-            lvl(kk) = CS(1,k);
-            isolines(kk).x = CS(1,k+1:k+npoints); % vertex x's
-            isolines(kk).y = CS(2,k+1:k+npoints); % vertex y's
-            isolines(kk).l = max(CS(2,k+1:k+npoints)); % max y of a curve
-            kk = kk + 1;
-            k = k + npoints + 1;
-        end
-
-        % sort the contours according to their maximum y coord; this way the first
-        % closed contour across which velocity increases will also be the largest
-        % one (it's the one which extend further north).
-        [~,order] = sort([isolines(:).l],'ascend');
-        isolines = isolines(order);
-        % ! Debug ! Test the contour value scanned
-        %display([min(diff(lvl)) mean(diff(lvl)) max(diff(lvl))]) % !Debug!
-
+        %-----------------------------------------------------------
+        [isolines,~] = scan_lines(CS);
+        
         %----------------------------------------------
         % scan streamlines and validate centers which are alone as potential centers
 

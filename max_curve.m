@@ -97,34 +97,9 @@ else
     C = contour(x,y,psi,H);
 end
 
-%-----------------------------------------------------------
 % rearrange all the contours in C to the structure array 'isolines'
-% sort by maximum y. Each element of isolines contains
-% all the vertices of a given contour level of PSI
-
-% fill the structure 'isolines'
-isolines = struct('x',{},'y',{},'l',{});
-
-% begin two counters
-i = 1;
-ii = 1;
-
-while i < size(C,2)
-    npoints = C(2,i);
-    lvl(ii) = C(1,i);
-    isolines(ii).x = C(1,i+1:i+npoints); % vertex x's
-    isolines(ii).y = C(2,i+1:i+npoints); % vertex y's
-    isolines(ii).l = max(C(2,i+1:i+npoints)); % max y of a curve
-    ii=ii+1;
-    i=i+npoints+1;
-end
-
-% sort the contours according to their maximum y; this way the first
-% closed contour across which velocity increases will also be the largest
-% one (it's the one which extend further north).
-[~,order] = sort([isolines(:).l],'ascend');
-isolines = isolines(order);
-lvl = lvl(order);
+%-----------------------------------------------------------
+[isolines,lvl] = scan_lines(C);
 
 %-----------------------------------------------------------
 % intialize the variables
