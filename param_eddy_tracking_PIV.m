@@ -1,4 +1,4 @@
-% param_eddy_tracking_AVISO.m
+%param_eddy_tracking_PIV.m
 %
 %   param_eddy_tracking sets user defined paths and parameters for a
 %   degradation coefficient of 'deg' which goes from 1 (default)
@@ -78,42 +78,32 @@
 %% Experiment setings
 
 % name for the experiment
-name = '2013';
-
-% set name of the domain
-global domname
-domname='ALG';
-
-% use to diferenciate source field of surface height (adt, ssh, psi,...)
-global sshname
-sshname='adt_'; % adt_ or sla_
+name='EXP19';
 
 % set the paths
 global path_in
 global path_out
-global path_tracks
-global path_data
-global path_rossby
+path_in = ['/home/blevu/DATA/PIV/',name,'_Data/'];
+path_out = ['/home/blevu/Resultats/PIV/',name,'/tests_new/'];
 
-path_in=['/home/blevu/DATA/AVISO/',domname,'/'];
-path_out=['/home/blevu/Resultats/AVISO/',domname,'/',sshname,name,'/tests/'];
-path_tracks='/home/blevu/DATA/AVISO/nrt/adt/tracks/';
-path_data='/home/blevu/DATA/CORIOLIS/SOP2/';
-path_rossby='/home/blevu/MATLAB/Rossby_radius/';
+% use to diferenciate source field of surface height (adt, ssh, psi,...)
+global sshname
+sshname = []; % ex: adt_
 
 % use to submit parallel computation
 global runname
 runname = []; % ex: 1
 
 % input data file absolute name
-nc_dim=[path_in,'lon_lat_',sshname,domname,'.nc'];
-nc_u=[path_in,'ssu_',sshname,domname,'_',name,'.nc'];
-nc_v=[path_in,'ssv_',sshname,domname,'_',name,'.nc'];
-nc_ssh=[path_in,'ssh_',sshname,domname,'_',name,'.nc'];
+mat = [path_in,name,'_new.mat'];
+
+% mesh grid  size (xd), deformation radius (Rd)
+Dx = 2.19*1e-6; % 2.19mm in km
+Rd = 23*1e-6; % 2.3cm in km
 
 % rotation period (T) per day and time step in days (dps)
-T = 3600*24; % day period in seconds
-dps = 1; % 24h time step
+T = 14.5; % revolution period in seconds
+dps = 0.2675; % day
 
 % Calculate coriolis parameter
 f = 4*pi/T; % in s-1
@@ -127,13 +117,13 @@ end
 
 % grid type
 global grid_ll
-grid_ll = 1;
+grid_ll = 0;
         % 0 : spatial grid in cartesian coordinates (x,y)
         % 1 : spatial grid in earth coordinates (lon,lat)
 
 % choose the field use as streamlines
 global type_detection
-type_detection = 3;
+type_detection = 1;
         % 1 : using velocity fields
 		% 2 : using ssh
 		% 3 : using both velocity fields and ssh, 
@@ -150,7 +140,7 @@ extended_diags = 1;
 global streamlines
 streamlines = 0;
 global daystreamfunction
-daystreamfunction = 1:365;
+daystreamfunction = 1:31/dps;
 
 % in case of periodic grid along x boundaries
 global periodic
@@ -164,28 +154,13 @@ periodic = 0;
 
 % Resolution parameters:
 %----------------------------------------------
-% Read grid
-y = double(ncread(nc_dim,'lat'))';
-x = double(ncread(nc_dim,'lon'))';
-
-% Meshgrid size at (x,y)
-if grid_ll
-    Dx = get_Dx_from_ll(x,y);
-else
-    Dx = ( abs( diff(x,1,2) ) + abs( diff(y,1,1) ) )/2;
-end
-
-% deformation radius (Rd in km)
-load([path_rossby,'Rossby_radius'])
-Rd = interp2(lon_Rd,lat_Rd,Rd_baroc1_extra,x,y); % 10km in average AVISO 1/8
-
 % gama is resolution coefficient which is the number of pixels per Rd.
 % After test gama>3 is required to get the max number of eddies.
-gama = Rd ./ (Dx*deg); % [0.1-1.5] for AVISO 1/8
+gama = Rd / (Dx*deg); % around 1 for AVISO 1/8
 
 % res is an integer and used to improve the precision of centers detection
 % close to 3 pixels per Rd. res can goes up to 3
-res = max(1,min(3,round(3/min(gama(:))))); % [1 - 3]
+res = max(1,min(3,round(3/gama))); % [1 - 3]
 
 % Detection parameters:
 %----------------------------------------------
@@ -195,19 +170,19 @@ res = max(1,min(3,round(3/min(gama(:))))); % [1 - 3]
 K = 0.7; % [0 - 1]
 
 % b is half length of the box in pixels used to normalise the LNAM and LOW.
-% After test the optimal length of the box ( Lb = 2b*Dx*deg )
-% is fixed to one and half the size of Rd (Lb/Rd=1.2).
+% After test the optimal length of the box ( Lb = 2b*xd*deg )
+% is fixed t;o one and half the size of Rd (Lb/Rd=1.2).
 b = max(1,round((1.2*gama)/2));
 
 % Rb (=Lb/Rd) is to check that the b setting and the gama are optimal.
 % !!! Because optimal b is directly linked to gama, you start missing
 % smaller eddies when gama is below 2 even at b=1
 % (e.g. for AVISO 1/8 (gama~0.8) we have Rb~2.5) !!!
-Rb = 2*b ./ gama;
+Rb = 2*b / gama;
 
 % bx is half length of the box used in pixels to find contour streamlines
 % in pixels bx = 10 times the Rd is enough to start testing any eddies
-bx = max(1,round(10*gama)); % [1-14] for AVISO 1/8
+bx = round(10*gama);
 
 % H is number of lines scanned in bx during detection of potential centers
 % (centers0 to centers) and shapes (centers to centers2). After test 100
@@ -218,6 +193,6 @@ H = 200; % number of line scanned
 
 % Tracking parameters:
 %----------------------------------------------
-% delay searching tolerance parameter for the eddy tracking
-Dt = 10; % in days
+% parameter for the eddy tracking.
+Dt = 7; % in days
 

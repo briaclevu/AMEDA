@@ -1,5 +1,7 @@
 % Eddy detection and tracking package
 %-------------------------
+%   Ver. 3.2 2016 by Le Vu et al.
+%   Ver. 3.1 2014 LMD
 %   Ver. 2.1 Oct.2012
 %   Ver. 2.0 Jan.2012
 %   Ver. 1.3 Apr.2011
@@ -40,7 +42,7 @@
 %  |--> load_fields.m
 %  |
 %  |
-%  |--> mod_fields.m
+%  |--> mod_fields_inter.m, mod_fields.m
 %  |
 %  |
 %  |--> mod_eddy_centers.m
@@ -55,17 +57,26 @@
 %  |     |     |--> compute_psi.m
 %  |     |     |
 %  |     |     |--> max_curve.m
-%  |     |           |
-%  |     |           |--> integrate_vel.m
-%  |     |           |
-%  |     |           |--> mean_radius.m
+%  |     |     |     |
+%  |     |     |     |--> integrate_vel.m
+%  |     |     |     |
+%  |     |     |     |--> mean_radius.m
+%  |     |     |     |
+%  |     |     |     |--> compute_curve.m
+%  |     |     |     |     |
+%  |     |     |     |     |--> TaubinNTN.m
 %  |     |
 %  |     |--> mean_radius.m
 %  |     |
 %  |     |--> compute_ellip.m
 %  |     |
+%  |     |--> compute_best_fit.m
+%  |     |
 %  |     |--> min_dist_shapes.m
 %  |
 %  |
 %  |--> mod_eddy_tracks.m
-
+%  |     |
+%  |     |--> assignmentoptimal.m
+%  |     |
+%  |     |--> mod_merging_splitting.m

@@ -1,5 +1,5 @@
-function mod_eddy_centers(K,bx,update)
-%mod_eddy_centers(K,bx {,update} )
+function mod_eddy_centers(K,update)
+%mod_eddy_centers(K {,update} )
 %
 %  Detect the potential eddy centers present in the domain,
 %  for each time step of the time serie of the 2-D velocity fields
@@ -9,8 +9,6 @@ function mod_eddy_centers(K,bx,update)
 %
 %  - K is the abs(LNAM(LOW<0)) threshold to delimit the contour of
 %       the potential eddy centers (one per contour)
-%  - bx is used to define smaller areas around each center and find which
-%    ones are included (and alone) in a closed streamline
 %  - update is a flag allowing to update an existing detection:
 %       update = number of time steps backward to consider
 %       update = 0 (default) to compute all the mod_field serie
@@ -205,20 +203,20 @@ for i=step0:stepF
 
         % resize coordinate and velocity matrix 
         % (making sure not to go outside the domain)
-        xx = x(max(C_J-bx,1):min(C_J+bx,size(x,1)), ...
-            max(C_I-bx,1):min(C_I+bx,size(x,2)));
-        yy = y(max(C_J-bx,1):min(C_J+bx,size(y,1)), ...
-            max(C_I-bx,1):min(C_I+bx,size(y,2)));
-        mk = mask(max(C_J-bx,1):min(C_J+bx,size(mask,1)), ...
-            max(C_I-bx,1):min(C_I+bx,size(mask,2)));
-        vv = v(max(C_J-bx,1):min(C_J+bx,size(v,1)), ...
-            max(C_I-bx,1):min(C_I+bx,size(v,2)),i);
-        uu = u(max(C_J-bx,1):min(C_J+bx,size(u,1)), ...
-            max(C_I-bx,1):min(C_I+bx,size(u,2)),i);
+        xx = x(max(C_J-round(bx(C_J,C_I)/2),1):min(C_J+round(bx(C_J,C_I)/2),size(x,1)), ...
+            max(C_I-round(bx(C_J,C_I)/2),1):min(C_I+round(bx(C_J,C_I)/2),size(x,2)));
+        yy = y(max(C_J-round(bx(C_J,C_I)/2),1):min(C_J+round(bx(C_J,C_I)/2),size(y,1)), ...
+            max(C_I-round(bx(C_J,C_I)/2),1):min(C_I+round(bx(C_J,C_I)/2),size(y,2)));
+        mk = mask(max(C_J-round(bx(C_J,C_I)/2),1):min(C_J+round(bx(C_J,C_I)/2),size(mask,1)), ...
+            max(C_I-round(bx(C_J,C_I)/2),1):min(C_I+round(bx(C_J,C_I)/2),size(mask,2)));
+        vv = v(max(C_J-round(bx(C_J,C_I)/2),1):min(C_J+round(bx(C_J,C_I)/2),size(v,1)), ...
+            max(C_I-round(bx(C_J,C_I)/2),1):min(C_I+round(bx(C_J,C_I)/2),size(v,2)),i);
+        uu = u(max(C_J-round(bx(C_J,C_I)/2),1):min(C_J+round(bx(C_J,C_I)/2),size(u,1)), ...
+            max(C_I-round(bx(C_J,C_I)/2),1):min(C_I+round(bx(C_J,C_I)/2),size(u,2)),i);
         
         if type_detection==2 || type_detection==3
-            sshh = ssh(max(C_J-bx,1):min(C_J+bx,size(ssh,1)), ...
-                max(C_I-bx,1):min(C_I+bx,size(ssh,2)),i);
+            sshh = ssh(max(C_J-round(bx(C_J,C_I)/2),1):min(C_J+round(bx(C_J,C_I)/2),size(ssh,1)), ...
+                max(C_I-round(bx(C_J,C_I)/2),1):min(C_I+round(bx(C_J,C_I)/2),size(ssh,2)),i);
         end
         
         % indice of the center in the small domain
@@ -400,4 +398,3 @@ if update && exist([path_out,'eddy_centers',runname,'.mat'],'file')
 else
     save([path_out,'eddy_centers',runname],'centers0','centers')
 end
-

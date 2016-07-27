@@ -183,13 +183,14 @@ while i<=length(isolines)
             R = mean_radius([xdata;ydata],grid_ll);
             
             % compute the local curvature (C) and the segment length (P)
-            [C,P] = curvature([xdata;ydata],Rd,grid_ll);
+            [C,P] = compute_curve([xdata;ydata],Rd,grid_ll);
             
             % compute the revolution time (Tau)
             T = sum(P(1:end-1))*1000/V/3600/24; % in days if vel is m/s
             
-            % compte the part of the contour with negative curvature
-            N = sum(P(C<0))/(2*pi*R(1));
+            % part of the contour with negative curvature weighted by
+            % the discrete curvature
+            N = abs(sum(P(C<0).*C(C<0))/(2*pi));
             
             % record every streamlines features
             if streamlines
@@ -213,16 +214,16 @@ while i<=length(isolines)
                 
                 % test if the first contour contains only 1 center
                 % it is not too big or too much concave segment
-                if nc==1 && R(1)<5*Rd || N<0.33
+                if nc==1 && R(1)<5*Rd && N<0.33
                     % fix the test values
                     Vmax = V; % first value of velmax
                     Tmin = min(Tmin,T); % first value of Tau
-                    % record the first shape wich can be the last
+                    % record the first shape which can be the last
                     velmax(3) = V;
                     eddy_lim{3} = [xdata;ydata]; % save the last shape
                     eta(3) = lvl(i); % save the ssh contour
                 else
-                    i = length(isolines); % stop the scan
+                    return % stop the scan
                 end
                 
             % closed contour already met and velocity is increasing
@@ -236,6 +237,7 @@ while i<=length(isolines)
                 % record others index
                 linesmax = [xdata;ydata];
                 etamax = lvl(i);
+                rmax = R(1);
                 nrhomax = N;
 
                 % record bigger contour around the single or 2 centers
@@ -245,7 +247,7 @@ while i<=length(isolines)
                     % replace previous contour
                     large(nc) = 1; % largest contour
                     % record eddy{1} only if R<Rlim and N<Nlim
-                    if nc==2 || R(1)<5*Rd && N<0.33
+                    if nc==2 || rmax<5*Rd && nrhomax<0.33
                         velmax(nc) = Vmax;
                         eddy_lim{nc} = linesmax; % save the shape
                         tau = Tmin; % save the turnover time
@@ -265,7 +267,7 @@ while i<=length(isolines)
                 % test if Vmax is higher then the existing "true" maximum
                 elseif Vmax>velmax(nc) && velmax(nc)~=0
                     % record eddy{1} only if R<Rlim and N<Nlim
-                    if nc==2 || R(1)<5*Rd && N<0.33
+                    if nc==2 || rmax<5*Rd && nrhomax<0.33
                         % replace previous contour
                         velmax(nc) = Vmax;
                         eddy_lim{nc} = linesmax; % save the shape
@@ -278,9 +280,8 @@ while i<=length(isolines)
 
         % the contour contains more than 2 centers
         else
-            i = length(isolines); % stop the scan
+            return % stop the scan
         end
     end
     i = i+1; % increase the counter
 end
-
