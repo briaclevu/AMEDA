@@ -52,9 +52,11 @@ maskr = ones(Nv,Mu);
 %% Enlarge degraded field
 if periodic
     disp('"enlarge fields" by cloning the periodic field')
-    % add bx pixels to the boundaries (East-West periodicity)
+    % add pixels to the boundaries (East-West periodicity)
     % u and v matrices are expanded by adding the ending columns
     % to the beginning of the domain, and the beginning columns at its end.
+    % We tried bx pixel and also the size of the grid but still some eddies
+    % can be lost during tracking if they cross the E AND W boundaries
     borders = bx0;
     borders = Mu-1;
     % enlaregd uroms with the same values at West and East boundary

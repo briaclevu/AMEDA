@@ -1,12 +1,12 @@
-function tracks = mod_merging_splitting(tracks,cut_off,Dt,dps)
-%tracks = mod_merging_splitting(tracks,cut_off,Dt,dps)
+function [tracks,short] = mod_merging_splitting(tracks,stepF,cut_off,Dt,dps)
+%[tracks,short] = mod_merging_splitting(tracks,cut_off,Dt,dps)
 %
 %  Resolve merging and splitting interaction from trajectories
 %
 %  Find indice of interaction eddy as 'interaction' field
 %  Flag the inetraction as 'merge' (=1) or/and 'split' (=1)
 %  Remove eddies associated with their next interaction
-%  which are shorter than cut_off.
+%  which are shorter than cut_off (save in 'short').
 
 %  - cut_off (days) are the minimum duration tracks recorded
 %       use cut_off=0 to use the explicit turnover time (tau) for each eddy
@@ -22,6 +22,12 @@ function tracks = mod_merging_splitting(tracks,cut_off,Dt,dps)
 %-------------------------
 %
 %=========================
+
+%----------------------------------------------------------
+% set name indice belonging to shapes2
+tracks_name = fieldnames(tracks);
+n1 = find(strcmp(tracks_name,'x2'));
+n2 = find(strcmp(tracks_name,'shapes2'));
 
 %----------------------------------------------------------
 % initialize tracks interaction detection and type flag
@@ -66,8 +72,10 @@ for j1=1:length(tracks)
                     y1 = tracks(j2).y1(ind);
 
                     % record tracks j2 as double eddy of j1 at step stp
+                    % and tracks j1 as double eddy of j2 at step stp
                     if x2==x1 && y2==y1
                         
+                        % check if any double shapes already
                         if isnan(tracks(j1).interaction(i))
                             tracks(j1).interaction(i) = j2;
                         elseif tracks(j1).interaction(i) ~= j2
@@ -77,6 +85,7 @@ for j1=1:length(tracks)
                                 ' and eddy ',num2str(j2),' at step ',num2str(stp)])
                         end
                         
+                        % check if any double shapes already
                         if isnan(tracks(j2).interaction(ind))
                             tracks(j2).interaction(ind) = j1;
                         elseif tracks(j2).interaction(ind) ~= j1
@@ -98,7 +107,7 @@ end % end loop on tracks j1
 %----------------------------------------------------------
 % flag merging & spliting period
 
-disp(' Flag merging and splitting eddies ...')
+disp('Flag merging and splitting eddies ...')
 
 for j=1:length(tracks)
     
@@ -144,109 +153,6 @@ for j=1:length(tracks)
     end
 end
         
-%----------------------------------------------------------
-% clean none associate or non interacting double shape or double center
-
-disp('Clean double shapes with no interaction ...')
-
-for j=1:length(tracks)
-    
-    for i=1:length(tracks(j).step)
-        
-        % check the interacting eddy of eddy j and the step stp(i)
-        if isnan(tracks(j).interaction(i))
-            % no interaction
-            tracks(j).shapes2{i} = NaN;
-            for n=[5:8 33:40]
-                tracks(j).(tracks_name{n})(i) = NaN;
-            end
-        end
-    end
-end % end loop on tracks j
-
-disp(' and double shapes no involved in merging nor splitting ...')
-
-for j=1:length(tracks)
-
-    % look for the interacting eddy indice of eddy j
-    list=unique([tracks(j).interaction;tracks(j).interaction2]);
-    list=list(~isnan(list))';
-    
-    for i=list
-        
-        % respective indices and their splitting/merging flag sum
-        ind11=find(tracks(j).interaction==i)';
-        ind12=find(tracks(j).interaction2==i)';
-        ind21=find(tracks(i).interaction==j)';
-        ind22=find(tracks(i).interaction2==j)';
-        
-        sum_test11 = tracks(j).merge(ind11) + tracks(j).split(ind11);
-        sum_test12 = tracks(j).merge2(ind12) + tracks(j).split2(ind12);
-        sum_test21 = tracks(i).merge(ind21) + tracks(i).split(ind21);
-        sum_test22 = tracks(i).merge2(ind22) + tracks(i).split2(ind22);
-        
-        % clean shapes2 if interaction leading to a merging or a splitting?
-        if nansum([sum_test11;sum_test12;sum_test21;sum_test22]) < 1
-            
-            for k=ind11
-                if isnan(tracks(j).interaction2(k))
-                    tracks(j).shapes2{k} = NaN;
-                    for n=[5:8 33:40]
-                        tracks(j).(tracks_name{n})(k) = NaN;
-                    end
-                end
-                tracks(j).interaction(k) = tracks(j).interaction2(k);
-                tracks(j).split(k) = tracks(j).split2(k);
-                tracks(j).merge(k) = tracks(j).merge2(k);
-                tracks(j).interaction2(k) = NaN;
-                tracks(j).split2(k) = NaN;
-                tracks(j).merge2(k) = NaN;
-            end
-            
-            for k=ind12
-                if isnan(tracks(j).interaction(k))
-                    tracks(j).shapes2{k} = NaN;
-                    for n=[5:8 33:40]
-                        tracks(j).(tracks_name{n})(k) = NaN;
-                    end
-                end
-                tracks(j).interaction2(k) = NaN;
-                tracks(j).split2(k) = NaN;
-                tracks(j).merge2(k) = NaN;
-            end
-            
-            for l=ind21
-                if isnan(tracks(i).interaction2(l))
-                    tracks(i).shapes2{l} = NaN;
-                    for n=[5:8 33:40]
-                        tracks(i).(tracks_name{n})(l) = NaN;
-                    end
-                end
-                tracks(i).interaction(l) = tracks(i).interaction2(l);
-                tracks(i).split(l) = tracks(i).split2(l);
-                tracks(i).merge(l) = tracks(i).merge2(l);
-                tracks(i).interaction2(l) = NaN;
-                tracks(i).split2(l) = NaN;
-                tracks(i).merge2(l) = NaN;
-            end
-            
-            for l=ind22
-                if isnan(tracks(i).interaction(l))
-                    tracks(i).shapes2{l} = NaN;
-                    for n=[5:8 33:40]
-                        tracks(i).(tracks_name{n})(l) = NaN;
-                    end
-                end
-                tracks(i).interaction2(l) = NaN;
-                tracks(i).split2(l) = NaN;
-                tracks(i).merge2(l) = NaN;
-            end
-        end
-        
-    end % end loop on list
-
-end % end loop on tracks j
-
 %----------------------------------------------------------
 % filter tracks or series of tracks older than Dt + cut_off
 % the ones shorter than eddy turnover time or cut_off days
@@ -331,17 +237,18 @@ for j=1:length(tracks)
         % indice of interacting eddy
         ind = tracks(j).interaction(stp(i));
         
-        % remove interaction if interacting eddy is missing
         if short(ind)==1
-
+            
+            % remove interaction if interacting eddy is missing
             tracks(j).interaction(stp(i)) = NaN;
             tracks(j).split(stp(i)) = NaN;
             tracks(j).merge(stp(i)) = NaN;
-            disp([' the interacting eddies ',num2str(ind),' has been filtred around eddy ',...
-                num2str(j),' on step ', num2str(tracks(j).step(stp(i)))])
+            disp([' the interacting eddies ',num2str(ind),...
+                ' has been filtred around eddy new indice ',num2str(j),...
+                ' on step ', num2str(tracks(j).step(stp(i)))])
             
-        % adjust tracking indice
         else        
+            % adjust tracking indice
             tracks(j).interaction(stp(i)) = ind - sum(short(1:ind));
         end
     end
@@ -354,18 +261,108 @@ for j=1:length(tracks)
         % indice of interacting eddy
         ind2 = tracks(j).interaction2(stp2(i));
         
-        % remove interaction if interacting eddy is missing
         if short(ind2)==1
             
+            % remove interaction if interacting eddy is missing
             tracks(j).interaction2(stp2(i)) = NaN;
             tracks(j).split2(stp2(i)) = NaN;
             tracks(j).merge2(stp2(i)) = NaN;
-            disp([' the interacting eddies ',num2str(ind2),' has been filtred around eddy ',...
-                num2str(j),' on step ', num2str(tracks(j).step(stp2(i)))])
+            disp([' the interacting eddies ',num2str(ind2),...
+                ' has been filtred around eddy new indice ',num2str(j),...
+                ' on step ', num2str(tracks(j).step(stp2(i)))])
             
-            % adjust tracking indice
         else
+            % adjust tracking indice
             tracks(j).interaction2(stp2(i)) = ind2 - sum(short(1:ind2));
         end
     end
-end 
+end
+
+%----------------------------------------------------------
+% clean none associate or non interacting double shape or double center
+
+disp('Unflag if interaction no involved in merging nor splitting ...')
+
+for j=1:length(tracks)
+
+    % look for the interacting eddy indice of eddy j
+    list=unique([tracks(j).interaction;tracks(j).interaction2]);
+    list=list(~isnan(list))';
+    
+    for i=list
+        
+        % respective indices of i/j interaction
+        ind11=find(tracks(j).interaction==i)';
+        ind12=find(tracks(j).interaction2==i)';
+        ind21=find(tracks(i).interaction==j)';
+        ind22=find(tracks(i).interaction2==j)';
+        
+        % i/j splitting/merging flag sum
+        sum_test11 = tracks(j).merge(ind11) + tracks(j).split(ind11);
+        sum_test12 = tracks(j).merge2(ind12) + tracks(j).split2(ind12);
+        sum_test21 = tracks(i).merge(ind21) + tracks(i).split(ind21);
+        sum_test22 = tracks(i).merge2(ind22) + tracks(i).split2(ind22);
+        
+        % Unflag i/j interaction no leading to a merging or a splitting
+        if nansum([sum_test11;sum_test12;sum_test21;sum_test22]) < 1
+            
+            % replace interaction by interaction2
+            % which become NaN if no interaction2
+            for k=ind11
+                tracks(j).interaction(k) = tracks(j).interaction2(k);
+                tracks(j).split(k) = tracks(j).split2(k);
+                tracks(j).merge(k) = tracks(j).merge2(k);
+                tracks(j).interaction2(k) = NaN;
+                tracks(j).split2(k) = NaN;
+                tracks(j).merge2(k) = NaN;
+            end
+            
+            % unflag interaction2
+            for k=ind12
+                tracks(j).interaction2(k) = NaN;
+                tracks(j).split2(k) = NaN;
+                tracks(j).merge2(k) = NaN;
+            end
+            
+            % replace interaction by interaction2
+            % which become NaN if no interaction2
+            for l=ind21
+                            tracks(i).interaction(l) = tracks(i).interaction2(l);
+                tracks(i).split(l) = tracks(i).split2(l);
+                tracks(i).merge(l) = tracks(i).merge2(l);
+                tracks(i).interaction2(l) = NaN;
+                tracks(i).split2(l) = NaN;
+                tracks(i).merge2(l) = NaN;
+            end
+            
+            % unflag interaction2
+            for l=ind22
+                tracks(i).interaction2(l) = NaN;
+                tracks(i).split2(l) = NaN;
+                tracks(i).merge2(l) = NaN;
+            end
+            
+        end
+        
+    end % end loop on list
+
+end % end loop on tracks j
+
+disp(' then clean double shapes with no interaction ...')
+
+for j=1:length(tracks)
+    
+    for i=1:length(tracks(j).step)
+        
+        % check the interacting eddy of eddy j and the step stp(i)
+        if isnan(tracks(j).interaction(i))
+            
+            % no interaction
+            tracks(j).shapes2{i} = NaN;
+            for n=[n1:n1+3 n2+1:n2+8]
+                tracks(j).(tracks_name{n})(i) = NaN;
+            end
+            
+        end
+    end
+end % end loop on tracks j

@@ -592,7 +592,7 @@ end
 %----------------------------------------------------------
 % Resolve merging and spltting event and filter eddies shorter than cut_off
 
-tracks = mod_merging_splitting(tracks,cut_off,Dt,dps)
+[tracks,short] = mod_merging_splitting(tracks,stepF,cut_off,Dt,dps);
 
 %----------------------------------------------------------
 % save tracks and warnings in structure array
