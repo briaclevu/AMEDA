@@ -17,7 +17,7 @@
 %            (longitude and latitude) and the velocity mask (land-points=0;
 %             ocean-points=1)
 %
-% User parameters definition:
+% User option keys:
 %   - type_detection: flag to choose the field use as streamlines
 %           1 : using velocity fields
 %           2 : using ssh
@@ -34,18 +34,6 @@
 %               (e.g. global fields or idealized simulations) domains.
 %               IMPORTANT: first and last columns of the domain must be
 %                          identical for this to work properly!!!!!
-%
-% Fixed parmeter:
-%   - res: factor of interpolation of the fields (velocity and ssh)
-%       to compute center detection. 2 or 3 seems reasonable in term of
-%       computation time for 1/8° AVISO fields.
-%   - K: LNAM(LOW<0) threshold to detect the potential eddy centers
-%   - b: parameter for the computation of LNAM and Local Okubo-Weiss
-%       (number of grid points in one of the 4 directions to define
-%       the length of the box area used normalize Angular Momentum
-%       and Okubo-Weiss fields)
-%   - bx: number of grid points to define the initial area to scan
-%       streamlines
 %
 %-------------------------
 % IMPORTANT - Input file requirements:
@@ -81,19 +69,10 @@
 name = '2013';
 
 % set name of the domain
-global domname
 domname='ALG';
 
 % use to diferenciate source field of surface height (adt, ssh, psi,...)
-global sshname
 sshname='adt_'; % adt_ or sla_
-
-% set the paths
-global path_in
-global path_out
-global path_tracks
-global path_data
-global path_rossby
 
 path_in=['/home/blevu/DATA/AVISO/',domname,'/'];
 path_out=['/home/blevu/Resultats/AVISO/',domname,'/',sshname,name,'/tests/'];
@@ -102,7 +81,6 @@ path_data='/home/blevu/DATA/CORIOLIS/SOP2/';
 path_rossby='/home/blevu/MATLAB/Rossby_radius/';
 
 % use to submit parallel computation
-global runname
 runname = []; % ex: 1
 
 % input data file absolute name
@@ -110,6 +88,10 @@ nc_dim=[path_in,'lon_lat_',sshname,domname,'.nc'];
 nc_u=[path_in,'ssu_',sshname,domname,'_',name,'.nc'];
 nc_v=[path_in,'ssv_',sshname,domname,'_',name,'.nc'];
 nc_ssh=[path_in,'ssh_',sshname,domname,'_',name,'.nc'];
+
+% variable names
+lat_name = 'lat';
+lon_name = 'lon';
 
 % rotation period (T) per day and time step in days (dps)
 T = 3600*24; % day period in seconds
@@ -123,37 +105,31 @@ if ~exist('deg','var')
     deg = 1; % from 1 (default) to >10 in some experiment
 end
 
-%% Experiment option
+%% Experiment option keys
 
 % grid type
-global grid_ll
 grid_ll = 1;
         % 0 : spatial grid in cartesian coordinates (x,y)
         % 1 : spatial grid in earth coordinates (lon,lat)
 
 % choose the field use as streamlines
-global type_detection
 type_detection = 3;
         % 1 : using velocity fields
-		% 2 : using ssh
-		% 3 : using both velocity fields and ssh, 
-		%     and keep max velocity along the eddy contour
+        % 2 : using ssh
+        % 3 : using both velocity fields and ssh, 
+        %     and keep max velocity along the eddy contour
 
 % if you want extended diags directly computed
-global extended_diags
 extended_diags = 1;
         % 0 : not computed
         % 1 : computed as the same time as eddy detection
-		% 2 : computed afterward  
+        % 2 : computed afterward  
 
 % save streamlines at days daystreamfunction and profil as well
-global streamlines
-streamlines = 0;
-global daystreamfunction
+streamlines = 1;
 daystreamfunction = 1:365;
 
 % in case of periodic grid along x boundaries
-global periodic
 periodic = 0;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -220,4 +196,3 @@ H = 200; % number of line scanned
 %----------------------------------------------
 % delay searching tolerance parameter for the eddy tracking
 Dt = 10; % in days
-

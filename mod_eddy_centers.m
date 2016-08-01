@@ -1,5 +1,10 @@
+<<<<<<< HEAD
 function mod_eddy_centers(K,update)
 %mod_eddy_centers(K {,update} )
+=======
+function [centers0,centers] = mod_eddy_centers(source,stp,fields,resolution)
+%[centers0,centers] = mod_eddy_centers(source,stp,fields {,resolution} )
+>>>>>>> ameda_v2
 %
 %  Detect the potential eddy centers present in the domain,
 %  for each time step of the time serie of the 2-D velocity fields
@@ -7,11 +12,23 @@ function mod_eddy_centers(K,update)
 %  calculated by mod_fields.m and stored as {detection_fields(t)} in
 %  [path_out,'fields_inter',runname]:
 %
-%  - K is the abs(LNAM(LOW<0)) threshold to delimit the contour of
+% - 'source' is the type of netcdf data (AVISO, NEMO, ROMS,...) that
+%   determine which load_field_'source'is  used in the routine
+% - 'fields' is the step 'stp' of the detection_fields computed with
+%   mod_eddy_fields.m
+%
+% This routine will use:
+%  - K: the abs(LNAM(LOW<0)) threshold to delimit the contour of
 %       the potential eddy centers (one per contour)
+<<<<<<< HEAD
 %  - update is a flag allowing to update an existing detection:
 %       update = number of time steps backward to consider
 %       update = 0 (default) to compute all the mod_field serie
+=======
+%  - bx: used to define smaller areas around each center and find which
+%       ones are included (and alone) in a closed streamline. Must take into
+%       account the resolution factor!
+>>>>>>> ameda_v2
 %
 %  For a description of the input parameters see param_eddy_tracking.m.
 
@@ -26,8 +43,8 @@ function mod_eddy_centers(K,update)
 %  - centers(t).type(n) : eddy type (1 => cyclonic; -1 => anticyclonic)
 %  - centers(t).x(n) : eddy center x coordinate
 %  - centers(t).y(n) : eddy center y coordinate
-%  - centers(t).j(n) : eddy center row index
 %  - centers(t).i(n) : eddy center column index
+%  - centers(t).j(n) : eddy center row index
 %
 %
 %  Max of |LNAM(LOW<0)>K| with the same fields as {centers} are
@@ -40,155 +57,100 @@ function mod_eddy_centers(K,update)
 %   Ver. 3.1 2013 LMD from Nencioli et al. routines
 %-------------------------
 %
-% Copyright (C) 2009-2012 Francesco Nencioli and Charles Dong
-%
-% This file is part of the Vector-Geometry Eddy Detection Algorithm.
-%
-% The Vector-Geometry Eddy Detection Algorithm is free software: 
-% you can redistribute it and/or modify it under the terms of the 
-% GNU General Public License as published by the Free Software Foundation, 
-% either version 3 of the License, or (at your option) any later version.
-% 
-% The Vector-Geometry Eddy Detection Algorithm is distributed in the 
-% hope that it will be useful, but WITHOUT ANY WARRANTY; without even 
-% the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR 
-% PURPOSE. See the GNU General Public License for more details.
-% 
-% You should have received a copy of the GNU General Public License
-% along with the Vector-Geometry Eddy Detection Algorithm.  
-% If not, see <http://www.gnu.org/licenses/>.
-%
 %=========================
 
-global path_out
-global runname
-global type_detection
-global grid_ll
-global H
+%---------------------------------------------
+% read fields and initialisation
+%---------------------------------------------
 
-% No update by default
-if nargin==2
-    update = 0;
+disp(['Find potential centers step ',num2str(stp)])
+
+% load key_source and parameters (use mod_eddy_params.m first)
+%----------------------------------------------
+load('param_eddy_tracking')
+
+% replace parameters by arguments
+%----------------------------------------
+if nargin==4
+    resol = resolution;
 end
+bx = bx*resol;
 
-% load the computed field in mod_fields
-load([path_out,'fields_inter',runname]);
-stepF = size(u,3);
+% load 2D velocity fields (m/s) for step stp
+%----------------------------------------
+eval(['[x,y,mask,u,v,ssh] = load_fields_',source,'(stp,resol,deg);'])
 
 % to calculate psi extrapole u and v to 0 in the land
 u(isnan(u)) = 0;
 v(isnan(v)) = 0;
 
-% preallocate centers array if doesn't exist
-if update && exist([path_out,'eddy_centers',runname,'.mat'],'file')
-    
-    load([path_out,'eddy_centers',runname]);
-    
-    step0 = stepF - update+1;
-    
-    if centers0(step0-1).step ~= step0-1
-        display('Gap with the last recorded step!')
-        return
-    end
-    
-    centers0 = centers0(1:step0-1);
-    centers  = centers(1:step0-1);
-    
-else
-    centers0 = struct('step',{},'type',{},'x',{},'y',{},'i',{},'j',{});
-    centers = centers0;
-    
-    step0 = 1;
-    
-end
+% initialise centers as structure
+%----------------------------------------
+centers0 = struct('step',nan,'type',[],'x',[],'y',[],'i',[],'j',[]);
+centers = centers0;
 
 %---------------------------------------------
-disp(['Find potential centers from step ',num2str(step0),' to ',num2str(stepF)])
+% Max LNAM 'centers0' for a given step k
+%---------------------------------------------
 
-% cycle through time steps
-for i=step0:stepF
+centers0.step = stp;
 
-    disp(['  Search centers step ',num2str(i)])
+% LNAM n OW criteria define contour including potential centers
+%---------------------------------------------
+OW = fields.LOW; % Okubo Weiss
+LNAM = fields.LNAM; % LNAM
+LOW = abs(LNAM);
+LOW(OW>=0 | isnan(OW)) = 0;
 
-    % eddy centers for a given step k
-    centers0(i).step = i;
+% test if the grid is regular or not
+if min(x(1,:)==x(end,:)) && min(y(:,1)==y(:,end))
+    CS = contourc(x(1,:),y(:,1),LOW,[K K]);
+else
+    figure('visible','off')
+    CS = contour(x,y,LOW,[K K]);
+end
 
-    % LNAM n OW criteria define contour including potential centers
-    OW = detection_fields(i).LOW; % Okubo Weiss
-    LNAM = detection_fields(i).LNAM; % LNAM
-    LOW = abs(LNAM);
-    LOW(OW>=0 | isnan(OW)) = 0;
-    
-    % test if the grid is regular or not
-    if min(x(1,:)==x(end,:)) && min(y(:,1)==y(:,end))
-        CS = contourc(x(1,:),y(:,1),LOW,[K K]);
-    else
-        figure('visible','off')
-        CS = contour(x,y,LOW,[K K]);
-    end
+% Initialization
+j = 1; % first coordinates of the contour scan
+k = 1; % first contour
 
-    % Initialization
-    j = 1; % first coordinates of the contour scan
-    k = 1; % first contour
+% scan each LNAM contour
+while j < size(CS,2)
 
-    % scan each LNAM contour
-    while j < size(CS,2)
-        
-        n = CS(2,j); % number of coordinates for the contour(j)
-        xv = CS(1,j+1:j+n); % x values serie for the contour(j) coordinates
-        yv = CS(2,j+1:j+n); % y values serie for the contour(j) coordinates
-        
-        % validate only bigger contour
-        if n >= 4
-            
-            % make a mask outside the contour
-            in = inpolygon(x,y,xv,yv);
-            maskin = mask;
-            maskin(~in) = 0;
-            maskin(in)  = 1;
-            Lm = LNAM.*maskin;
-            
-            % L maximum value inside the contour(j)  
-            if sum(maskin(:))>0
-            
-                LC = Lm(abs(Lm)==max(abs(Lm(:))));
-                
-                % save coordinates of the L maximum inside the contour(j)
-                if mask(find(Lm==LC,1))==1
-                    
-                    centers0(i).type(k) = sign(LC(1));
-                    centers0(i).x(k)    = x(find(Lm==LC,1));
-                    centers0(i).y(k)    = y(find(Lm==LC,1));
-                    [centers0(i).j(k),centers0(i).i(k)] = find(Lm==LC,1);
-                    
-                    % increment the counter
-                    k = k + 1; % next contour
-                end
+    n = CS(2,j); % number of coordinates for the contour(j)
+    xv = CS(1,j+1:j+n); % x values serie for the contour(j) coordinates
+    yv = CS(2,j+1:j+n); % y values serie for the contour(j) coordinates
+
+    % validate only bigger contour
+    if n >= n_min
+
+        % make a mask outside the contour
+        in = inpolygon(x,y,xv,yv);
+        maskin = mask;
+        maskin(~in) = 0;
+        maskin(in)  = 1;
+        Lm = LNAM.*maskin;
+
+        % L maximum value inside the contour(j)  
+        if sum(maskin(:))>0
+
+            LC = Lm(abs(Lm)==max(abs(Lm(:))));
+
+            % save coordinates of the L maximum inside the contour(j)
+            if mask(find(Lm==LC,1))==1
+
+                centers0.type(k) = sign(LC(1));
+                centers0.x(k)    = x(find(Lm==LC,1));
+                centers0.y(k)    = y(find(Lm==LC,1));
+                [centers0.j(k),centers0.i(k)] = find(Lm==LC,1);
+
+                % increment the counter
+                k = k + 1; % next contour
             end
         end
-        
-        % increment the counter
-        j = j + n + 1; % series of coordinates of the next contour 
     end
-    
-    %----------------------------------------------
-    % remove center with no close curve around only one center
-    disp('    Remove centers without closed streamlines')
 
-    % all centers coordinates for a given step i
-    centers(i).step = i;
-    centers_type = centers0(i).type;
-    centers_x    = centers0(i).x;
-    centers_y    = centers0(i).y;
-    centers_i    = centers0(i).i;
-    centers_j    = centers0(i).j;
-
-    type1 = nan(1,length(centers_x));
-    x1    = type1;
-    y1    = type1;
-    j1    = type1;
-    i1    = type1;
-
+<<<<<<< HEAD
     %----------------------------------------------
     % compute each centers in a smaller area
 
@@ -249,42 +211,106 @@ for i=step0:stepF
         else
             xy_ctsj = [];
             xy_ctsi = [];
+=======
+    % increment the counter
+    j = j + n + 1; % series of coordinates of the next contour 
+end
+
+disp(['  ',num2str(k-1),' max LNAM found'])
+
+%----------------------------------------------
+% Remove 'centers0' with no close curve around only one max LNAM
+%----------------------------------------------
+
+disp('  Remove max LNAM without closed streamlines')
+
+% all max LNAM coordinates for the given step stp
+centers.step = stp;
+centers_type = centers0.type;
+centers_x    = centers0.x;
+centers_y    = centers0.y;
+centers_i    = centers0.i;
+centers_j    = centers0.j;
+
+type1 = nan(1,length(centers_x));
+x1    = type1;
+y1    = type1;
+j1    = type1;
+i1    = type1;
+
+% compute each centers in a smaller area
+%----------------------------------------------
+for ii=1:length(centers_x)
+
+    % fix the indice of the main center
+    C_I = centers_i(ii);
+    C_J = centers_j(ii);
+    % center coordinates
+    xy_ci = centers_x(ii);
+    xy_cj = centers_y(ii);
+
+    % resize coordinate and velocity matrix 
+    % (making sure not to go outside the domain)
+    xx = x(max(C_J-round(bx/2),1):min(C_J+round(bx/2),size(x,1)), ...
+        max(C_I-round(bx/2),1):min(C_I+round(bx/2),size(x,2)));
+    yy = y(max(C_J-round(bx/2),1):min(C_J+round(bx/2),size(y,1)), ...
+        max(C_I-round(bx/2),1):min(C_I+round(bx/2),size(y,2)));
+    mk = mask(max(C_J-round(bx/2),1):min(C_J+round(bx/2),size(mask,1)), ...
+        max(C_I-round(bx/2),1):min(C_I+round(bx/2),size(mask,2)));
+    vv = v(max(C_J-round(bx/2),1):min(C_J+round(bx/2),size(v,1)), ...
+        max(C_I-round(bx/2),1):min(C_I+round(bx/2),size(v,2)));
+    uu = u(max(C_J-round(bx/2),1):min(C_J+round(bx/2),size(u,1)), ...
+        max(C_I-round(bx/2),1):min(C_I+round(bx/2),size(u,2)));
+
+    if type_detection>=2
+        sshh = ssh(max(C_J-round(bx/2),1):min(C_J+round(bx/2),size(ssh,1)), ...
+            max(C_I-round(bx/2),1):min(C_I+round(bx/2),size(ssh,2)));
+    end
+
+    % indice of the center in the small domain
+    [cj,ci] = find(yy==xy_cj & xx==xy_ci);
+
+    % indices of all eddy centers in the smaller area
+    % (contains at least c_j and c_i)
+    cts_j = zeros(length(centers_y),1);
+    cts_i = cts_j;
+    for k=1:length(centers_y)
+        try
+            [cts_j(k),cts_i(k)] = find(yy==centers_y(k) & xx==centers_x(k));
+        catch
+>>>>>>> ameda_v2
         end
+    end
 
-        % initialize streamlines to be scanned
-        CS1 = [];
-        CS2 = [];
+    % can be empty
+    zero_centers = find(cts_j==0 | cts_i==0);
+    cts_i(zero_centers) = [];
+    cts_j(zero_centers) = [];
 
-        %----------------------------------------------
-        % compute the psi field from velocity fields
-        if type_detection==1 || type_detection==3
-        
-            psi = compute_psi(xx,yy,mk,uu/100,vv/100,ci,cj,grid_ll);
-
-            % test if the grid is regular or not
-            if min(xx(1,:)==xx(end,:)) && min(yy(:,1)==yy(:,end))
-                CS1 = contourc(xx(1,:),yy(:,1),psi,H/2);
-            else
-                figure('visible','off')
-                CS1 = contour(xx,yy,psi,H/2);
-            end
+    % centers position in the smaller area
+    if ~isempty(cts_i)
+        xy_ctsi = zeros(length(cts_i),1);
+        xy_ctsj = xy_ctsi;
+        for k=1:length(cts_i)
+            xy_ctsi(k) = xx(cts_j(k),cts_i(k));
+            xy_ctsj(k) = yy(cts_j(k),cts_i(k));
         end
+    else
+        xy_ctsi = [];
+        xy_ctsj = [];
+    end
 
-        %----------------------------------------------
-        % compute the psi field from ssh
-        if type_detection==2 || type_detection==3
+    % initialize streamlines to be scanned
+    CS1 = [];
+    CS2 = [];
 
-            psi = squeeze(sshh);
+    % compute the psi field from velocity fields
+    %----------------------------------------------
+    if type_detection==1 || type_detection==3
 
-            % test if the grid is regular or not
-            if min(xx(1,:)==xx(end,:)) && min(yy(:,1)==yy(:,end))
-                CS2 = contourc(xx(1,:),yy(:,1),psi,H/2);
-            else
-                figure('visible','off')
-                CS2 = contour(xx,yy,psi,H/2);
-            end
-        end
+        psi = compute_psi(xx,yy,mk,uu/100,vv/100,ci,cj,grid_ll);
 
+<<<<<<< HEAD
         %----------------------------------------------
         % concantene all streamlines
         CS = [CS1,CS2];
@@ -335,40 +361,111 @@ for i=step0:stepF
             
             % increment the counter
             j = j + 1;
-        end
-
-    end % centers ii loop
-
-    %----------------------------------------------
-    % select only centers with close contour and no other center inside
-
-    % Initialisation
-    j = 1; % first coordinates of the contour scan
-
-    for k=1:length(type1)
-        
-        % remove centers with no close contour
-        if ~isnan(type1(k))
-            
-            centers(i).type(j) = type1(k);
-            centers(i).x(j)    = x1(k);
-            centers(i).y(j)    = y1(k);
-            centers(i).j(j)    = j1(k);
-            centers(i).i(j)    = i1(k);
-            j = j + 1;
-            
+=======
+        % test if the grid is regular or not
+        if min(xx(1,:)==xx(end,:)) && min(yy(:,1)==yy(:,end))
+            CS1 = contourc(xx(1,:),yy(:,1),psi,H/2);
+        else
+            figure('visible','off')
+            CS1 = contour(xx,yy,psi,H/2);
         end
     end
-        
-end % time i loop
 
+    % compute the psi field from ssh
+    %----------------------------------------------
+    if type_detection==2 || type_detection==3
+
+        psi = squeeze(sshh);
+
+        % test if the grid is regular or not
+        if min(xx(1,:)==xx(end,:)) && min(yy(:,1)==yy(:,end))
+            CS2 = contourc(xx(1,:),yy(:,1),psi,H/2);
+        else
+            figure('visible','off')
+            CS2 = contour(xx,yy,psi,H/2);
+>>>>>>> ameda_v2
+        end
+    end
+
+    % concantene all streamlines
+    %----------------------------------------------
+    CS = [CS1,CS2];
+
+    % rearrange all the contours in C to the structure array 'isolines'
+    %-----------------------------------------------------------
+    [isolines,~] = scan_lines(CS);
+
+    % scan streamlines and validate 'centers0' which are alone as potential centers
+    %----------------------------------------------
+
+    % Initialization
+    j = 1; % first coordinates of the contour scan
+
+    while j <= length(isolines)
+
+        xdata = isolines(j).x; % vortex x's
+        ydata = isolines(j).y; % vortex y's
+
+        % conditions to have determine a ptential center
+        % 1) a closed contour
+        % 2) detected the right eddy center inside the polygon
+
+        if xdata(1)==xdata(end) && ydata(1)==ydata(end) && ...
+                inpolygon(xy_ci,xy_cj,xdata,ydata) && length(xdata)>=n_min
+
+            % searchs the coordinates of the centers in the contour 
+            IN = inpolygon(xy_ctsi,xy_ctsj,xdata,ydata);
+            [p,~] = find(IN==1); % index of the coordinates in the contour
+            nc = length(p); % number of center in the contour
+
+            % only one center include in the streamline
+            if nc==1
+
+                type1(ii) = centers_type(ii);
+                x1(ii)    = xy_ci;
+                y1(ii)    = xy_cj;
+                i1(ii)    = C_I;
+                j1(ii)    = C_J;
+
+            % the contour contains more than 1 center
+            elseif nc>1
+
+                j = length(isolines); % stop the scan
+
+            end
+        end
+
+        % increment the counter
+        j = j + 1;
+    end
+
+end % centers ii loop
+
+%----------------------------------------------
+% export potential centers as 'centers'
+%----------------------------------------------
+
+% Initialisation
+j = 1; % first coordinates of the contour scan
+
+for k=1:length(type1)
+
+    % remove centers with no close contour
+    if ~isnan(type1(k))
+
+        centers.type(j) = type1(k);
+        centers.x(j)    = x1(k);
+        centers.y(j)    = y1(k);
+        centers.i(j)    = i1(k);
+        centers.j(j)    = j1(k);
+        j = j + 1;
+
+    end
+end
+<<<<<<< HEAD
+=======
+
+disp(['    ',num2str(j-1),' potential centers found (',num2str(k-j+1),' max LNAM removed)'])
 disp(' ')
 
-%----------------------------------------
-% save centers in struct array
-
-if update && exist([path_out,'eddy_centers',runname,'.mat'],'file')
-    save([path_out,'eddy_centers',runname],'centers0','centers','-append')
-else
-    save([path_out,'eddy_centers',runname],'centers0','centers')
-end
+>>>>>>> ameda_v2

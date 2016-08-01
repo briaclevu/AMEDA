@@ -1,7 +1,9 @@
 function [cd,eddy_lim,lines,velmax,tau,eta,nrho,large] =...
-            max_curve(x,y,psi,xy_ci,xy_cj,xy_ctsi,xy_ctsj,u,v,Rd,grid_ll)
+            max_curve(x,y,psi,xy_ci,xy_cj,xy_ctsi,xy_ctsj,u,v,Rd,...
+            H,n_min,k_vel_decay,R_lim,nrho_lim,grid_ll)
 %[cd,eddy_lim,lines,velmax,tau,eta,nrho,large] =...
-%           max_curve(x,y,psi,xy_ci,xy_cj,xy_ctsi,xy_ctsj,u,v,Rd {,grid_ll} )
+%           max_curve(x,y,psi,xy_ci,xy_cj,xy_ctsi,xy_ctsj,u,v,Rd,...
+%           H,n_min,k_vel_decay,R_lim,nrho_lim {,grid_ll} )
 %
 %  Computes the eddy shape defined as the largest closed contour of the
 %  streamfunction (PSI/SSH) field in meter, across which velocity magnitude
@@ -26,6 +28,8 @@ function [cd,eddy_lim,lines,velmax,tau,eta,nrho,large] =...
 %  - u and v are the 2D u and v velocity field in the small area used to
 %       compute the circulation around the eddy edge with integrate_vel.m
 %  - Rd is the deformation radius
+%  - H is the number of streamlines scanned and see mod_eddy_params for the
+%       others constant parameters
 %  - grid_ll =1  (default) if the coordinates are in (longitude,latitude)
 %            =0 if coordinates are in 'km'
 %
@@ -48,7 +52,7 @@ function [cd,eddy_lim,lines,velmax,tau,eta,nrho,large] =...
 %    the eddy_lim1, eddy_lim2 and eddy_lim3
 %  - tau is the 1x2 minimum turnover times inside the eddies contour
 %  - eta is the 1x3 PSI/SSH values for the eddy_lim1 and eddy_lim2
-%  - nrho is the 1x2 part of the contour with negative curvature
+%  - nrho is the 1x2 part of the contour with negative curvature                  <                                                                                    -
 %  - large is the 1x2 flags for eddy_lim1 and 2 for largest contour
 %    (1 if the contour is the largest and no "true" maximum is found)
 %
@@ -77,16 +81,13 @@ function [cd,eddy_lim,lines,velmax,tau,eta,nrho,large] =...
 %
 %=========================
 
-global streamlines
-global H
-
 % Default grid is (lon,lat)
-if nargin==10
+if nargin==15
     grid_ll = 1;
 end
 
-%-----------------------------------------------------------
 % compute contourlines of the streamfunction psi (H contour)
+%-----------------------------------------------------------
 % C is a vector containing all the coordinates of PSI contours
 
 % test the regularity of the grid
@@ -98,11 +99,17 @@ else
 end
 
 % rearrange all the contours in C to the structure array 'isolines'
+<<<<<<< HEAD
 %-----------------------------------------------------------
 [isolines,lvl] = scan_lines(C);
 
+=======
+>>>>>>> ameda_v2
 %-----------------------------------------------------------
+[isolines,lvl] = scan_lines(C);
+
 % intialize the variables
+%-----------------------------------------------------------
 % fix eddy contour and property empty
 % if no closed contour exists around the center
 cd = nan(2); % centers in the closed contour
@@ -121,9 +128,9 @@ Tmin = 9999;
 % start the counter of isolines
 i = 1;
 
-%-----------------------------------------------------------
 % scan all isolines until the eddy shape is determined
 % and test the averaged velocity along each streamline
+%-----------------------------------------------------------
 while i<=length(isolines)
 
     xdata = isolines(i).x; % vertex x's
@@ -139,7 +146,7 @@ while i<=length(isolines)
     % 6) record the "true" maximum or by default the largest
     
     if xdata(1)==xdata(end) && ydata(1)==ydata(end) && ...
-            inpolygon(xy_ci,xy_cj,xdata,ydata) && length(xdata) >= 4
+            inpolygon(xy_ci,xy_cj,xdata,ydata) && length(xdata) >= n_min
      
         % searchs the coordinates of the centers in the contour 
         IN = inpolygon(xy_ctsi,xy_ctsj,xdata,ydata);
@@ -163,16 +170,17 @@ while i<=length(isolines)
             % compute the revolution time (Tau)
             T = sum(P(1:end-1))*1000/V/3600/24; % in days if vel is m/s
             
+<<<<<<< HEAD
             % part of the contour with negative curvature weighted by
             % the discrete curvature
+=======
+            % part of the contour with negative curvature weighted by the
+            % discrete curvature
+>>>>>>> ameda_v2
             N = abs(sum(P(C<0).*C(C<0))/(2*pi));
             
             % record every streamlines features
-            if streamlines
-                lines = [lines;nc lvl(i) R(1) V T];
-            else
-                lines = [lines;1];
-            end
+            lines = [lines;nc lvl(i) R(1) V T];
 
             % in case of 1 center record the last shape
             if nc==1
@@ -189,7 +197,11 @@ while i<=length(isolines)
                 
                 % test if the first contour contains only 1 center
                 % it is not too big or too much concave segment
+<<<<<<< HEAD
                 if nc==1 && R(1)<5*Rd && N<0.33
+=======
+                if nc==1 && R(1)<R_lim && N<nrho_lim
+>>>>>>> ameda_v2
                     % fix the test values
                     Vmax = V; % first value of velmax
                     Tmin = min(Tmin,T); % first value of Tau
@@ -206,7 +218,7 @@ while i<=length(isolines)
 
                 % Indice of the contour
                 I = i;
-		        % update test values
+                % update test values
                 Vmax = V; % replace the velmax
                 Tmin = min(Tmin,T); % replace the Tau
                 % record others index
@@ -214,7 +226,7 @@ while i<=length(isolines)
                 etamax = lvl(i);
                 rmax = R(1);
                 nrhomax = N;
-
+                
                 % record bigger contour around the single or 2 centers
                 % if no "true" maximum met yet
                 if large(nc)~=0
@@ -222,7 +234,11 @@ while i<=length(isolines)
                     % replace previous contour
                     large(nc) = 1; % largest contour
                     % record eddy{1} only if R<Rlim and N<Nlim
+<<<<<<< HEAD
                     if nc==2 || rmax<5*Rd && nrhomax<0.33
+=======
+                    if nc==2 || rmax<R_lim && nrhomax<nrho_lim
+>>>>>>> ameda_v2
                         velmax(nc) = Vmax;
                         eddy_lim{nc} = linesmax; % save the shape
                         tau = Tmin; % save the turnover time
@@ -232,7 +248,7 @@ while i<=length(isolines)
                 end
 
             % velocity is decreasing more than 5% !!! new parameter !!!
-            elseif V<Vmax*0.95
+            elseif V<k_vel_decay*Vmax
                 
                 % test if the last contour is the largest and not the previous one
                 if large(nc)==1 && i-I>1
@@ -242,7 +258,11 @@ while i<=length(isolines)
                 % test if Vmax is higher then the existing "true" maximum
                 elseif Vmax>velmax(nc) && velmax(nc)~=0
                     % record eddy{1} only if R<Rlim and N<Nlim
+<<<<<<< HEAD
                     if nc==2 || rmax<5*Rd && nrhomax<0.33
+=======
+                    if nc==2 || rmax<R_lim && nrhomax<nrho_lim
+>>>>>>> ameda_v2
                         % replace previous contour
                         velmax(nc) = Vmax;
                         eddy_lim{nc} = linesmax; % save the shape
