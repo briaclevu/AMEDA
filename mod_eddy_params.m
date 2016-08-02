@@ -4,22 +4,22 @@ function mod_eddy_params(keys_sources)
 %   and sets 2D fields of parameters
 %
 % Computed parameters:
-%   - gama: resolution coefficient which is the number of pixels per Rd.
-%   - resol: factor of interpolation of the fields (velocity and ssh)
-%       to compute center detection. 2 or 3 seems reasonable in term of
-%       computation time for 1/8° AVISO fields.
 %   - b: parameter for the computation of LNAM and Local Okubo-Weiss
 %       (number of grid points in one of the 4 directions to define
 %       the length of the box area used normalize Angular Momentum
 %       and Okubo-Weiss fields)
 %   - bx: number of grid points to define the initial area to scan
 %       streamlines
+%   - Dx: Meshgrid size
+%   - Rd: First Baroclinic Rossby Radius of Deformation
+%   - gama: resolution coefficient which is the number of pixels per Rd.
+%   - resol: factor of interpolation of the fields (velocity and ssh)
+%       to compute center detection. 2 or 3 seems reasonable in term of
+%       computation time for 1/8° AVISO fields.
 %
 % Fixed parameters
 % (you can play with Dt and cut_off but don't touch too much others):
 %   - K: LNAM(LOW<0) threshold to detect the potential eddy centers
-%   - r: distance in km/day to define the area used to derive eddy
-%        tracks
 %   - Dt: delay in days for the tracking tolerance
 %   - cut_off: in days for eddies duration filtration after the tracking
 %           0 : use the turnover time from each eddies
@@ -58,8 +58,14 @@ run(keys_sources)
 %----------------------------------------------
 
 % Read grid
-y = double(ncread(nc_dim,y_name))';
-x = double(ncread(nc_dim,x_name))';
+lon0 = double(ncread(nc_dim,x_name))';
+lat0 = double(ncread(nc_dim,y_name))';
+
+% produce degraded field 
+x = lon0(1:deg:end,1:deg:end);
+y = lat0(1:deg:end,1:deg:end);
+
+[N,M] = size(x)
 
 % Meshgrid size
 if grid_ll
@@ -78,13 +84,13 @@ f = 4*pi/T; % in s-1
 % (taken from 2D file Rossby_radius computed using Chelton et al. 1998)
 %----------------------------------------------
 load(mat_Rd)
-Rd = interp2(lon_Rd,lat_Rd,Rd_baroc1,x,y); % 10km in average AVISO 1/8
+Rd = interp2(lon_Rd,lat_Rd,Rd_baroc1_extra,x,y); % 10km in average AVISO 1/8
 
 % Resolution parameters:
 %----------------------------------------------
 % gama is resolution coefficient which is the number of pixels per Rd.
 % After test gama>3 is required to get the max number of eddies.
-gama = Rd ./ (Dx*deg); % [0.1-1.5] for AVISO 1/8 (0.8 in average)
+gama = Rd ./ Dx; % [0.1-1.5] for AVISO 1/8 (0.8 in average)
 
 % resol is an integer and used to improve the precision of centers detection
 % close to 3 pixels per Rd. resol can goes up to 3
@@ -117,15 +123,6 @@ bx = round(10*gama); % [1-14] for AVISO 1/8 (8 in average)
 
 % Tracking parameters:
 %----------------------------------------------
-% maximal distance between 2 time steps based on the center deplacement
-% for the eddy tracking.
-% eddy deplacement < velmax
-u = double(ncread(nc_u,u_name)); % m/s
-v = double(ncread(nc_v,v_name)); % m/s
-vel = sqrt(u.^2+v.^2); % m/s
-
-r = max(vel(:))*T*1e-3; % km/day
-
 % maximal delay after its last detection for tracking an eddy [1-15]
 Dt = 10; % in days
 
@@ -157,8 +154,8 @@ vel_epsil = 1e-4; % in m/s
 % coefficient of velmax to detect a decrease ([0.95-0.99])
 k_vel_decay = 0.95; % in term of velmax
 
-% limite of the size ([5-7]Rd) for a single eddy
-R_lim = 5*Rd; % [4-7]Rd
+% size limite in term of deformation radius ([5-7]Rd) for a single eddy
+nR_lim = 5; % [4-7]Rd
 
 % limite of the length of the contour with negative curvature for a single
 % eddy from empirical determination based on ROMS, PIV and AVISO tests
@@ -182,14 +179,50 @@ dc_max = 3.5;
 % or beginning of a splitting; ie. see end of mod_eddy_shapes) ([1.5-3])
 aire_max = 2; % in term of surface area
 
+%% interpolated parameters
+%----------------------------------------------
+
+if resol==1
+
+    bi = b;
+    bxi = bx;
+    Dxi = Dx;
+    Rdi = Rd;
+    gamai = gama;
+
+else
+
+    % size for the interpolated grid
+    Ni = resol*(N-1)+1; % new size in lat
+    Mi = resol*(M-1)+1; % new size in lon
+
+    % elemental spacing for the interpolated grid with regular grid
+    dy = diff(y(1:2,1))/resol;
+    dx = diff(x(1,1:2))/resol;
+
+    % interpolated grid
+    [xi,yi] = meshgrid([0:Mi-1]*dx+min(x(:)),[0:Ni-1]*dy+min(y(:)));
+
+    % Compute interpolated b and bx
+    bi = round(interp2(x,y,b,xi,yi))*resol;
+    bxi = round(interp2(x,y,bx,xi,yi))*resol;
+
+    % Dx, Rd, gama on interpolated grid
+    Dxi = get_Dx_from_ll(xi,yi);
+    Rdi = interp2(lon_Rd,lat_Rd,Rd_baroc1_extra,xi,yi); % 10km in average AVISO 1/8
+    gamai = Rdi ./ Dxi / resol;
+
+end
+    
 %% Save parameters and paths
 %----------------------------------------------
 save([path_ameda,'param_eddy_tracking'],...
     'postname','domain','sshtype','path_ameda','path_in','path_out',...
     'nc_dim','nc_u','nc_v','nc_ssh','x_name','y_name','m_name','u_name','v_name','s_name',...
     'grid_ll','type_detection','extended_diags','streamlines','daystreamfunction','periodic',...
-    'stepF','T','f','dps','deg','Dx','Rd','gama','resol','K','b','Rb','bx','r','Dt''D_stp','C_rad',...
-    'H','n_min','vel_epsil','k_vel_decay','ds_max','dc_max','R_lim','nrho_lim','aire_max')
+    'deg','resol','K','b','bx','Dx','Rd','gama','Rb','bi','bxi','Dxi','Rdi','gamai','Rb',...
+    'stepF','T','f','dps','Dt''D_stp','C_rad','H','n_min','vel_epsil','k_vel_decay',...
+    'ds_max','dc_max','R_lim','nrho_lim','aire_max')
 
 
 

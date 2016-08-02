@@ -1,7 +1,7 @@
 function [centers2,shapes1,shapes2,profil2,warn_shapes,warn_shapes2] = ...
-    mod_eddy_shapes(source,stp,fields,centers,bxarea)
+    mod_eddy_shapes(source,stp,fields,centers)
 %[centers2,shapes1,shapes2,profil2] =
-%       mod_eddy_shapes(source,stp,fields,centers {,bxarea})
+%       mod_eddy_shapes(source,stp,fields,centers)
 %
 %  Computes the shapes (if any) of eddies identified with their potential
 %  centers by mod_eddy_centers.m and stored as {centers(t)} in
@@ -11,7 +11,6 @@ function [centers2,shapes1,shapes2,profil2,warn_shapes,warn_shapes2] = ...
 %   determine which load_field_'source'is  used in the routine
 % - 'fields' is the step 'stp' of the detection_fields computed with
 %   mod_eddy_fields.m
-% - 'bxarea' defines the area where the streamfunction (PSI) is firstly computed
 %
 %  For a description of the input parameters see param_eddy_tracking.m
 
@@ -99,12 +98,6 @@ disp(['  Step ',num2str(stp),' %-------------'])
 %----------------------------------------------
 load('param_eddy_tracking')
 
-% replace parameters by arguments
-%----------------------------------------
-if nargin==5
-    bx = bxarea;
-end
-
 % load 2D velocity fields (m/s) for step stp
 %----------------------------------------
 eval(['[x,y,mask,uu,vv,sshh] = load_fields_',source,'(stp,1,deg);'])
@@ -123,8 +116,8 @@ if streamlines
     struct1 = struct('alpha',[],'rsquare',[],'rmse',[]);
     names1 = [fieldnames(shapes1); fieldnames(struct1)];
     shapes1 = cell2struct([struct2cell(shapes1); struct2cell(struct1)], names1, 1);
-
 end
+
 if extended_diags==1
     struct1 = struct('xbary',[],'ybary',[],'ellip',[],...
                 'ke',[],'vort',[],'vortM',[],'OW',[],'LNAM',[]);
@@ -136,7 +129,7 @@ if extended_diags==1
 end
 
 % shapes struct for the possible second shape with 2 centers
-warn_shapes = struct('no_curve',[],'fac',[],'bx',[],'calcul_curve',[],...
+warn_shapes = struct('no_curve',[],'Rd',[],'gama',[],'bx',[],'calcul_curve',[],...
                 'large_curve1',[],'large_curve2',[],'too_large2',[]);
 warn_shapes2 = warn_shapes;
 
@@ -163,6 +156,10 @@ for ii=1:length(centers.type)
 
     disp([' === Center ',num2str(ii),' ==='])
 
+    % center indice
+    c_j = centers.j(ii);
+    c_i = centers.i(ii);
+
     % initialization
     bound = 1; % flag that indicates that permit to increase the small area
     fac = 0; % increase factor for the area where PSI is computed
@@ -184,7 +181,7 @@ for ii=1:length(centers.type)
         % the others are flags output by eddy_dim, and saved in 'warnings_shapes';
         %----------------------------------------------
         [CD,xy,allines,velmax,tau,deta,nrho,large,warn,calcul] =...
-            eddy_dim(uu,vv,sshh,mask,x,y,centers,ii,fac*bx);
+            eddy_dim(uu,vv,sshh,mask,x,y,centers,ii,Rdi(c_j,c_i),fac*bxi(c_j,c_i));
 
         % flags exploitation
         %----------------------------------------------
@@ -432,8 +429,9 @@ for ii=1:length(centers.type)
     % warnings from shape computation
     %----------------------------------------------------------
     warn_shapes.no_curve(ii)     = warn;
-    warn_shapes.fac(ii)          = fac;
-    warn_shapes.bx(ii)           = bx;
+    warn_shapes.Rd(ii)           = Rdi(c_j,c_i);
+    warn_shapes.gama(ii)         = gamai(c_j,c_i);
+    warn_shapes.bx(ii)           = bxi(c_j,c_i)*fac;
     warn_shapes.calcul_curve(ii) = calcul;
     warn_shapes.large_curve1(ii) = large(1);
     warn_shapes.large_curve2(ii) = large(2);
@@ -554,7 +552,7 @@ else
                     mv = 1;
                 end
                 if shapes2.aire(ii) < aire_max*shapes1.aire(ii) &&...
-                        shapes2.rmax(ii) < R_lim &&...
+                        shapes2.rmax(ii) < nR_lim*warn_shapes2.Rd(ii) &&...
                         shapes2.nrho(ii) < nrho_lim
                     disp(['   Small double eddies ',num2str(ii),' replace by single eddy !!!'])
                     names = fieldnames(centers2);

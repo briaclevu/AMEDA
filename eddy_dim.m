@@ -1,7 +1,7 @@
 function [CD,xy,allines,velmax,tau,deta,nrho,large,warn,calcul] =...
-    eddy_dim(u,v,ssh,mask,x,y,centers,ii,bxarea,plo)
+    eddy_dim(u,v,ssh,mask,x,y,centers,ii,Rdarea,bxarea,plo)
 %[CD,xy,allines,velmax,tau,deta,nrho,large,warn,calcul] =...
-%               eddy_dim(u,v,ssh,mask,x,y,centers,ii {,bx,plo})
+%               eddy_dim(u,v,ssh,mask,x,y,centers,ii {,Rd,bx,plo})
 %
 %  Computes the shape of the eddy defined by the iith center
 %
@@ -9,8 +9,9 @@ function [CD,xy,allines,velmax,tau,deta,nrho,large,warn,calcul] =...
 %  - ssh is the 2D ssh field of the step (can be = [])
 %  - centers is the potential eddy center structure
 %  - x and y are the grid coordinates in the all domain of any step
-%  - bxarea is used to define the area where the shape is computed
 %  - ii is the indice of the main eddy center
+%  - Rdarea is the deformation radius where the shape is computed
+%  - bxarea is used to define the area where the shape is computed
 %  - plo is a debug mod to check result of max_curve on a plot.
 %       plot==0 by default
 %
@@ -49,34 +50,25 @@ load('param_eddy_tracking')
 
 % replace parameters by arguments
 %----------------------------------------
-if nargin==9
+bx = bxarea;
+Rd = Rdarea;
+
+else nargin<11
     plo = 0;
-    bx = bxarea;
-elseif nargin==10
-    bx = bxarea;
 end
 
 % main center coordinates
 %-----------------------------------------------------------
-c_y = centers.y(ii);
-c_x = centers.x(ii);
+xy_cj = centers.y(ii);
+xy_ci = centers.x(ii);
+
+% indice of the main center (C_J and C_I) 
+C_I = centers.i(ii);
+C_J = centers.j(ii);
 
 % all centers coordinates
 centers_y = centers.y;
 centers_x = centers.x;
-
-% find the indice of the main center in the coarse domain (C_J and C_I) 
-if resol==1
-    C_I = centers.i(ii);
-    C_J = centers.j(ii);
-else
-    dist = sum(bsxfun(@minus, cat(3,c_x,c_y), cat(3,x,y)).^2,3);
-    [C_J,C_I] = find(dist==min(dist(:)),1);
-end
-
-% center coordinates in the coarse domain
-xy_cj = y(C_J,C_I);
-xy_ci = x(C_J,C_I);
 
 % resize coordinate and velocity matrix 
 % (making sure not to go outside the domain)
@@ -123,28 +115,28 @@ switch type_detection
         % compute eddy shape with psi
         [cd,eddy_lim,lines,velmax,tau,eta,nrho,large] =...
             max_curve(x,y,psi,c_x,c_y,xy_ctsi,xy_ctsj,u,v,Rd,...
-            H,n_min,k_vel_decay,R_lim,nrho_lim,grid_ll);
+            H,n_min,k_vel_decay,nR_lim,nrho_lim,grid_ll);
         calcul=1;
     
     case 2
         % compute eddy shape with ssh
         [cd,eddy_lim,lines,velmax,tau,eta,nrho,large] =...
             max_curve(x,y,ssh,c_x,c_y,xy_ctsi,xy_ctsj,u,v,Rd,...
-            H,n_min,k_vel_decay,R_lim,nrho_lim,grid_ll);
+            H,n_min,k_vel_decay,nR_lim,nrho_lim,grid_ll);
         calcul=0;
 
     case 3
         % compute eddy shape with ssh
         [cd,eddy_lim,lines,velmax,tau,eta,nrho,large] =...
             max_curve(x,y,ssh,c_x,c_y,xy_ctsi,xy_ctsj,u,v,Rd,...
-            H,n_min,k_vel_decay,R_lim,nrho_lim,grid_ll);
+            H,n_min,k_vel_decay,nR_lim,nrho_lim,grid_ll);
         calcul=0;
 
         if isnan(large(1))
             % compute eddy shape with psi
             [cd,eddy_lim,lines,velmax,tau,eta,nrho,large] =...
                 max_curve(x,y,psi,c_x,c_y,xy_ctsi,xy_ctsj,u,v,Rd,...
-                H,n_min,k_vel_decay,R_lim,nrho_lim,grid_ll);
+                H,n_min,k_vel_decay,nR_lim,nrho_lim,grid_ll);
             calcul=1;
         end
 end

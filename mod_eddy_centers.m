@@ -1,5 +1,5 @@
-function [centers0,centers] = mod_eddy_centers(source,stp,fields,resolution)
-%[centers0,centers] = mod_eddy_centers(source,stp,fields {,resolution} )
+function [centers0,centers] = mod_eddy_centers(source,stp,fields)
+%[centers0,centers] = mod_eddy_centers(source,stp,fields)
 %
 %  Detect the potential eddy centers present in the domain,
 %  for each time step of the time serie of the 2-D velocity fields
@@ -57,13 +57,6 @@ disp(['Find potential centers step ',num2str(stp)])
 % load key_source and parameters (use mod_eddy_params.m first)
 %----------------------------------------------
 load('param_eddy_tracking')
-
-% replace parameters by arguments
-%----------------------------------------
-if nargin==4
-    resol = resolution;
-end
-bx = bx*resol;
 
 % load 2D velocity fields (m/s) for step stp
 %----------------------------------------
@@ -178,20 +171,20 @@ for ii=1:length(centers_x)
 
     % resize coordinate and velocity matrix 
     % (making sure not to go outside the domain)
-    xx = x(max(C_J-round(bx/2),1):min(C_J+round(bx/2),size(x,1)), ...
-        max(C_I-round(bx/2),1):min(C_I+round(bx/2),size(x,2)));
-    yy = y(max(C_J-round(bx/2),1):min(C_J+round(bx/2),size(y,1)), ...
-        max(C_I-round(bx/2),1):min(C_I+round(bx/2),size(y,2)));
-    mk = mask(max(C_J-round(bx/2),1):min(C_J+round(bx/2),size(mask,1)), ...
-        max(C_I-round(bx/2),1):min(C_I+round(bx/2),size(mask,2)));
-    vv = v(max(C_J-round(bx/2),1):min(C_J+round(bx/2),size(v,1)), ...
-        max(C_I-round(bx/2),1):min(C_I+round(bx/2),size(v,2)));
-    uu = u(max(C_J-round(bx/2),1):min(C_J+round(bx/2),size(u,1)), ...
-        max(C_I-round(bx/2),1):min(C_I+round(bx/2),size(u,2)));
+    xx = x(max(C_J-round(bxi/2),1):min(C_J+round(bxi/2),size(x,1)), ...
+        max(C_I-round(bxi/2),1):min(C_I+round(bxi/2),size(x,2)));
+    yy = y(max(C_J-round(bxi/2),1):min(C_J+round(bxi/2),size(y,1)), ...
+        max(C_I-round(bxi/2),1):min(C_I+round(bxi/2),size(y,2)));
+    mk = mask(max(C_J-round(bxi/2),1):min(C_J+round(bxi/2),size(mask,1)), ...
+        max(C_I-round(bxi/2),1):min(C_I+round(bxi/2),size(mask,2)));
+    vv = v(max(C_J-round(bxi/2),1):min(C_J+round(bxi/2),size(v,1)), ...
+        max(C_I-round(bxi/2),1):min(C_I+round(bxi/2),size(v,2)));
+    uu = u(max(C_J-round(bxi/2),1):min(C_J+round(bxi/2),size(u,1)), ...
+        max(C_I-round(bxi/2),1):min(C_I+round(bxi/2),size(u,2)));
 
     if type_detection>=2
-        sshh = ssh(max(C_J-round(bx/2),1):min(C_J+round(bx/2),size(ssh,1)), ...
-            max(C_I-round(bx/2),1):min(C_I+round(bx/2),size(ssh,2)));
+        sshh = ssh(max(C_J-round(bxi/2),1):min(C_J+round(bxi/2),size(ssh,1)), ...
+            max(C_I-round(bxi/2),1):min(C_I+round(bxi/2),size(ssh,2)));
     end
 
     % indice of the center in the small domain

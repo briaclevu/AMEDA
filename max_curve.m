@@ -1,6 +1,6 @@
 function [cd,eddy_lim,lines,velmax,tau,eta,nrho,large] =...
             max_curve(x,y,psi,xy_ci,xy_cj,xy_ctsi,xy_ctsj,u,v,Rd,...
-            H,n_min,k_vel_decay,R_lim,nrho_lim,grid_ll)
+            H,n_min,k_vel_decay,nR_lim,nrho_lim,grid_ll)
 %[cd,eddy_lim,lines,velmax,tau,eta,nrho,large] =...
 %           max_curve(x,y,psi,xy_ci,xy_cj,xy_ctsi,xy_ctsj,u,v,Rd,...
 %           H,n_min,k_vel_decay,R_lim,nrho_lim {,grid_ll} )
@@ -186,7 +186,7 @@ while i<=length(isolines)
                 
                 % test if the first contour contains only 1 center
                 % it is not too big or too much concave segment
-                if nc==1 && R(1)<R_lim && N<nrho_lim
+                if nc==1 && R(1)<nR_lim*Rd && N<nrho_lim
                     % fix the test values
                     Vmax = V; % first value of velmax
                     Tmin = min(Tmin,T); % first value of Tau
@@ -195,7 +195,7 @@ while i<=length(isolines)
                     eddy_lim{3} = [xdata;ydata]; % save the last shape
                     eta(3) = lvl(i); % save the ssh contour
                 else
-                    i = length(isolines); % stop the scan
+                    return % stop the scan
                 end
                 
             % closed contour already met and velocity is increasing
@@ -239,7 +239,7 @@ while i<=length(isolines)
                 % test if Vmax is higher then the existing "true" maximum
                 elseif Vmax>velmax(nc) && velmax(nc)~=0
                     % record eddy{1} only if R<Rlim and N<Nlim
-                    if nc==2 || rmax<R_lim && nrhomax<nrho_lim
+                    if nc==2 || rmax<nR_lim*Rd && nrhomax<nrho_lim
                         % replace previous contour
                         velmax(nc) = Vmax;
                         eddy_lim{nc} = linesmax; % save the shape
@@ -252,7 +252,7 @@ while i<=length(isolines)
 
         % the contour contains more than 2 centers
         else
-            i = length(isolines); % stop the scan
+            return % stop the scan
         end
     end
     i = i+1; % increase the counter

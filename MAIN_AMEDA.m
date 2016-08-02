@@ -1,17 +1,19 @@
-function MAIN_AMEDA(source,runname,parallel,update)
+function MAIN_AMEDA(source,runname,parallel,update,stepE)
 % MAIN AMEDA routine to loop on time with PARFOR
 %   MAIN_AMEDA is the main function of the eddy detection and
 %   tracking package. It returns position of the centers, dimensions and 
 %   tracks of the eddies detected from the time series of a 2-D velocity 
 %   field.
+%   It gives also an history of the splitting and merging events.
 %
 %   - 'source' allows to specify the type of sources file (AVISO, ROMS, NEMO,...)
 %     with their specific parameters and Input/Output.
 %   - runname is the prefix name of the output.
-%   - parellel to use 'parfor' as time loops (=1)
+%   - parellel to use 'parfor' as time loops (=# of procs)
 %   - update is a flag allowing to update an existing tracking:
 %       update = number of time steps backward to consider
 %       update = 0 (default) to compute all the time serie
+%   - stepE is the last time step computed (=stepF by default)
 %
 %   The algortihm subroutines:
 %
@@ -52,21 +54,24 @@ runname = '_test'; % ex: _d1_d100 or ''
 %----------------------------------------
 mod_eddy_params(['keys_sources_',source])
 load('param_eddy_tracking')
-stepF=5;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Initialiation ---------------------------------------------
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% No update by default
-if nargin<=2
+% No update by default and ond possibility to change the last time step
+if nargin<4
     update = 0;
+elseif nargin>4
+    stepF=stepE;
 end
 
-% set parallel computation
-myCluster = parcluster('local');
-delete(myCluster.Jobs)
-matlabpool open 5
+% Set parallel computation
+if parallel>2
+    myCluster = parcluster('local');
+    delete(myCluster.Jobs)
+    matlabpool open parallel
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Compute LNAM ---------------------------------------------
@@ -141,7 +146,7 @@ else
     disp('Copy non interpolated LNAM')
     disp(' ')
     
-	copyfile([path_out,'fields',runname,'.mat'],[path_out,'fields_inter',runname,'.mat'])
+    copyfile([path_out,'fields',runname,'.mat'],[path_out,'fields_inter',runname,'.mat'])
     
 end
 
@@ -177,7 +182,7 @@ fields_mat = matfile([path_out,'fields',runname,'.mat']);
 %----------------------------------------
 disp(['Find potential centers from step ',num2str(step0),' to step ',num2str(stepF)])
 if resol==1
-	disp('Use non interpolated fields')
+    disp('Use non interpolated fields')
 else
     disp(['Use inteprolated fields resol=',num2str(resol)])
 end
@@ -188,7 +193,7 @@ parfor stp = step0:stepF
     % load inter fields at step stp
     detection_fields = fields_inter_mat.detection_fields(:,stp);
     % find max LNAM and potential centers
-    [centers0(stp),centers(stp)] = mod_eddy_centers(source,stp,detection_fields,resol);
+    [centers0(stp),centers(stp)] = mod_eddy_centers(source,stp,detection_fields);
 end
 
 % Save centers in struct array
@@ -274,18 +279,17 @@ parfor stp = step0:stepF
     potential_centers = centers_mat.centers(:,stp);
     % find eddy shapes
     [centers2(stp),shapes1(stp),shapes2(stp),profil2(stp),warn_shapes(stp),warn_shapes2(stp)] = ...
-        mod_eddy_shapes(source,stp,detection_fields,potential_centers,bx);
+        mod_eddy_shapes(source,stp,detection_fields,potential_centers);
 end
 
 % save warnings, shapes and their centers in structure array
 %----------------------------------------
 save([path_out,'eddy_centers',runname],'centers2','-append')
 if streamlines
-    save([path_out,'eddy_shapes',runname],'shapes1','shapes2','profil2')
+    save([path_out,'eddy_shapes',runname],'shapes1','shapes2','warn_shapes','warn_shapes2','profil2')
 else
-    save([path_out,'eddy_shapes',runname],'shapes1','shapes2')
+    save([path_out,'eddy_shapes',runname],'shapes1','shapes2','warn_shapes','warn_shapes2')
 end
-save([path_out,'warnings_shapes',runname],'warn_shapes','warn_shapes2')
 clear centers2 shapes1 shapes2 profil2 warn_shapes warn_shapes2 struct1 struct2 struct3
 
 % close log file
