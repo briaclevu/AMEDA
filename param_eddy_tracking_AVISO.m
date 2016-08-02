@@ -35,6 +35,18 @@
 %               IMPORTANT: first and last columns of the domain must be
 %                          identical for this to work properly!!!!!
 %
+% Fixed parmeter:
+%   - res: factor of interpolation of the fields (velocity and ssh)
+%       to compute center detection. 2 or 3 seems reasonable in term of
+%       computation time for 1/8° AVISO fields.
+%   - K: LNAM(LOW<0) threshold to detect the potential eddy centers
+%   - b: parameter for the computation of LNAM and Local Okubo-Weiss
+%       (number of grid points in one of the 4 directions to define
+%       the length of the box area used normalize Angular Momentum
+%       and Okubo-Weiss fields)
+%   - bx: number of grid points to define the initial area to scan
+%       streamlines
+%
 %-------------------------
 % IMPORTANT - Input file requirements:
 %
@@ -69,10 +81,19 @@
 name = '2013';
 
 % set name of the domain
+global domname
 domname='ALG';
 
 % use to diferenciate source field of surface height (adt, ssh, psi,...)
+global sshname
 sshname='adt_'; % adt_ or sla_
+
+% set the paths
+global path_in
+global path_out
+global path_tracks
+global path_data
+global path_rossby
 
 path_in=['/home/blevu/DATA/AVISO/',domname,'/'];
 path_out=['/home/blevu/Resultats/AVISO/',domname,'/',sshname,name,'/tests/'];
@@ -81,6 +102,7 @@ path_data='/home/blevu/DATA/CORIOLIS/SOP2/';
 path_rossby='/home/blevu/MATLAB/Rossby_radius/';
 
 % use to submit parallel computation
+global runname
 runname = []; % ex: 1
 
 % input data file absolute name
@@ -108,11 +130,13 @@ end
 %% Experiment option keys
 
 % grid type
+global grid_ll
 grid_ll = 1;
         % 0 : spatial grid in cartesian coordinates (x,y)
         % 1 : spatial grid in earth coordinates (lon,lat)
 
 % choose the field use as streamlines
+global type_detection
 type_detection = 3;
         % 1 : using velocity fields
         % 2 : using ssh
@@ -120,16 +144,20 @@ type_detection = 3;
         %     and keep max velocity along the eddy contour
 
 % if you want extended diags directly computed
+global extended_diags
 extended_diags = 1;
         % 0 : not computed
         % 1 : computed as the same time as eddy detection
         % 2 : computed afterward  
 
 % save streamlines at days daystreamfunction and profil as well
-streamlines = 1;
+global streamlines
+streamlines = 0;
+global daystreamfunction
 daystreamfunction = 1:365;
 
 % in case of periodic grid along x boundaries
+global periodic
 periodic = 0;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -141,8 +169,12 @@ periodic = 0;
 % Resolution parameters:
 %----------------------------------------------
 % Read grid
-y = double(ncread(nc_dim,'lat'))';
-x = double(ncread(nc_dim,'lon'))';
+lon0 = double(ncread(nc_dim,'lon'))';
+lat0 = double(ncread(nc_dim,'lat'))';
+
+% Apply degraded sampling
+x = lon0(1:deg:end,1:deg:end);
+y = lat0(1:deg:end,1:deg:end);
 
 % Meshgrid size at (x,y)
 if grid_ll
@@ -157,7 +189,7 @@ Rd = interp2(lon_Rd,lat_Rd,Rd_baroc1_extra,x,y); % 10km in average AVISO 1/8
 
 % gama is resolution coefficient which is the number of pixels per Rd.
 % After test gama>3 is required to get the max number of eddies.
-gama = Rd ./ (Dx*deg); % [0.1-1.5] for AVISO 1/8
+gama = Rd ./ Dx; % [0.1-1.5] for AVISO 1/8
 
 % res is an integer and used to improve the precision of centers detection
 % close to 3 pixels per Rd. res can goes up to 3

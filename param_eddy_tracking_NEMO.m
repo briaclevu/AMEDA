@@ -44,7 +44,7 @@
 %       (number of grid points in one of the 4 directions to define
 %       the length of the box area used normalize Angular Momentum
 %       and Okubo-Weiss fields)
-%   - box: number of grid points to define the initial area to scan
+%   - bx: number of grid points to define the initial area to scan
 %       streamlines
 %   - r: distance in km to define the area used to derive eddy
 %        tracks
@@ -159,16 +159,16 @@ grid_ll = 1;
 global type_detection
 type_detection = 1;
         % 1 : using velocity fields
-		% 2 : using ssh
-		% 3 : using both velocity fields and ssh, 
-		%     and keep max velocity along the eddy contour
+        % 2 : using ssh
+        % 3 : using both velocity fields and ssh, 
+        %     and keep max velocity along the eddy contour
 
 % if you want extended diags directly computed
 global extended_diags
 extended_diags = 1;
         % 0 : not computed
         % 1 : computed as the same time as eddy detection
-		% 2 : computed afterward  
+        % 2 : computed afterward  
 
 % save streamlines at days daystreamfunction and profil as well
 global streamlines
@@ -214,11 +214,11 @@ b = max(1,round((1.2*gama)/2));
 % (e.g. for AVISO 1/8 (gama~0.8) we have Rb~2.5) !!!
 Rb = 2*b / gama;
 
-% box is half length of the box used in pixels to find contour streamlines
-% in pixels box = 10 times the Rd is enough to start testing any eddies
-box = round(10*gama);
+% bx is half length of the box used in pixels to find contour streamlines
+% in pixels bx = 10 times the Rd is enough to start testing any eddies
+bx = round(10*gama);
 
-% H is number of lines scanned in box during detection of potential centers
+% H is number of lines scanned in bx during detection of potential centers
 % (centers0 to centers) and shapes (centers to centers2). After test 100
 % seems a good compromise. This parameter is directly link to the time
 % computation!
@@ -233,4 +233,4 @@ r = 7/10*Rd; % 7km/day for Rd = 10
 
 % parameter for the eddy tracking.
 % Not tested yet
-delay = 7; % in days
+Dt = 7; % in days
