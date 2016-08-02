@@ -41,7 +41,9 @@ function [centers2,shapes1,shapes2,profil2,warn_shapes,warn_shapes2] = ...
 %    the boundary vertices (see 'mean_radius' for more details)
 %  - aire(n): aire is the area delimited by the eddy boundaries
 %    (see 'mean_radius.m' for more details)
-%  - mu, rsquare, rmse: fitting result from compute_best_fit
+%  - xy_end, velmax_end, deta_end, rmax_end, aire_end: features for the
+%    last contour with one center
+%  - alpha, rsquare, rmse: fitting result from compute_best_fit
 %
 %  Also:
 %
@@ -53,15 +55,16 @@ function [centers2,shapes1,shapes2,profil2,warn_shapes,warn_shapes2] = ...
 %  computation at t=daystreamfunction in {profil2(t)}, with:
 %  - step,nc(n): time step and number of centers at t
 %  - eta(n),rmoy(n),vel(n),tau(n): profil scanned
-%  - myfit: fitting result with curve (form factor) and err (error fitting)
+%  - myfit: fitting result with alpha (form factor) and err (error fitting)
 %
 %  Another file which contains information on the process to  compute eddy 
 %  shapes is saved as [path_out,'warnings_shapes',runname] in
 %  {warn_shapes(t)}:
 %  - no_curve(n): 1 if no closed contour of PSI was found
 %    around the eddy center;
-%  - fac(n): number of times the area where the shape is
-%    computed was enlarged;
+%  - Rd(n): first baroclinic deformation radius of Rossby at the center
+%  - gama(n): resolution factor at the center (Rd/DX/deg*res)
+%  - bx(n): area where the shape is computed (bx*fac)
 %  - calcul_curve(n): 1 if the closed contour as been obtain
 %    through the computation of psi field thanks to 'compute_psi' in the
 %    case ssh do not allowed to close contour around the center

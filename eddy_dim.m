@@ -53,12 +53,12 @@ load('param_eddy_tracking')
 bx = bxarea;
 Rd = Rdarea;
 
-else nargin<11
+if nargin==10
     plo = 0;
 end
 
-% main center coordinates
 %-----------------------------------------------------------
+% main center coordinates
 xy_cj = centers.y(ii);
 xy_ci = centers.x(ii);
 
@@ -107,28 +107,28 @@ if type_detection==1 || type_detection==3
     psi = compute_psi(x,y,mask,u/100,v/100,ci,cj,grid_ll);
 end
 
-% compute eddy shapes
 %------------------------------------
+% compute eddy shapes
 switch type_detection
     
     case 1
         % compute eddy shape with psi
         [cd,eddy_lim,lines,velmax,tau,eta,nrho,large] =...
-            max_curve(x,y,psi,c_x,c_y,xy_ctsi,xy_ctsj,u,v,Rd,...
+            max_curve(x,y,psi,xy_ci,xy_cj,xy_ctsi,xy_ctsj,u,v,Rd,...
             H,n_min,k_vel_decay,nR_lim,nrho_lim,grid_ll);
         calcul=1;
     
     case 2
         % compute eddy shape with ssh
         [cd,eddy_lim,lines,velmax,tau,eta,nrho,large] =...
-            max_curve(x,y,ssh,c_x,c_y,xy_ctsi,xy_ctsj,u,v,Rd,...
+            max_curve(x,y,ssh,xy_ci,xy_cj,xy_ctsi,xy_ctsj,u,v,Rd,...
             H,n_min,k_vel_decay,nR_lim,nrho_lim,grid_ll);
         calcul=0;
 
     case 3
         % compute eddy shape with ssh
         [cd,eddy_lim,lines,velmax,tau,eta,nrho,large] =...
-            max_curve(x,y,ssh,c_x,c_y,xy_ctsi,xy_ctsj,u,v,Rd,...
+            max_curve(x,y,ssh,xy_ci,xy_cj,xy_ctsi,xy_ctsj,u,v,Rd,...
             H,n_min,k_vel_decay,nR_lim,nrho_lim,grid_ll);
         calcul=0;
 
@@ -141,8 +141,8 @@ switch type_detection
         end
 end
 
-% compute eddy features and flags
 %------------------------------------
+% compute eddy features and flags
 if ~calcul
     psi = ssh;
 end
