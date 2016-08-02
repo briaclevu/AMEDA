@@ -39,6 +39,9 @@ end
 
 %----------------------------------------
 % get netcdf
+
+disp(['Get grid and velocities field from ',path_out,' ...'])
+
 lon0 = double(ncread(nc_dim,'lon'))';
 lat0 = double(ncread(nc_dim,'lat'))';
 %mask0 = double(ncread(nc_dim,'mask'))'; ! mask0 not constant with time !
@@ -51,8 +54,17 @@ else
     ssh = [];
 end
 
+disp(' ')
+
 %----------------------------------------
 % produce degraded field 
+if deg~=1
+    disp(['  Fields are degraded by a factor ',num2str(deg)])
+    disp('  (degraded grid becomes native grid)')
+end
+
+disp(' ')
+
 x = lon0(1:deg:end,1:deg:end);
 y = lat0(1:deg:end,1:deg:end);
 u = u0(1:deg:end,1:deg:end,:);
@@ -82,7 +94,7 @@ v(mask3d==0 | isnan(v)) = 0;
 %----------------------------------------
 % Enlarge mask into land by b pixels and compute ssh in the first land pixel if needed
 
-disp('"enlarge coastal mask" by adding b pixels of ocean to the coast')
+disp(['Enlarge coastal mask by adding ',num2str(max(b(:))),' pixels of ocean to the coast...'])
 
 mask1 = mask;
 for n=1:max(b(:))
@@ -105,6 +117,8 @@ for n=1:max(b(:))
     end
     mask1 = mask2;% enlarged mask
 end
+
+disp(' ')
 
 % Build mask ssh
 if type_detection>=2
@@ -135,7 +149,8 @@ if res==1
     
 else
 
-    disp(['"change resolution" by computing 2D SPLINE INTERPOLATION res=',num2str(res)])
+    disp(['Change resolution by computing 2D SPLINE INTERPOLATION ',...
+        'by a factor ',num2str(res)])
 
     % size for the interpolated grid
     Ni = res*(N-1)+1; % new size in lat
@@ -173,7 +188,9 @@ else
     
     % Increase resolution of fields (interp2 with regular grid)
     for i=1:stp
+        
         disp([' step ',num2str(i)])
+        
         u1 = squeeze(u(:,:,i));
         v1 = squeeze(v(:,:,i));
         u1(isnan(u1)) = 0;
@@ -199,20 +216,35 @@ else
 
 end
 
+disp(' ')
+
+%----------------------------------------
 % Dx, Rd, gama
+
+disp('Get Rossby deformation radius and compute GAMA on native grid')
+
 load([path_rossby,'Rossby_radius'])
 Dx = get_Dx_from_ll(x,y);
 Rd = interp2(lon_Rd,lat_Rd,Rd_baroc1_extra,x,y); % 10km in average AVISO 1/8
 gama = Rd ./ Dx;
 
+%----------------------------------------
 % Save non interpolated fields
+
+disp(['  Save fields',runname,'.mat ...'])
+
 save([path_out,'fields',runname],'x','y','mask','u','v','ssh','b','bx','Dx','Rd','gama','-v7.3')
 
+disp(' ')
+
+%----------------------------------------
 % Dx, Rd, gama on interpolated grid
+disp('Compute GAMA on interpolated grid')
 Dx = get_Dx_from_ll(xi,yi);
 Rd = interp2(lon_Rd,lat_Rd,Rd_baroc1_extra,xi,yi); % 10km in average AVISO 1/8
 gama = Rd ./ Dx / res;
 
+%----------------------------------------
 % Save interpolated fields
 x=xi;
 y=yi;
@@ -222,4 +254,9 @@ v=vi;
 ssh=sshi;
 b=bi;
 bx=bxi;
+
+disp(['  Save fields_inter',runname,'.mat ...'])
+
 save([path_out,'fields_inter',runname],'x','y','mask','u','v','ssh','b','bx','Dx','Rd','gama','-v7.3')
+
+disp(' ')

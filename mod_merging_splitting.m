@@ -107,7 +107,7 @@ end % end loop on tracks j1
 %----------------------------------------------------------
 % flag merging & spliting period
 
-disp('Flag merging and splitting eddies ...')
+disp(' flag merging and splitting eddies ...')
 
 for j=1:length(tracks)
     
@@ -153,6 +153,8 @@ for j=1:length(tracks)
     end
 end
         
+disp(' ')
+
 %----------------------------------------------------------
 % filter tracks or series of tracks older than Dt + cut_off
 % the ones shorter than eddy turnover time or cut_off days
@@ -278,6 +280,8 @@ for j=1:length(tracks)
     end
 end
 
+disp(' ')
+
 %----------------------------------------------------------
 % clean none associate or non interacting double shape or double center
 
@@ -367,3 +371,5 @@ for j=1:length(tracks)
     end
 
 end % end loop on tracks j
+
+disp(' ')

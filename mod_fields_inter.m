@@ -39,9 +39,16 @@ if nargin==1
     update = 0;
 end
 
+%----------------------------------------
 % load velocities field (see load_fields for details)
+
+disp(['Load velocities from fields_inter',runname,'.mat ...'])
+
 load([path_out,'fields_inter',runname])
 
+disp(' ')
+
+%----------------------------------------
 % preallocate fields struct array if doesn't exist
 stepF = size(u,3);
 
@@ -55,24 +62,24 @@ end
 
 %----------------------------------------
 
-disp('Compute fields on interpolated grid')
+disp('Compute LNAM and various fields on interpolated grid')
 
 % cycle through time steps
 for j=step0:stepF
     
-    disp(['  Step ',num2str(j),' ... '])
+    disp([' step ',num2str(j)])
     
-    % load 2D velocity fields for stepj (m/s)
     %----------------------------------------
+    % load 2D velocity fields for stepj (m/s)
     uu = squeeze(u(:,:,j));
     vv = squeeze(v(:,:,j));
 
-    % Calculation of eddy kinetic energy
     %----------------------------------------
+    % Calculation of eddy kinetic energy
     ke = (uu.^2 + vv.^2)/2;
     
-    % Calculation of finite spatial element
     %----------------------------------------
+    % Calculation of finite spatial element
     dx  = zeros(size(x));
     dy  = dx;
     dux = dx;
@@ -80,8 +87,8 @@ for j=step0:stepF
     dvx = dx;
     dvy = dx;
     
-    % Spatial element in deg if grid_ll==1 or in km otherwise
     %----------------------------------------
+    % Spatial element in deg if grid_ll==1 or in km otherwise
     dx(2:end-1,2:end-1) = x(2:end-1,3:end) - x(2:end-1,1:end-2); %#ok<*COLND>
     dy(2:end-1,2:end-1) = y(3:end,2:end-1) - y(1:end-2,2:end-1);
     
@@ -99,44 +106,45 @@ for j=step0:stepF
     dx = dx*1000; % m
     dy = dy*1000; % m
 
-    % Compute speed element in m/s
     %----------------------------------------
+    % Compute speed element in m/s
     dux(2:end-1,2:end-1) = (uu(2:end-1,3:end) - uu(2:end-1,1:end-2));
     duy(2:end-1,2:end-1) = (uu(3:end,2:end-1) - uu(1:end-2,2:end-1));
     dvx(2:end-1,2:end-1) = (vv(2:end-1,3:end) - vv(2:end-1,1:end-2));
     dvy(2:end-1,2:end-1) = (vv(3:end,2:end-1) - vv(1:end-2,2:end-1));
 
-    % Calculation of Okubo-Weiss criteria
     %----------------------------------------
+    % Calculation of Okubo-Weiss criteria
     sn = (dux./dx) - (dvy./dy); % shear "cisaillement"
     ss = (dvx./dx) + (duy./dy); % strain "deformation"
     om = (dvx./dx) - (duy./dy); % vorticity "vorticité"
 
     okubo = sn.^2 + ss.^2 - om.^2; % in s-2
 
-    % Calculation of divergence
     %----------------------------------------
+    % Calculation of divergence
     div = (dux./dx) + (dvy./dy);
 
-    % Calculation of vorticity field (typically +/-10^-5 s-1)
     %----------------------------------------
+    % Calculation of vorticity field (typically +/-10^-5 s-1)
     vorticity = om;
 
+    %----------------------------------------
     % border is a parameter which prevents the constraints
     % to be applied to points too close to the domain boundaries
     % which would result in an index error
     borders = max(b(:)) + 1;
     
+    %----------------------------------------
     % Calculation of LNAM criteria (Local Normalized Angular Momentum)
     % and LOW criteria (Local Averaged Okubo Weiss)
-    %----------------------------------------
     
     % Initialisation
     L   = zeros(size(uu));
     LOW = nan(size(uu));
 
-    % calculate LNAM and LOW in all domain pixels
     %----------------------------------------
+    % calculate LNAM and LOW in all domain pixels
     for i=borders:length(vv(:,1))-borders+1
         for ii=borders:length(vv(1,:))-borders+1
 
@@ -184,8 +192,8 @@ for j=step0:stepF
     
     L(isnan(L)) = 0;
 
-    % save fields in struct array
     %----------------------------------------
+    % save fields in struct array
     detection_fields(j).ke   = ke.*mask;
     detection_fields(j).div  = div.*mask;
     detection_fields(j).vort = vorticity.*mask;
@@ -198,6 +206,11 @@ end
 
 disp(' ')
 
-% export fields
 %----------------------------------------
+% export fields
+
+disp(['Update fields_inter',runname,'.mat ...'])
+
 save([path_out,'fields_inter',runname],'detection_fields','-append')
+
+disp(' ')

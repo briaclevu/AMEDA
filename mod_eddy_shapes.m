@@ -100,7 +100,11 @@ if nargin==0
     update = 0;
 end
 
+%----------------------------------------------
 % load the computed field in mod_fields
+
+disp(['Load fields_inter',runname,'.mat and eddy_centers',runname,'.mat ...'])
+
 load([path_out,'fields_inter',runname]);
 % begin the log file
 diary([path_out,'log_eddy_shapes',runname,'.txt']);
@@ -117,7 +121,6 @@ global extended_diags
 if update && exist([path_out,'eddy_shapes',runname,'.mat'],'file')
     
     load([path_out,'eddy_shapes',runname])
-    load([path_out,'warnings_shapes',runname])
     
     step0 = stepF - update + 1;
     
@@ -135,6 +138,8 @@ if update && exist([path_out,'eddy_shapes',runname,'.mat'],'file')
     if streamlines
         profil2  = profil2(1:step0-1);
     end
+    
+    disp(['  update eddy_shapes',runname,'.mat'])
     
 else
 % preallocate shape and warning array
@@ -184,16 +189,18 @@ else
     step0 = 1;
     
 end
- 
+
+disp(' ')
+
 %----------------------------------------------
 % Compute eddy shape
 
-disp(['Determine contour shapes for ',runname])
+disp(['Determine contour shapes'])
 
 % loop through all steps of the time series
 for i=step0:stepF
 
-    disp(['  Step ',num2str(i),' %-------------'])
+    disp([' Step ',num2str(i),' %-------------'])
 
     uu = squeeze(u(:,:,i));
     vv = squeeze(v(:,:,i));
@@ -250,7 +257,7 @@ for i=step0:stepF
             % flags exploitation
             %----------------------------------------------
             if warn
-                disp('   No significant streamlines closed around the center')
+                disp('    No significant streamlines closed around the center')
                 bound = 0;
             else
                 % if eddy max velocity is still increasing then temporary save eddy_dim(1)
@@ -308,9 +315,9 @@ for i=step0:stepF
                 % if no closed curve more intense in the larger area then
                 % final eddy shape is the one computed in the smaller area
                 if bound
-                    disp(['   Big eddy: going to fac = ',num2str(fac+1)])
+                    disp(['    Big eddy: going to fac = ',num2str(fac+1)])
                 else
-                    disp(['   No closed or largest curve at fac ',num2str(fac),...
+                    disp(['    No closed or largest curve at fac ',num2str(fac),...
                         ' back to the largest curve at fac ',num2str(fac-1)])
                     % stop enlarging the area
                     fac = fac - 1;
@@ -331,13 +338,13 @@ for i=step0:stepF
         % write out which kind of eddy found
         if ~warn
             if large(2) == 0
-                disp('   Eddy with 2 centers')
+                disp('   -> Eddy with 2 centers')
             elseif large(1) == 0
-                disp('   Eddy with 1 center')
+                disp('   -> Eddy with 1 center')
             elseif large(2) == 1
-                disp('   Largest with 2 centers')
+                disp('   -> Largest with 2 centers')
             else
-                disp('   Largest with 1 center')
+                disp('   -> Largest with 1 center')
             end
         end
 
@@ -646,7 +653,11 @@ end % i=stepF
 %----------------------------------------
 % save warnings, shapes and their centers in structure array
 
+disp(['Update eddy_centers',runname,'.mat with eddies centers ...'])
+
 save([path_out,'eddy_centers',runname],'centers2','-append')
+
+disp(['Save eddy_shapes',runname,'.mat with eddies features ...'])
 
 if streamlines
     save([path_out,'eddy_shapes',runname],'shapes1','shapes2','warn_shapes','warn_shapes2','profil2')
@@ -657,3 +668,4 @@ end
 % close log file
 diary off
 
+disp(' ')

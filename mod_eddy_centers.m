@@ -53,17 +53,22 @@ if nargin==2
     update = 0;
 end
 
+%---------------------------------------------
 % load the computed field in mod_fields
+
+disp(['Load fields_inter',runname,'.mat ...'])
+
 load([path_out,'fields_inter',runname]);
 stepF = size(u,3);
 
-% to calculate psi extrapole u and v to 0 in the land
+% extrapole u and v to 0 in the land to calculate psi 
 u(isnan(u)) = 0;
 v(isnan(v)) = 0;
 
+%---------------------------------------------
 % preallocate centers array if doesn't exist
 if update && exist([path_out,'eddy_centers',runname,'.mat'],'file')
-    
+
     load([path_out,'eddy_centers',runname]);
     
     step0 = stepF - update+1;
@@ -76,7 +81,10 @@ if update && exist([path_out,'eddy_centers',runname,'.mat'],'file')
     centers0 = centers0(1:step0-1);
     centers  = centers(1:step0-1);
     
+    disp(['  update eddy_center',runname,'.mat'])
+
 else
+    
     centers0 = struct('step',{},'type',{},'x',{},'y',{},'i',{},'j',{});
     centers = centers0;
     
@@ -84,13 +92,16 @@ else
     
 end
 
+disp(' ')
+
 %---------------------------------------------
+
 disp(['Find potential centers from step ',num2str(step0),' to ',num2str(stepF)])
 
 % cycle through time steps
 for i=step0:stepF
 
-    disp(['  Search centers step ',num2str(i)])
+    disp([' Search centers step ',num2str(i),' %-------------'])
 
     % eddy centers for a given step k
     centers0(i).step = i;
@@ -153,11 +164,12 @@ for i=step0:stepF
         j = j + n + 1; % series of coordinates of the next contour 
     end
     
-    disp(['  ',num2str(k-1),' max LNAM found'])
+    disp(['  -> ',num2str(k-1),' max LNAM found'])
 
     %----------------------------------------------
     % remove center with no close curve around only one center
-    disp('    Remove centers without closed streamlines')
+    
+    disp('  Remove centers without closed streamlines')
 
     % all centers coordinates for a given step i
     centers(i).step = i;
@@ -344,16 +356,22 @@ for i=step0:stepF
         end
     end
         
-end % time i loop
+    disp(['   -> ',num2str(j-1),' potential centers found'])
+    disp(['      (',num2str(k-j+1),' max LNAM removed)'])
+    
+    disp(' ')
 
-disp(['    ',num2str(j-1),' potential centers found (',num2str(k-j+1),' max LNAM removed)'])
-disp(' ')
+end % time i loop
 
 %----------------------------------------
 % save centers in struct array
+
+disp(['Save max LNAM and potentiel centers in eddy_centers',runname,'.mat ...'])
 
 if update && exist([path_out,'eddy_centers',runname,'.mat'],'file')
     save([path_out,'eddy_centers',runname],'centers0','centers','-append')
 else
     save([path_out,'eddy_centers',runname],'centers0','centers')
 end
+
+disp(' ')

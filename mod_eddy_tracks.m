@@ -144,6 +144,9 @@ diary([path_out,'log_eddy_tracks',runname,'.txt']);
 
 %----------------------------------------------------------
 % load eddy centers and eddy shapes
+
+disp(['Load eddy_centers',runname,'.mat and eddy_shapes',runname,'.mat ...'])
+
 load([path_out,'eddy_centers',runname]);
 load([path_out,'eddy_shapes',runname]);
 
@@ -209,6 +212,9 @@ if update && exist([path_out,'eddy_tracks',runname,'.mat'],'file')
     search(moved) = [];
     tracks(~moved) = [];
     
+    disp(['  update eddy_tracks',runname,'.mat'])
+    disp('  !!! be sure to use at least the last 30 days !!!')
+    
 else
 % preallocate tracks array
     
@@ -261,15 +267,20 @@ else
     
 end
 
+disp(' ')
+
 %----------------------------------------------------------
 % loop through all the steps in which eddies were detected
+
+disp(['Tracks eddies for ',runname])
+
 for i=step0:stepF
     
     % variables containing data of all the eddies detected for the
     % current step
     
     stp = centers(i).step;
-    disp(['Searching step ',num2str(stp),' ... '])
+    disp([' Searching step ',num2str(stp),' %------------- '])
     
     for n=2:length(var_name1)
         eddy.(tracks_name{n}) = centers2(i).(var_name1{n});
@@ -310,7 +321,7 @@ for i=step0:stepF
             end
 
             % display number of first eddies
-            disp([' total eddies: ',num2str(length(search))])
+            disp(['  -> ',num2str(length(search)),' total eddies'])
     
         %----------------------------------------------------------
         % if not first step, then open tracks from previous steps
@@ -461,9 +472,9 @@ for i=step0:stepF
 
                     if mov>1
                         % display and update warning
-                        disp(['  Warning t+',num2str(last(j)),...
-                                '; eddy: ',num2str(i2),...
-                                '; ',num2str(mov),' possibilities !!!'])
+                        disp(['  Warning !!! Eddy ',num2str(i2),': ',...
+                                num2str(mov),' possibilities ',...
+                                'at t+',num2str(last(j))])
                         warn_tracks(end+1,:) = [stp i2 mov];
                     end
 
@@ -540,7 +551,7 @@ for i=step0:stepF
             end
             
             % display number of new eddies
-            disp([' new eddies: ',num2str(sum(~isnan(ind_new(:,1))))])
+            disp(['  -> ',num2str(sum(~isnan(ind_new(:,1)))),' new eddies'])
 
             %----------------------------------------------------------
             % 6th: eddies are considered dissipated when tracks are not
@@ -565,7 +576,7 @@ for i=step0:stepF
             search(moved) = [];
             
             % display number of old eddies
-            disp([' too old eddies: ',num2str(sum(moved))])
+            disp(['    (',num2str(sum(moved)),' too old eddies)'])
             
             % clear some variables (re-initialized at next loop)
             clear ind_new moved
@@ -597,8 +608,11 @@ end
 %----------------------------------------------------------
 % save tracks and warnings in structure array
 
+disp(['Save eddy_tracks',runname,'.mat ...'])
+
 save([path_out,'eddy_tracks',runname],'tracks','short','warn_tracks')
 
 % close log file
 diary off
 
+disp(' ')
