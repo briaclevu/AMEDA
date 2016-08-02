@@ -327,7 +327,7 @@ for j=1:length(tracks)
             % replace interaction by interaction2
             % which become NaN if no interaction2
             for l=ind21
-                            tracks(i).interaction(l) = tracks(i).interaction2(l);
+                tracks(i).interaction(l) = tracks(i).interaction2(l);
                 tracks(i).split(l) = tracks(i).split2(l);
                 tracks(i).merge(l) = tracks(i).merge2(l);
                 tracks(i).interaction2(l) = NaN;
@@ -365,4 +365,5 @@ for j=1:length(tracks)
             
         end
     end
+
 end % end loop on tracks j

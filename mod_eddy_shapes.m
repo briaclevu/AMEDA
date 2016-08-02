@@ -167,7 +167,7 @@ else
                 shapes1 = struct('xy',{},'velmax',{},'taumin',{},'deta',{},'nrho',{},'rmax',{},'aire',{},...
                     'xy_end',{},'vel_end',{},'deta_end',{},'r_end',{},'aire_end',{});
             end
-            shapes2 = struct('xy',{},'velmax',{},'taumin',{},'deta',{},'nrho',{},'rmax',{},'aire',{});
+            shapes2 = struct('xy',{},'velmax',{},'deta',{},'nrho',{},'rmax',{},'aire',{});
         case 1
             if streamlines
                 shapes1 = struct('xy',{},'velmax',{},'taumin',{},'deta',{},'nrho',{},'rmax',{},'aire',{},...
@@ -304,7 +304,7 @@ for i=step0:stepF
                     % test double eddy in larger area
                     bound = 1;
                 % if double contour is still increasing then temporary save eddy_dim(2)
-                elseif velmax(2) > tmp_velmax(2) + 2e-4
+                elseif velmax(2) > tmp_velmax(2) + 1e-4
                     bound = 1;
                     % temporary save eddy till true double eddy found 
                     if tmp_large(2)==1

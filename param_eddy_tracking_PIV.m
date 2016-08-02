@@ -171,7 +171,7 @@ K = 0.7; % [0 - 1]
 
 % b is half length of the box in pixels used to normalise the LNAM and LOW.
 % After test the optimal length of the box ( Lb = 2b*xd*deg )
-% is fixed t;o one and half the size of Rd (Lb/Rd=1.2).
+% is fixed to one and half the size of Rd (Lb/Rd=1.2).
 b = max(1,round((1.2*gama)/2));
 
 % Rb (=Lb/Rd) is to check that the b setting and the gama are optimal.

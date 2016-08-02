@@ -17,7 +17,7 @@
 %            (longitude and latitude) and the velocity mask (land-points=0;
 %             ocean-points=1)
 %
-% User parameters definition:
+% User option keys:
 %   - type_detection: flag to choose the field use as streamlines
 %           1 : using velocity fields
 %           2 : using ssh
@@ -123,7 +123,7 @@ if ~exist('deg','var')
     deg = 1; % from 1 (default) to >10 in some experiment
 end
 
-%% Experiment option
+%% Experiment option keys
 
 % grid type
 global grid_ll
@@ -135,16 +135,16 @@ grid_ll = 1;
 global type_detection
 type_detection = 3;
         % 1 : using velocity fields
-		% 2 : using ssh
-		% 3 : using both velocity fields and ssh, 
-		%     and keep max velocity along the eddy contour
+        % 2 : using ssh
+        % 3 : using both velocity fields and ssh, 
+        %     and keep max velocity along the eddy contour
 
 % if you want extended diags directly computed
 global extended_diags
 extended_diags = 1;
         % 0 : not computed
         % 1 : computed as the same time as eddy detection
-		% 2 : computed afterward  
+        % 2 : computed afterward  
 
 % save streamlines at days daystreamfunction and profil as well
 global streamlines
@@ -165,8 +165,12 @@ periodic = 0;
 % Resolution parameters:
 %----------------------------------------------
 % Read grid
-y = double(ncread(nc_dim,'lat'))';
-x = double(ncread(nc_dim,'lon'))';
+lon0 = double(ncread(nc_dim,'lon'))';
+lat0 = double(ncread(nc_dim,'lat'))';
+
+% Apply degraded sampling
+x = lon0(1:deg:end,1:deg:end);
+y = lat0(1:deg:end,1:deg:end);
 
 % Meshgrid size at (x,y)
 if grid_ll
@@ -181,7 +185,7 @@ Rd = interp2(lon_Rd,lat_Rd,Rd_baroc1_extra,x,y); % 10km in average AVISO 1/8
 
 % gama is resolution coefficient which is the number of pixels per Rd.
 % After test gama>3 is required to get the max number of eddies.
-gama = Rd ./ (Dx*deg); % [0.1-1.5] for AVISO 1/8
+gama = Rd ./ Dx; % [0.1-1.5] for AVISO 1/8
 
 % res is an integer and used to improve the precision of centers detection
 % close to 3 pixels per Rd. res can goes up to 3
@@ -220,4 +224,3 @@ H = 200; % number of line scanned
 %----------------------------------------------
 % delay searching tolerance parameter for the eddy tracking
 Dt = 10; % in days
-

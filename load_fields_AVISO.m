@@ -15,8 +15,9 @@ function load_fields_AVISO(nc_dim,nc_u,nc_v,nc_ssh,b,bx,res,deg)
 %	ssh(b)=mean(ssh)(b-1) or mean(ssh),ssh(~mask(b-1))=nan;
 %
 %  Output are matlab matrice used with tracking_plot routines and should be
-%  saved in fields.mat file fieldsi must be save in fields_inter.mat.
-%  fields size must be [lat,lon,time] and output velocities must be in m/s and ssh in m
+%  saved in fields.mat file and fieldsi in fields_inter.mat.
+%  fields size must be [lat,lon,time]
+%  output velocities must be in m/s and ssh in m
 %
 %  For a description of the input parameters see param_eddy_tracking.m.
 %
@@ -47,7 +48,7 @@ v0 = permute(ncread(nc_v,'v'),[2,1,3]);
 if type_detection>=2
     ssh0 = permute(ncread(nc_ssh,'ssh'),[2,1,3]);
 else
-    ssh0 = [];
+    ssh = [];
 end
 
 %----------------------------------------
@@ -59,10 +60,6 @@ v = v0(1:deg:end,1:deg:end,:);
 if type_detection>=2
     ssh = ssh0(1:deg:end,1:deg:end,:);
 end
-
-% get degarded b and bx
-b = b(1:deg:end,1:deg:end);
-bx = bx(1:deg:end,1:deg:end);
 
 % get the grid size
 [N,M,stp] = size(u);
@@ -110,8 +107,10 @@ for n=1:max(b(:))
 end
 
 % Build mask ssh
-maskssh = min(ssh(:,:,1:max(1,stp-7))*0+1,[],3);
-maskssh(isnan(maskssh)) = 0;
+if type_detection>=2
+    maskssh = min(ssh(:,:,1:max(1,stp-7))*0+1,[],3);
+    maskssh(isnan(maskssh)) = 0;
+end
 
 % Mask velocities with the enlarged mask
 mask3d = repmat(mask1,[1,1,stp]);
@@ -153,10 +152,11 @@ else
     maski = interp2(x,y,mask,xi,yi);
     maski(isnan(maski) | maski < 1) = 0;
     
-    % Increase resolution of the ssh mask
-    maskissh = interp2(x,y,maskssh,xi,yi);
-    maskissh(isnan(maskissh) | maskissh < 1) = 0;
-
+    if type_detection>=2
+       % Increase resolution of the ssh mask
+        maskissh = interp2(x,y,maskssh,xi,yi);
+        maskissh(isnan(maskissh) | maskissh < 1) = 0;
+    end
     % Compute the enlarged mask to the new resolution
     maski1 = interp2(x,y,mask1,xi,yi);
     maski1(isnan(maski1)) = 0;
@@ -203,7 +203,7 @@ end
 load([path_rossby,'Rossby_radius'])
 Dx = get_Dx_from_ll(x,y);
 Rd = interp2(lon_Rd,lat_Rd,Rd_baroc1_extra,x,y); % 10km in average AVISO 1/8
-gama = Rd ./ (Dx*deg);
+gama = Rd ./ Dx;
 
 % Save non interpolated fields
 save([path_out,'fields',runname],'x','y','mask','u','v','ssh','b','bx','Dx','Rd','gama','-v7.3')
@@ -211,7 +211,7 @@ save([path_out,'fields',runname],'x','y','mask','u','v','ssh','b','bx','Dx','Rd'
 % Dx, Rd, gama on interpolated grid
 Dx = get_Dx_from_ll(xi,yi);
 Rd = interp2(lon_Rd,lat_Rd,Rd_baroc1_extra,xi,yi); % 10km in average AVISO 1/8
-gama = Rd ./ (Dx*deg)/res;
+gama = Rd ./ Dx / res;
 
 % Save interpolated fields
 x=xi;

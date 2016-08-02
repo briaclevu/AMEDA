@@ -4,6 +4,9 @@
 %   tracking package. It returns position of the centers, dimensions and 
 %   tracks of the eddies detected from the time series of a 2-D velocity 
 %   field.
+%   It gives also an history of the splitting and merging events.
+%
+%   The algortihm subroutines:
 %
 %   - param_eddy_tracking sets user defined paths and parameters:
 %     nc_u nc_v nc_dim b bx r path_in path_out periodic criteres

@@ -100,4 +100,3 @@ R(3) = max(distance(1:lim));
 % Mean radius from barycenter to points of the polygon
 %----------------------------------------
 R(4) = mean(distance(1:lim));
-

@@ -26,8 +26,8 @@ function mod_eddy_centers(K,update)
 %  - centers(t).type(n) : eddy type (1 => cyclonic; -1 => anticyclonic)
 %  - centers(t).x(n) : eddy center x coordinate
 %  - centers(t).y(n) : eddy center y coordinate
-%  - centers(t).j(n) : eddy center row index
 %  - centers(t).i(n) : eddy center column index
+%  - centers(t).j(n) : eddy center row index
 %
 %
 %  Max of |LNAM(LOW<0)>K| with the same fields as {centers} are
@@ -171,6 +171,8 @@ for i=step0:stepF
         j = j + n + 1; % series of coordinates of the next contour 
     end
     
+    disp(['  ',num2str(k-1),' max LNAM found'])
+
     %----------------------------------------------
     % remove center with no close curve around only one center
     disp('    Remove centers without closed streamlines')
@@ -292,7 +294,7 @@ for i=step0:stepF
         % rearrange all the contours in C to the structure array 'isolines'
         %-----------------------------------------------------------
         [isolines,~] = scan_lines(CS);
-        
+
         %----------------------------------------------
         % scan streamlines and validate centers which are alone as potential centers
 
@@ -362,6 +364,7 @@ for i=step0:stepF
         
 end % time i loop
 
+disp(['    ',num2str(j-1),' potential centers found (',num2str(k-j+1),' max LNAM removed)'])
 disp(' ')
 
 %----------------------------------------
