@@ -22,24 +22,24 @@ if nargin==1
     grid_ll = 1;
 end
 
-% Size of the polygon
 %----------------------------------------
+% Size of the polygon
 lim = size(xy,2)-1;
 
-% Barycenter computation
 %----------------------------------------
+% Barycenter computation
 somme_x = sum(xy(1,1:lim));
 somme_y = sum(xy(2,1:lim));
 
 xbary = somme_x/lim;
 ybary = somme_y/lim;
 
-% Ellipse fitting
 %----------------------------------------
+% Ellipse fitting
 if lim >= 5
     try
-        % Coord = coordinates of the polygon
         %----------------------------------------
+        % Coord = coordinates of the polygon
         if grid_ll
 
             xs(1) = xbary;
@@ -53,8 +53,8 @@ if lim >= 5
                 xs(2) = xy(1,pt);
                 ys(2) = xy(2,pt);
 
-                % distances in km of every point from the barycenter
                 %----------------------------------------
+                % distances in km of every point from the barycenter
                 coord(1,pt) = sign(diff(xs)) * sw_dist([ybary ybary],xs,'km');
                 coord(2,pt) = sign(diff(ys)) * sw_dist(ys,[xbary xbary],'km');
             end

@@ -40,7 +40,7 @@ function mod_eddy_shapes(update)
 %    (see 'mean_radius.m' for more details)
 %  - xy_end, velmax_end, deta_end, rmax_end, aire_end: features for the
 %    last contour with one center
-%  - mu, rsquare, rmse: fitting result from compute_best_fit
+%  - alpha, rsquare, rmse: fitting result from compute_best_fit
 %
 %  Also:
 %
@@ -52,7 +52,7 @@ function mod_eddy_shapes(update)
 %  computation at t=daystreamfunction in {profil2(t)}, with:
 %  - step,nc(n): time step and number of centers at t
 %  - eta(n),rmoy(n),vel(n),tau(n): profil scanned
-%  - myfit: fitting result with mu (form factor) and err (error fitting)
+%  - myfit: fitting result with alpha (form factor) and err (error fitting)
 %
 %  Another file which contains information on the process to  compute eddy 
 %  shapes is saved as [path_out,'warnings_shapes',runname] in
@@ -85,24 +85,6 @@ function mod_eddy_shapes(update)
 %   Ver. 3.2 Apr.2015 Briac Le Vu
 %   Ver. 3.1 2014 LMD from Nencioli et al. routines
 %-------------------------
-%
-% Copyright (C) 2009-2012 Francesco Nencioli and Charles Dong
-%
-% This file is part of the Vector-Geometry Eddy Detection Algorithm.
-%
-% The Vector-Geometry Eddy Detection Algorithm is free software: 
-% you can redistribute it and/or modify it under the terms of the 
-% GNU General Public License as published by the Free Software Foundation, 
-% either version 3 of the License, or (at your option) any later version.
-% 
-% The Vector-Geometry Eddy Detection Algorithm is distributed in the 
-% hope that it will be useful, but WITHOUT ANY WARRANTY; without even 
-% the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR 
-% PURPOSE. See the GNU General Public License for more details.
-% 
-% You should have received a copy of the GNU General Public License
-% along with the Vector-Geometry Eddy Detection Algorithm.  
-% If not, see <http://www.gnu.org/licenses/>.
 %
 %=========================
 

@@ -10,7 +10,7 @@ function [CD,xy,allines,velmax,tau,deta,nrho,large,warn,calcul] =...
 %  - centers is the potential eddy center structure
 %  - x and y are the grid coordinates in the all domain of any step
 %  - ii is the indice of the main eddy center
-%  - Rd is the deformation radius
+%  - Rd is the deformation radius where the shape is computed
 %  - bx is used to define the area where the shape is computed
 %  - plo is a debug mod to check result of max_curve on a plot.
 %       plot==0 by default
@@ -120,8 +120,8 @@ if type_detection==1 || type_detection==3
     psi = compute_psi(x,y,mask,u/100,v/100,ci,cj,grid_ll);
 end
 
-% compute eddy shapes
 %------------------------------------
+% compute eddy shapes
 switch type_detection
     
     case 1
@@ -150,8 +150,8 @@ switch type_detection
         end
 end
 
-% compute eddy features and flags
 %------------------------------------
+% compute eddy features and flags
 if ~calcul
     psi = ssh;
 end

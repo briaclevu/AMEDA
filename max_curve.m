@@ -129,6 +129,7 @@ while i<=length(isolines)
     xdata = isolines(i).x; % vertex x's
     ydata = isolines(i).y; % vertex y's
 
+    %-----------------------------------------------------------
     % conditions to have determine a contour
     % (isolines already sorted by maximum y)
     % 1) closed contours
@@ -137,10 +138,12 @@ while i<=length(isolines)
     % 4) no more than 2 centers
     % 5) record two contours with the right eddy center ('max' and 'end')
     % 6) record the "true" maximum or by default the largest
+    %-----------------------------------------------------------
     
     if xdata(1)==xdata(end) && ydata(1)==ydata(end) && ...
             inpolygon(xy_ci,xy_cj,xdata,ydata) && length(xdata) >= 4
      
+        %-----------------------------------------------------------
         % searchs the coordinates of the centers in the contour 
         IN = inpolygon(xy_ctsi,xy_ctsj,xdata,ydata);
         [~,p] = find(IN==1); % index of the coordinates in the contour
@@ -149,24 +152,30 @@ while i<=length(isolines)
         % test if the contour contains less than 2 centers
         if nc<=2
 
+            %-----------------------------------------------------------
             % projection of velocities fields on a contour
             % for ir/regular grid and integrate these fields
             % along this contour to get the averaged velocity
             V = integrate_vel(x,y,u,v,xdata,ydata,grid_ll);
             
+            %-----------------------------------------------------------
             % compute the R circle of a similar area
             R = mean_radius([xdata;ydata],grid_ll);
             
+            %-----------------------------------------------------------
             % compute the local curvature (C) and the segment length (P)
             [C,P] = compute_curve([xdata;ydata],Rd,grid_ll);
             
+            %-----------------------------------------------------------
             % compute the revolution time (Tau)
             T = sum(P(1:end-1))*1000/V/3600/24; % in days if vel is m/s
             
+            %-----------------------------------------------------------
             % part of the contour with negative curvature weighted by
             % the discrete curvature
             N = abs(sum(P(C<0).*C(C<0))/(2*pi));
             
+            %-----------------------------------------------------------
             % record every streamlines features
             if streamlines
                 lines = [lines;nc lvl(i) R(1) V T];
@@ -174,6 +183,7 @@ while i<=length(isolines)
                 lines = [lines;1];
             end
 
+            %-----------------------------------------------------------
             % in case of 1 center record the last shape
             if nc==1
                 velmax(3) = V;
@@ -184,6 +194,7 @@ while i<=length(isolines)
                 cd = [xy_ctsi(p);xy_ctsj(p)];
             end
             
+            %-----------------------------------------------------------
             % no closed contour met yet
             if Vmax==0
                 
@@ -201,12 +212,13 @@ while i<=length(isolines)
                     return % stop the scan
                 end
                 
+            %-----------------------------------------------------------
             % closed contour already met and velocity is increasing
             elseif V>Vmax
 
                 % Indice of the contour
                 I = i;
-		        % update test values
+                % update test values
                 Vmax = V; % replace the velmax
                 Tmin = min(Tmin,T); % replace the Tau
                 % record others index
@@ -215,6 +227,7 @@ while i<=length(isolines)
                 rmax = R(1);
                 nrhomax = N;
 
+                %-----------------------------------------------------------
                 % record bigger contour around the single or 2 centers
                 % if no "true" maximum met yet
                 if large(nc)~=0
@@ -231,14 +244,17 @@ while i<=length(isolines)
                     end                            
                 end
 
+            %-----------------------------------------------------------
             % velocity is decreasing more than 5% !!! new parameter !!!
             elseif V<Vmax*0.95
                 
+                %-----------------------------------------------------------
                 % test if the last contour is the largest and not the previous one
                 if large(nc)==1 && i-I>1
                     
                     large(nc) = 0; % we found an eddy with nc centers
                     
+                %-----------------------------------------------------------
                 % test if Vmax is higher then the existing "true" maximum
                 elseif Vmax>velmax(nc) && velmax(nc)~=0
                     % record eddy{1} only if R<Rlim and N<Nlim
@@ -253,6 +269,7 @@ while i<=length(isolines)
                 end
             end
 
+        %-----------------------------------------------------------
         % the contour contains more than 2 centers
         else
             return % stop the scan

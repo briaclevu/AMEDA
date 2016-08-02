@@ -59,16 +59,16 @@
 %  |     |     |--> compute_psi.m
 %  |     |     |
 %  |     |     |--> max_curve.m
-%  |     |     |     |
-%  |     |     |     |--> scan_lines.m
-%  |     |     |     |
-%  |     |     |     |--> integrate_vel.m
-%  |     |     |     |
-%  |     |     |     |--> mean_radius.m
-%  |     |     |     |
-%  |     |     |     |--> compute_curve.m
-%  |     |     |     |     |
-%  |     |     |     |     |--> TaubinNTN.m
+%  |     |           |
+%  |     |           |--> scan_lines.m
+%  |     |           |
+%  |     |           |--> integrate_vel.m
+%  |     |           |
+%  |     |           |--> mean_radius.m
+%  |     |           |
+%  |     |           |--> compute_curve.m
+%  |     |                 |
+%  |     |                 |--> TaubinNTN.m
 %  |     |
 %  |     |--> mean_radius.m
 %  |     |

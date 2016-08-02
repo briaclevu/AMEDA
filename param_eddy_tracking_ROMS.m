@@ -139,7 +139,7 @@ extended_diags = 1;
 
 % save streamlines at days daystreamfunction and profil as well
 global streamlines
-streamlines = 0;
+streamlines = 1;
 global daystreamfunction
 daystreamfunction = 1:170;
 
