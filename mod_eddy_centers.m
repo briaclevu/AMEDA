@@ -37,7 +37,7 @@ function mod_eddy_centers(K,update)
 %
 %-------------------------
 %   Ver. 3.2 Apr 2015 Briac Le Vu
-%   Ver. 3.1 2013 LMD from Nencioli et al. routines
+%   Ver. 3.1 2014 LMD from Nencioli et al. routines
 %-------------------------
 %
 %=========================
@@ -101,7 +101,7 @@ disp(['Find potential centers from step ',num2str(step0),' to ',num2str(stepF)])
 % cycle through time steps
 for i=step0:stepF
 
-    disp([' Search centers step ',num2str(i),' %-------------'])
+    disp([' Find potential centers step ',num2str(i),' %-------------'])
 
     % eddy centers for a given step k
     centers0(i).step = i;
@@ -169,7 +169,7 @@ for i=step0:stepF
     %----------------------------------------------
     % remove center with no close curve around only one center
     
-    disp('  Remove centers without closed streamlines')
+    disp('  Remove max LNAM without closed streamlines')
 
     % all centers coordinates for a given step i
     centers(i).step = i;

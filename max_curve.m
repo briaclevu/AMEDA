@@ -54,26 +54,8 @@ function [cd,eddy_lim,lines,velmax,tau,eta,nrho,large] =...
 %
 %-------------------------
 %   Ver. 3.2 Apr.2015 Briac Le Vu
-%   Ver. 3.1 2014 LMD from nencioli et al. routines
+%   Ver. 3.1 2014 LMD from Nencioli et al. routines
 %-------------------------
-%
-% Copyright (C) 2009-2012 Francesco Nencioli and Charles Dong
-%
-% This file is part of the Vector-Geometry Eddy Detection Algorithm.
-%
-% The Vector-Geometry Eddy Detection Algorithm is free software: 
-% you can redistribute it and/or modify it under the terms of the 
-% GNU General Public License as published by the Free Software Foundation, 
-% either version 3 of the License, or (at your option) any later version.
-% 
-% The Vector-Geometry Eddy Detection Algorithm is distributed in the 
-% hope that it will be useful, but WITHOUT ANY WARRANTY; without even 
-% the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR 
-% PURPOSE. See the GNU General Public License for more details.
-% 
-% You should have received a copy of the GNU General Public License
-% along with the Vector-Geometry Eddy Detection Algorithm.  
-% If not, see <http://www.gnu.org/licenses/>.
 %
 %=========================
 
@@ -200,7 +182,7 @@ while i<=length(isolines)
                 
                 % test if the first contour contains only 1 center
                 % it is not too big or too much concave segment
-                if nc==1 && R(1)<5*Rd && N<0.33
+                if nc==1 && R(1)<nR_lim*Rd && N<nrho_lim
                     % fix the test values
                     Vmax = V; % first value of velmax
                     Tmin = min(Tmin,T); % first value of Tau

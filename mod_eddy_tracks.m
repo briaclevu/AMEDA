@@ -4,6 +4,7 @@ function mod_eddy_tracks(cut_off,Dt,T,dps,update)
 %  Computes eddy tracking from the eddies features, and saves them
 %  as {eddy_tracks(n)} in [path_out,'eddy_tracks',runname].
 %
+% This routine will use:
 %  - cut_off (days) are the minimum duration tracks recorded
 %       use cut_off=0 to use the explicit turnover time (tau) for each eddy
 %       use cut_off=1 to keep all eddies
@@ -154,6 +155,7 @@ stepF = length(centers);
 
 %----------------------------------------------------------
 % Names list from centers and shapes structure
+
 var_name1 = fieldnames(centers2);
 var_name2 = fieldnames(shapes1);
 var_name3 = fieldnames(shapes2);
@@ -226,13 +228,13 @@ else
                     'shapes3',{},'velmax3',{},'deta3',{},'rmax3',{},'aire3',{},...
                     'alpha',{},'rsquare',{},'rmse',{},...
                     'shapes2',{},'velmax2',{},'deta2',{},'nrho2',{},'rmax2',{},'aire2',{},...
-                    'calcul',{},'large1',{},'large2',{},'toobig',{});
+                    'Rd',{},'gama',{},'calcul',{},'large1',{},'large2',{},'toobig',{});
             else
                 tracks = struct('step',{},'type',{},'x1',{},'y1',{},'x2',{},'y2',{},'dc',{},'ds',{},...
                     'shapes1',{},'velmax1',{},'tau1',{},'deta1',{},'nrho1',{},'rmax1',{},'aire1',{},...
                     'shapes3',{},'velmax3',{},'deta3',{},'rmax3',{},'aire3',{},...
                     'shapes2',{},'velmax2',{},'deta2',{},'nrho2',{},'rmax2',{},'aire2',{},...
-                    'calcul',{},'large1',{},'large2',{},'toobig',{});
+                    'Rd',{},'gama',{},'calcul',{},'large1',{},'large2',{},'toobig',{});
             end
         case 1
             if streamlines
@@ -272,7 +274,7 @@ disp(' ')
 %----------------------------------------------------------
 % loop through all the steps in which eddies were detected
 
-disp(['Tracks eddies for ',runname])
+disp('Tracks eddies')
 
 for i=step0:stepF
     

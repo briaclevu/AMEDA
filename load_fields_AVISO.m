@@ -54,8 +54,6 @@ else
     ssh = [];
 end
 
-disp(' ')
-
 %----------------------------------------
 % produce degraded field 
 if deg~=1
@@ -120,12 +118,14 @@ end
 
 disp(' ')
 
+%----------------------------------------
 % Build mask ssh
 if type_detection>=2
     maskssh = min(ssh(:,:,1:max(1,stp-7))*0+1,[],3);
     maskssh(isnan(maskssh)) = 0;
 end
 
+%----------------------------------------
 % Mask velocities with the enlarged mask
 mask3d = repmat(mask1,[1,1,stp]);
 u(mask3d==0) = NaN;
@@ -168,10 +168,11 @@ else
     maski(isnan(maski) | maski < 1) = 0;
     
     if type_detection>=2
-       % Increase resolution of the ssh mask
+        % Increase resolution of the ssh mask
         maskissh = interp2(x,y,maskssh,xi,yi);
         maskissh(isnan(maskissh) | maskissh < 1) = 0;
     end
+
     % Compute the enlarged mask to the new resolution
     maski1 = interp2(x,y,mask1,xi,yi);
     maski1(isnan(maski1)) = 0;

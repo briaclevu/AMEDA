@@ -54,33 +54,8 @@
 %
 %-------------------------
 %   Ver. 3.2 2015 by Le Vu et al.
-%   Ver. 3.1 2014 by Mkhinini et al.
-%   Ver. 2.1 Oct.2012
-%   Ver. 2.0 Jan.2012
-%   Ver. 1.3 Apr.2011
-%   Ver. 1.2 May.2010
-%   Ver. 1.1 Dec.2009
-%   Authors: Francesco Nencioli, francesco.nencioli@univ-amu.fr
-%            Charles Dong, cdong@atmos.ucla.edu
+%   Ver. 3.1 2014 by Mkhinini et al. and LMD from from Nencioli et al routines's
 %-------------------------
-%
-% Copyright (C) 2009-2012 Francesco Nencioli and Charles Dong
-%
-% This file is part of the Vector-Geometry Eddy Detection Algorithm.
-%
-% The Vector-Geometry Eddy Detection Algorithm is free software: 
-% you can redistribute it and/or modify it under the terms of the 
-% GNU General Public License as published by the Free Software Foundation, 
-% either version 3 of the License, or (at your option) any later version.
-%
-% The Vector-Geometry Eddy Detection Algorithm is distributed in the 
-% hope that it will be useful, but WITHOUT ANY WARRANTY; without even 
-% the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR 
-% PURPOSE. See the GNU General Public License for more details.
-% 
-% You should have received a copy of the GNU General Public License
-% along with the Vector-Geometry Eddy Detection Algorithm.  
-% If not, see <http://www.gnu.org/licenses/>.
 %
 %=========================
 

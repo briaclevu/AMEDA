@@ -248,9 +248,9 @@ for i=step0:stepF
             % if eddy dimensions are too big (bound=1)
             fac = fac + 1; % this determine larger area
 
+            %----------------------------------------------
             % xy is the computed shape;
             % the others are flags output by eddy_dim, and saved in 'warnings_shapes';
-            %----------------------------------------------
             [CD,xy,allines,velmax,tau,deta,nrho,large,warn,calcul] =...
                 eddy_dim(uu,vv,sshh,mask,x,y,centers(i),ii,Rd(c_j,c_i),fac*bx(c_j,c_i));
 
@@ -559,7 +559,10 @@ for i=step0:stepF
         %   remove shapes2 if dc > 3.5 * rmax
         %   replace shapes1 by shapes2 if shapes2 small
         % end
+        %----------------------------------------------------------
+
         disp(' ')
+
         for ii=1:length(shapes2(i).velmax)
             % test shapes2(ii) exists
             if ~isnan(shapes2(i).velmax(ii))
@@ -577,10 +580,12 @@ for i=step0:stepF
                     ll2 = shapes1(i).xy{ind}; % shapes1(ind)
                     % calcul distance between shapes1(ii) and shapes1(ind)
                     centers2(i).ds(ii) = min_dist_shapes(ll1,ll2,grid_ll);
+                    %----------------------------------------------------------
                     % remove shapes2(ii) when shapes1(ind) gots higher velocity
                     if shapes2(i).velmax(ii) < shapes1(i).velmax(ind)
                         disp(['   Double eddy ',num2str(ii),' too weak around second shape !!!'])
                         mv=1;
+                    %----------------------------------------------------------
                     % remove shapes2(ii) when shapes1 far one from the other
                     elseif centers2(i).ds(ii) > 3/2*(shapes1(i).rmax(ii)+shapes1(i).rmax(ind))
                         disp(['   Double eddy ',num2str(ii),' too large space between 2 shapes !!!'])
@@ -589,6 +594,7 @@ for i=step0:stepF
                     elseif ~isnan(shapes2(i).velmax(ind))
                         % test shapes2 both calculated or both not calculated
                         if warn_shapes2(i).calcul_curve(ii)==warn_shapes2(i).calcul_curve(ind)
+                            %----------------------------------------------------------
                             % remove shapes2 if weakest
                             if shapes2(i).velmax(ii) < shapes2(i).velmax(ind)
                                 mv = 1;
@@ -601,6 +607,7 @@ for i=step0:stepF
                                 disp(['   Double eddy ',num2str(ii),' weaker than eddy ',num2str(ind),' !!!'])
                             end
                         else
+                            %----------------------------------------------------------
                             % remove shapes2(ii) if calculated
                             if warn_shapes2(i).calcul_curve(ii)==1
                                 disp(['   Calculated double eddy ',num2str(ii),' removed  !!!'])
@@ -608,6 +615,7 @@ for i=step0:stepF
                             end
                         end
                     end
+                %----------------------------------------------------------
                 % if shapes1(ind) doesn't exist remove shapes2(ii) with centers
                 % very far from each ones and record small shapes2 as shapes1
                 else
@@ -632,6 +640,7 @@ for i=step0:stepF
                     end
                 end
                 
+                %----------------------------------------------------------
                 % then remove shapes2 too big or mistaken as explain above
                 if mv
                     shapes2(i).xy(ii) = {NaN};
