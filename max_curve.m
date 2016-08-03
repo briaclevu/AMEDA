@@ -3,7 +3,7 @@ function [cd,eddy_lim,lines,velmax,tau,eta,nrho,large] =...
             H,n_min,k_vel_decay,nR_lim,nrho_lim,grid_ll)
 %[cd,eddy_lim,lines,velmax,tau,eta,nrho,large] =...
 %           max_curve(x,y,psi,xy_ci,xy_cj,xy_ctsi,xy_ctsj,u,v,Rd,...
-%           H,n_min,k_vel_decay,R_lim,nrho_lim {,grid_ll} )
+%           H,n_min,k_vel_decay,nR_lim,nrho_lim {,grid_ll} )
 %
 %  Computes the eddy shape defined as the largest closed contour of the
 %  streamfunction (PSI/SSH) field in meter, across which velocity magnitude
@@ -58,26 +58,8 @@ function [cd,eddy_lim,lines,velmax,tau,eta,nrho,large] =...
 %
 %-------------------------
 %   Ver. 3.2 Apr.2015 Briac Le Vu
-%   Ver. 3.1 2014 LMD from nencioli et al. routines
+%   Ver. 3.1 2014 LMD from Nencioli et al. routines
 %-------------------------
-%
-% Copyright (C) 2009-2012 Francesco Nencioli and Charles Dong
-%
-% This file is part of the Vector-Geometry Eddy Detection Algorithm.
-%
-% The Vector-Geometry Eddy Detection Algorithm is free software: 
-% you can redistribute it and/or modify it under the terms of the 
-% GNU General Public License as published by the Free Software Foundation, 
-% either version 3 of the License, or (at your option) any later version.
-% 
-% The Vector-Geometry Eddy Detection Algorithm is distributed in the 
-% hope that it will be useful, but WITHOUT ANY WARRANTY; without even 
-% the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR 
-% PURPOSE. See the GNU General Public License for more details.
-% 
-% You should have received a copy of the GNU General Public License
-% along with the Vector-Geometry Eddy Detection Algorithm.  
-% If not, see <http://www.gnu.org/licenses/>.
 %
 %=========================
 
@@ -223,7 +205,7 @@ while i<=length(isolines)
                 etamax = lvl(i);
                 rmax = R(1);
                 nrhomax = N;
-                
+
                 %-----------------------------------------------------------
                 % record bigger contour around the single or 2 centers
                 % if no "true" maximum met yet
@@ -232,7 +214,7 @@ while i<=length(isolines)
                     % replace previous contour
                     large(nc) = 1; % largest contour
                     % record eddy{1} only if R<Rlim and N<Nlim
-                    if nc==2 || rmax<R_lim && nrhomax<nrho_lim
+                    if nc==2 || rmax<nR_lim*Rd && nrhomax<nrho_lim
                         velmax(nc) = Vmax;
                         eddy_lim{nc} = linesmax; % save the shape
                         tau = Tmin; % save the turnover time

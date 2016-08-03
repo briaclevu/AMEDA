@@ -95,18 +95,18 @@ function [centers2,shapes1,shapes2,profil2,warn_shapes,warn_shapes2] = ...
 % read fields and initialisation
 %---------------------------------------------
 
-disp(['  Step ',num2str(stp),' %-------------'])
+disp([' Step ',num2str(stp),' %-------------'])
 
-% load key_source and parameters
 %----------------------------------------------
+% load key_source and parameters
 load('param_eddy_tracking')
 
+%----------------------------------------
 % load 2D velocity fields (m/s) for step stp
-%----------------------------------------
-eval(['[x,y,mask,uu,vv,sshh] = load_fields_',source,'(stp,1,deg);'])
+eval(['[x,y,mask,uu,vv,sshh] = load_fields_',source,'(stp,resol,deg);'])
 
-% initialise centers as structure
 %----------------------------------------
+% initialise centers as structure
 centers2 = struct('step',[],'type',[],'x1',[],'y1',[],'x2',[],'y2',[],'dc',[],'ds',[]);
 
 shapes1 = struct('step',[],'xy',[],'velmax',[],'taumin',[],'deta',[],'nrho',[],'rmax',[],'aire',[],...
@@ -136,8 +136,8 @@ warn_shapes = struct('no_curve',[],'Rd',[],'gama',[],'bx',[],'calcul_curve',[],.
                 'large_curve1',[],'large_curve2',[],'too_large2',[]);
 warn_shapes2 = warn_shapes;
 
-% Compute eddy shape
 %----------------------------------------------
+% Compute eddy shape
 
 if streamlines
     profil2.step = centers.step;
@@ -153,8 +153,8 @@ shapes2.xy = {};
 shapes2.velmax = nan(1,length(centers.type));
 warn_shapes.no_curve = ones(1,length(centers.type));
 
-% loop through all centers detected for a given step
 %----------------------------------------------
+% loop through all centers detected for a given step
 for ii=1:length(centers.type)
 
     disp([' === Center ',num2str(ii),' ==='])
@@ -180,16 +180,16 @@ for ii=1:length(centers.type)
         % if eddy dimensions are too big (bound=1)
         fac = fac + 1; % this determine larger area
 
+        %----------------------------------------------
         % xy is the computed shape;
         % the others are flags output by eddy_dim, and saved in 'warnings_shapes';
-        %----------------------------------------------
         [CD,xy,allines,velmax,tau,deta,nrho,large,warn,calcul] =...
             eddy_dim(uu,vv,sshh,mask,x,y,centers,ii,Rdi(c_j,c_i),fac*bxi(c_j,c_i));
 
-        % flags exploitation
         %----------------------------------------------
+        % flags exploitation
         if warn
-            disp('   No significant streamlines closed around the center')
+            disp('    -> No significant streamlines closed around the center')
             bound = 0;
         else
             % if eddy max velocity is still increasing then temporary save eddy_dim(1)
@@ -247,9 +247,9 @@ for ii=1:length(centers.type)
             % if no closed curve more intense in the larger area then
             % final eddy shape is the one computed in the smaller area
             if bound
-                disp(['   Big eddy: going to fac = ',num2str(fac+1)])
+                disp(['    Big eddy: going to fac = ',num2str(fac+1)])
             else
-                disp(['   No closed or largest curve at fac ',num2str(fac),...
+                disp(['    No closed or largest curve at fac ',num2str(fac),...
                     ' back to the largest curve at fac ',num2str(fac-1)])
                 % stop enlarging the area
                 fac = fac - 1;
@@ -266,22 +266,22 @@ for ii=1:length(centers.type)
         end
     end % end while loop
 
-    % write out which kind of eddy found
     %----------------------------------------------
+    % write out which kind of eddy found
     if ~warn
         if large(2) == 0
-            disp('   Eddy with 2 centers')
+            disp('    -> Eddy with 2 centers')
         elseif large(1) == 0
-            disp('   Eddy with 1 center')
+            disp('    -> Eddy with 1 center')
         elseif large(2) == 1
-            disp('   Largest with 2 centers')
+            disp('    -> Largest with 2 centers')
         else
-            disp('   Largest with 1 center')
+            disp('    -> Largest with 1 center')
         end
     end
 
-    % save eddy_dim results in a struct array shapes end the single eddies
     %----------------------------------------------------------
+    % save eddy_dim results in a struct array shapes end the single eddies
     if ~isempty(xy{3})
         centers2.type(ii) = centers.type(ii);
         centers2.x1(ii)   = centers.x(ii);
@@ -317,8 +317,8 @@ for ii=1:length(centers.type)
             end
         end
     end
-    % save eddy_dim results in a struct array shapes1 the single eddies
     %----------------------------------------------------------
+    % save eddy_dim results in a struct array shapes1 the single eddies
     if ~isempty(xy{1})
         [rmax,aire,~,~] = mean_radius(xy{1},grid_ll);
         shapes1.xy(ii)     = xy(1);
@@ -356,8 +356,8 @@ for ii=1:length(centers.type)
             shapes1.OW(ii)   = nanmean(OW(:));
             shapes1.LNAM(ii) = nanmean(LNAM(:));
         end
-        % save the streamlines features at i=daystreamfunction
         %----------------------------------------------------------
+        % save the streamlines features at i=daystreamfunction
         if streamlines
             if find(daystreamfunction==stp)
                 names = fieldnames(profil2);
@@ -382,8 +382,8 @@ for ii=1:length(centers.type)
             end
         end
     end
-    % save eddy_dim results in a struct array shapes2 double eddies
     %----------------------------------------------------------
+    % save eddy_dim results in a struct array shapes2 double eddies
     if ~isempty(xy{2})
         if CD(1,1)==centers.x(ii) && CD(2,1)==centers.y(ii)
             centers2.x2(ii) = CD(1,2);
@@ -429,8 +429,8 @@ for ii=1:length(centers.type)
         end
     end
 
-    % warnings from shape computation
     %----------------------------------------------------------
+    % warnings from shape computation
     warn_shapes.no_curve(ii)     = warn;
     warn_shapes.Rd(ii)           = Rdi(c_j,c_i);
     warn_shapes.gama(ii)         = gamai(c_j,c_i);
@@ -443,17 +443,17 @@ for ii=1:length(centers.type)
 end % ii=last eddy
 
 if isempty(centers2.type)
-    % Initialize warn_shape for eddies with shapes1
     %----------------------------------------------------------
+    % Initialize warn_shape for eddies with shapes1
     warn_shapes.no_curve = [];
     warn_shapes2 = warn_shapes;
 else
-    % Initialize warn_shape for eddies with shapes1
     %----------------------------------------------------------
+    % Initialize warn_shape for eddies with shapes1
     warn_shapes2 = warn_shapes;
 
-    % remove the shapes and centers where no closed contour was found
     %----------------------------------------------------------
+    % remove the shapes and centers where no closed contour was found
     replace = find(isnan(shapes1.vel_end));
     names = fieldnames(centers2);
     for n=2:length(names)
@@ -493,7 +493,9 @@ else
     %   replace shapes1 by shapes2 if shapes2 small
     % end
     %----------------------------------------------------------
+
     disp(' ')
+
     for ii=1:length(shapes2.velmax)
         % test shapes2(ii) exists
         if ~isnan(shapes2.velmax(ii))
@@ -511,13 +513,13 @@ else
                 ll2 = shapes1.xy{ind}; % shapes1(ind)
                 % calcul distance between shapes1(ii) and shapes1(ind)
                 centers2.ds(ii) = min_dist_shapes(ll1,ll2,grid_ll);
-                % remove shapes2(ii) when shapes1(ind) gots higher velocity
                 %----------------------------------------------------------
+                % remove shapes2(ii) when shapes1(ind) gots higher velocity
                 if shapes2.velmax(ii) < shapes1.velmax(ind)
                     disp(['   Double eddy ',num2str(ii),' weaker than eddy ',num2str(ind),' !!!'])
                     mv=1;
-                % remove shapes2(ii) when shapes1 far one from the other
                 %----------------------------------------------------------
+                % remove shapes2(ii) when shapes1 far one from the other
                 elseif centers2.ds(ii) > ds_max*(shapes1.rmax(ii)+shapes1.rmax(ind))/2
                     disp(['   Double eddy ',num2str(ii),' too large space between 2 shapes !!!'])
                     mv=1;
@@ -525,8 +527,8 @@ else
                 elseif ~isnan(shapes2.velmax(ind))
                     % test shapes2 both calculated or both not calculated
                     if warn_shapes2.calcul_curve(ii)==warn_shapes2.calcul_curve(ind)
-                        % remove shapes2 if weakest
                         %----------------------------------------------------------
+                        % remove shapes2 if weakest
                         if shapes2.velmax(ii) < shapes2.velmax(ind)
                             mv = 1;
                         elseif shapes2.velmax(ii) == shapes2.velmax(ind)
@@ -538,17 +540,17 @@ else
                             disp(['   Double eddy ',num2str(ii),' weaker than double eddy ',num2str(ind),' !!!'])
                         end
                     else
-                        % remove shapes2(ii) if calculated
                         %----------------------------------------------------------
+                        % remove shapes2(ii) if calculated
                         if warn_shapes2.calcul_curve(ii)==1
                             disp(['   Calculated double eddy ',num2str(ii),' removed  !!!'])
                             mv= 1 ;
                         end
                     end
                 end
+            %----------------------------------------------------------
             % if shapes1(ind) doesn't exist remove shapes2(ii) with centers
             % very far from each ones and record small shapes2 as shapes1
-            %----------------------------------------------------------
             else
                 if centers2.dc(ii) > dc_max*shapes1.rmax(ii)
                     disp(['   Double eddy ',num2str(ii),' too large distance between 2 centers !!!'])
@@ -571,8 +573,8 @@ else
                 end
             end
 
-            % then remove shapes2 too big or mistaken as explain above
             %----------------------------------------------------------
+            % then remove shapes2 too big or mistaken as explain above
             if mv
                 shapes2.xy{ii} = NaN;
                 names = fieldnames(shapes2);

@@ -43,7 +43,7 @@ function [centers0,centers] = mod_eddy_centers(source,stp,fields)
 %
 %-------------------------
 %   Ver. 3.2 Apr 2015 Briac Le Vu
-%   Ver. 3.1 2013 LMD from Nencioli et al. routines
+%   Ver. 3.1 2014 LMD from Nencioli et al. routines
 %-------------------------
 %
 %=========================
@@ -52,22 +52,20 @@ function [centers0,centers] = mod_eddy_centers(source,stp,fields)
 % read fields and initialisation
 %---------------------------------------------
 
-disp(['Find potential centers step ',num2str(stp)])
-
-% load key_source and parameters (use mod_eddy_params.m first)
 %----------------------------------------------
+% load key_source and parameters (use mod_eddy_params.m first)
 load('param_eddy_tracking')
 
-% load 2D velocity fields (m/s) for step stp
 %----------------------------------------
+% load 2D velocity fields (m/s) for step stp
 eval(['[x,y,mask,u,v,ssh] = load_fields_',source,'(stp,resol,deg);'])
 
 % to calculate psi extrapole u and v to 0 in the land
 u(isnan(u)) = 0;
 v(isnan(v)) = 0;
 
-% initialise centers as structure
 %----------------------------------------
+% initialise centers as structure
 centers0 = struct('step',nan,'type',[],'x',[],'y',[],'i',[],'j',[]);
 centers = centers0;
 
@@ -75,10 +73,12 @@ centers = centers0;
 % Max LNAM 'centers0' for a given step k
 %---------------------------------------------
 
+disp([' Find potential centers step ',num2str(stp),' %-------------'])
+
 centers0.step = stp;
 
-% LNAM n OW criteria define contour including potential centers
 %---------------------------------------------
+% LNAM n OW criteria define contour including potential centers
 OW = fields.LOW; % Okubo Weiss
 LNAM = fields.LNAM; % LNAM
 LOW = abs(LNAM);
@@ -136,7 +136,7 @@ while j < size(CS,2)
     j = j + n + 1; % series of coordinates of the next contour 
 end
 
-disp(['  ',num2str(k-1),' max LNAM found'])
+disp(['  -> ',num2str(k-1),' max LNAM found'])
 
 %----------------------------------------------
 % Remove 'centers0' with no close curve around only one max LNAM
@@ -158,8 +158,8 @@ y1    = type1;
 j1    = type1;
 i1    = type1;
 
-% compute each centers in a smaller area
 %----------------------------------------------
+% compute each centers in a smaller area
 for ii=1:length(centers_x)
 
     % fix the indice of the main center
@@ -223,8 +223,8 @@ for ii=1:length(centers_x)
     CS1 = [];
     CS2 = [];
 
-    % compute the psi field from velocity fields
     %----------------------------------------------
+    % compute the psi field from velocity fields
     if type_detection==1 || type_detection==3
 
         psi = compute_psi(xx,yy,mk,uu/100,vv/100,ci,cj,grid_ll);
@@ -238,8 +238,8 @@ for ii=1:length(centers_x)
         end
     end
 
-    % compute the psi field from ssh
     %----------------------------------------------
+    % compute the psi field from ssh
     if type_detection==2 || type_detection==3
 
         psi = squeeze(sshh);
@@ -253,16 +253,16 @@ for ii=1:length(centers_x)
         end
     end
 
-    % concantene all streamlines
     %----------------------------------------------
+    % concantene all streamlines
     CS = [CS1,CS2];
 
-    % rearrange all the contours in C to the structure array 'isolines'
     %-----------------------------------------------------------
+    % rearrange all the contours in C to the structure array 'isolines'
     [isolines,~] = scan_lines(CS);
 
-    % scan streamlines and validate 'centers0' which are alone as potential centers
     %----------------------------------------------
+    % scan streamlines and validate 'centers0' which are alone as potential centers
 
     % Initialization
     j = 1; % first coordinates of the contour scan
@@ -329,6 +329,7 @@ for k=1:length(type1)
     end
 end
 
-disp(['    ',num2str(j-1),' potential centers found (',num2str(k-j+1),' max LNAM removed)'])
+disp(['   -> ',num2str(j-1),' potential centers found'])
+disp(['      (',num2str(k-j+1),' max LNAM removed)'])
+    
 disp(' ')
-

@@ -1,4 +1,5 @@
-function mod_eddy_params(keys_sources)
+function mod_eddy_params(keys_sources,stepF)
+%mod_eddy_params(keys_sources {,stepF})
 %
 %   mod_eddy_params loads user paths and keys defined in keys_sources.m
 %   and sets 2D fields of parameters
@@ -65,7 +66,7 @@ lat0 = double(ncread(nc_dim,y_name))';
 x = lon0(1:deg:end,1:deg:end);
 y = lat0(1:deg:end,1:deg:end);
 
-[N,M] = size(x)
+[N,M] = size(x);
 
 % Meshgrid size
 if grid_ll
@@ -221,8 +222,8 @@ save([path_ameda,'param_eddy_tracking'],...
     'nc_dim','nc_u','nc_v','nc_ssh','x_name','y_name','m_name','u_name','v_name','s_name',...
     'grid_ll','type_detection','extended_diags','streamlines','daystreamfunction','periodic',...
     'deg','resol','K','b','bx','Dx','Rd','gama','Rb','bi','bxi','Dxi','Rdi','gamai','Rb',...
-    'stepF','T','f','dps','Dt''D_stp','C_rad','H','n_min','vel_epsil','k_vel_decay',...
-    'ds_max','dc_max','R_lim','nrho_lim','aire_max')
+    'stepF','T','f','dps','Dt','cut_off','D_stp','C_rad','H','n_min','vel_epsil','k_vel_decay',...
+    'ds_max','dc_max','nR_lim','nrho_lim','aire_max')
 
 
 

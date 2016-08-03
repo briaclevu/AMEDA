@@ -28,6 +28,7 @@
 %           2 : computed afterward
 %   - streamlines and daystreamfunction: save streamlines at steps 
 %       'daystreamfunction' and profils of streamlines scanned as well
+%       (1:stepF by default )
 %   - periodic: flag to activate options for East-West periodic
 %               (e.g. global fields or idealized simulations) domains.
 %               IMPORTANT: first and last columns of the domain must be
@@ -68,18 +69,28 @@
 postname = '2013';
 
 % set name of the domain
-domain='MED';
+domain='ALG';
 
 % use to diferenciate source field of surface height (adt, ssh, psi,...)
 sshtype='adt'; % adt or sla
 
+% use to differenciate job
+runname = 'test_v2';
+
 % set the paths
-path_ameda='/home/blevu/MATLAB/AMEDA_v2/';
+path_ameda='/home/blevu/MATLAB/AMEDA/';
 path_in=['/home/blevu/DATA/AVISO/',domain,'/'];
-path_out=['/home/blevu/Resultats/AVISO/',domain,'/',sshtype,'/'];
+path_out=['/home/blevu/Resultats/AVISO/',domain,'/',sshtype,'_',postname,'/',runname,'/'];
 path_tracks='/home/blevu/DATA/AVISO/nrt/adt/tracks/';
 path_data='/home/blevu/DATA/CORIOLIS/';
 path_rossby='/home/blevu/MATLAB/Rossby_radius/';
+
+disp(['Compute from ',path_in])
+disp([' to ',path_out])
+
+if exist(path_out,'file')==0
+    system(['mkdir ',path_out]);
+end
 
 % select AMEDA path
 rmpath('/home/blevu/MATLAB/AMEDA')
@@ -103,9 +114,14 @@ v_name = 'v';
 s_name = 'ssh';
 
 % duration experiment (should read a 'time' variable)
-u0 = squeeze(ncread(nc_u,u_name,[1 1 1],[1 1 Inf]));
-stepF = length(u0);
-clear u0
+if ~exist('stepF','var')
+    u0 = squeeze(ncread(nc_u,u_name,[1 1 1],[1 1 Inf]));
+    stepF = length(u0);
+    clear u0
+end
+
+disp([' ',num2str(stepF),' time steps'])
+disp(' ')
 
 % rotation period (T) per day and time step in days (dps)
 T = 3600*24; % day period in seconds

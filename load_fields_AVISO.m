@@ -26,12 +26,12 @@ function [x,y,mask,u,v,ssh] = load_fields_AVISO(stp,resolution,degra)
 %
 %=========================
 
-% load keys_sources and parameters (use mod_eddy_params.m first)
 %----------------------------------------
+% load keys_sources and parameters (use mod_eddy_params.m first)
 load('param_eddy_tracking')
 
-% replace parameters by arguments
 %----------------------------------------
+% replace parameters by arguments
 if nargin==3
     deg = degra;
     resol = resolution;
@@ -39,8 +39,11 @@ elseif nargin==2
     resol = resolution;
 end
 
-% get netcdf
 %----------------------------------------
+% get netcdf
+
+disp(['Get grid and velocities field at step ',num2str(stp),' ...'])
+
 lon0 = double(ncread(nc_dim,x_name))';
 lat0 = double(ncread(nc_dim,y_name))';
 % ! mask0 not constant with time ! don't trust that one
@@ -51,11 +54,16 @@ v0 = squeeze(permute(ncread(nc_v,v_name,[1 1 stp],[Inf Inf 1]),[2,1,3]));
 if type_detection>=2
     ssh0 = squeeze(permute(ncread(nc_ssh,s_name,[1 1 stp],[Inf Inf 1]),[2,1,3]));
 else
-    ssh0 = [];
+    ssh = [];
 end
 
-% produce degraded field 
 %----------------------------------------
+% produce degraded field 
+if deg~=1
+    disp(['  Fields are degraded by a factor ',num2str(deg)])
+    disp('  (degraded grid becomes native grid)')
+end
+
 x = lon0(1:deg:end,1:deg:end);
 y = lat0(1:deg:end,1:deg:end);
 u = u0(1:deg:end,1:deg:end);
@@ -67,22 +75,22 @@ end
 % get the grid size
 [N,M] = size(u);
 
-% mask 2d ! AVISO mask changes with time ! use that one
 %----------------------------------------
+% mask 2d ! AVISO mask changes with time ! use that one
+
 mask = u.*v*0+1;
 mask(isnan(mask)) = 0;
 
-% fix fields to 0 in land and in miscellaneous AVISO mask
 %----------------------------------------
+% fix fields to 0 in land
 u(mask==0 | isnan(u)) = 0;
 v(mask==0 | isnan(v)) = 0;
 
-if type_detection>=2
-    ssh(mask0==0) = NaN;
-end
-
-% Enlarge mask into land by b pixels and compute ssh in the first land pixel if needed
 %----------------------------------------
+% Enlarge mask into land by b pixels and compute ssh in the first land pixel if needed
+
+disp(['Enlarge coastal mask by adding ',num2str(max(b(:))),' pixels of ocean to the coast ...'])
+
 mask1 = mask;
 for n=1:max(b(:))
     mask2 = mask1;
@@ -101,33 +109,35 @@ for n=1:max(b(:))
     mask1 = mask2;% enlarged mask
 end
 
-% Build mask ssh
 %----------------------------------------
+% Build mask ssh
 if type_detection>=2
     maskssh = ssh*0+1;
     maskssh(isnan(maskssh)) = 0;
 end
 
-% Mask velocities with the enlarged mask
 %----------------------------------------
+% Mask velocities with the enlarged mask
 u(mask1==0) = NaN;
 v(mask1==0) = NaN;
 
-% Increase resolution r factor by linear interpolation
 %----------------------------------------
+% Increase resolution r factor by linear interpolation
+
 if resol==1
 
     disp('NO INTERPOLATION')
 
 else
 
-    disp(['"change resolution" by computing 2D SPLINE INTERPOLATION res=',num2str(resol)])
+    disp(['Change resolution by computing 2D SPLINE INTERPOLATION ',...
+        'by a factor ',num2str(resol)])
 
     % size for the interpolated grid
-    Ni = res*(N-1)+1; % new size in lat
-    Mi = res*(M-1)+1; % new size in lon
+    Ni = resol*(N-1)+1; % new size in lat
+    Mi = resol*(M-1)+1; % new size in lon
 
-    % elemental spacing for the interpolated grid
+    % elemental spacing for the interpolated grid with regular grid
     dy = diff(y(1:2,1))/resol;
     dx = diff(x(1,1:2))/resol;
 
@@ -175,4 +185,3 @@ else
     ssh = sshi;
 
 end
-
