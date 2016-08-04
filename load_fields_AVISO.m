@@ -116,10 +116,6 @@ if type_detection>=2
     maskssh(isnan(maskssh)) = 0;
 end
 
-%----------------------------------------
-% Mask velocities with the enlarged mask
-u(mask1==0) = NaN;
-v(mask1==0) = NaN;
 
 %----------------------------------------
 % Increase resolution r factor by linear interpolation
@@ -128,6 +124,11 @@ if resol==1
 
     disp('NO INTERPOLATION')
 
+    %----------------------------------------
+    % Mask velocities with the enlarged mask
+    u(mask1==0) = NaN;
+    v(mask1==0) = NaN;
+    
 else
 
     disp(['Change resolution by computing 2D SPLINE INTERPOLATION ',...
