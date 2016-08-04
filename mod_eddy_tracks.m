@@ -582,9 +582,9 @@ end
 %----------------------------------------------------------
 % save tracks and warnings in structure array
 
-disp(['Save eddy_tracks',runname,'.mat ...'])
+disp(['Save eddy_tracks.mat ...'])
 
-save([path_out,'eddy_tracks',runname],'tracks','short','warn_tracks')
+save([path_out,'eddy_tracks'],'tracks','short','warn_tracks')
 
 % close log file
 diary off

@@ -1,5 +1,5 @@
-function MAIN_AMEDA(source,cpus,update,stepF)
-%MAIN_AMEDA(source {,cpus,update,stepF})
+function MAIN_AMEDA
+%MAIN_AMEDA
 %
 %   MAIN_AMEDA is the main function of the eddy detection and
 %   tracking package. It returns position of the centers, dimensions and 
@@ -56,174 +56,159 @@ function MAIN_AMEDA(source,cpus,update,stepF)
 %
 %=========================
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Load paths and keys ---------------------------------------------
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 start
 clear; clc;
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Initialisation ---------------------------------------------
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %----------------------------------------
 % source of data driving the netcdf format
 source = 'AVISO';
 
 %----------------------------------------
+% Update option
+update = 0; % the serie from the begenning
+
+%----------------------------------------
 % Possibility to shorter the serie
 stepF = 2;
 
-%----------------------------------------
-% Default arguments
-if nargin <2
-    cpus = 1; % no parallel
-    update = 0; % the entire serie
-elseif nargin<3
-    update = 0;
-end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Initialisation ---------------------------------------------
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %----------------------------------------
-% Produce default parameters in param_eddy_tracking
+% Produce default parmeters in param_eddy_tracking
 if exist('stepF','var')
     mod_eddy_params(['keys_sources_',source],stepF)
 else
     mod_eddy_params(['keys_sources_',source])
 end
-load('param_eddy_tracking','path_out','resol','stepF')
-
-%----------------------------------------
-% Set parallel computation
-
-%maximum of 12 procs
-cpus=min([cpus,stepF-step0+1,4]);
-
-if cpus>1
-    
-    disp(['Check you have "Parallel Computing Toolbox" to use ',...
-        num2str(cpus),' processors'])
-    disp(' ')
-    
-    delete(gcp)
-    parpool('local',cpus)
-    
-end
+load('param_eddy_tracking','path_out','streamlines','resol','stepF')
 
 %----------------------------------------
 % Preallocate structure array and mat-file or prepare update
 step0 = mod_init(update);
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Main routines ---------------------------------------------
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 %----------------------------------------
-% Get parameters
-load('param_eddy_tracking','path_out','streamlines','resol','stepF')
+% Set parallel computation
+cpus=2;
+cpus=min([cpus,stepF-step0+1,12]);%maximum of 12 procs
 
-%----------------------------------------
-% Build I/O matfile
-disp('Your MATLAB to support "-v7.3" format to get full performance of')
-disp('I/O MAT-file and save memory space')
+disp('Check that you have access to "Parallel Computing Toolbox" to use PARPOOL')
 disp(' ')
 
-%----------------------------------------
-% !!! Loop on steps using FOR or PARFOR (in hard) !!!
-%----------------------------------------
-
-diary([path_out,'log.txt'])
-
-parfor stp = step0:stepF
-    
-    %----------------------------------------
-    % Build I/O matfile
-    fields_inter_mat = matfile([path_out,'fields_inter.mat'],'Writable',true);
-    fields_mat = matfile([path_out,'fields.mat'],'Writable',true);
-    centers_mat = matfile([path_out,'eddy_centers.mat'],'Writable',true);
-    shapes_mat = matfile([path_out,'eddy_shapes.mat'],'Writable',true);
-
-%for stp = step0:stepF
-    
-    %----------------------------------------
-    % begin the log file
-    %system(['mkdir ',path_out,'/log']);
-    %if stp<10
-    %    diary([path_out,'log/log_eddy_stp_000',num2str(stp),'.txt']);
-    %elseif stp<100
-    %    diary([path_out,'log/log_eddy_stp_00',num2str(stp),'.txt']);
-    %elseif stp<1000
-    %    diary([path_out,'log/log_eddy_stp_0',num2str(stp),'.txt']);
-    %lseif stp<10000
-    %    diary([path_out,'log/log_eddy_stp_',num2str(stp),'.txt']);
-    %end
+myCluster = parcluster('local');
+delete(myCluster.Jobs)
+eval(['matlabpool open ',num2str(cpus)])
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Compute LNAM ---------------------------------------------
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+disp(' === Compute non interpolated LNAM ===')
+disp(' ')
+
+load([path_out,'fields'],'detection_field')
+
+parfor stp = step0:stepF
     %----------------------------------------
     % Compute non interpolated fields for step stp
-    fields = mod_fields(source,stp,1);
+    detection_fields(stp) = mod_fields(source,stp,1);
+end
+
+%----------------------------------------
+% Save non interpolated fields
+save([path_out,'fields'],'detection_fields')
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Compute interpolated LNAM ---------------------------------------------
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+if resol>1
+    disp(' === Compute interpolated LNAM ===')
+    disp(' ')
     
-    %----------------------------------------
-    % Write in I/O matfile step stp
-    fields_mat.detection_fields(:,stp) = fields;
+    load([path_out,'fields_inter.mat'],'detection_field')
     
-    if resol>1
+    parfor stp = step0:stepF
         %----------------------------------------
         % Compute interpolated fields for step stp
-        fields = mod_fields(source,stp,resol);
+        detection_fields(stp) = mod_fields(source,stp,resol);
     end
-    
+else
     %----------------------------------------
-    % Write in I/O matfile
-    % Interpolated and non interpolated field can be the same
-    fields_inter_mat.detection_fields(:,stp) = fields;
-    
+    % Interpolated and non interpolated field are the same
+    disp(' === Interpolated LNAM is the same ===')
+end
+
+%----------------------------------------
+% Save interpolated fields
+save([path_out,'fields_inter'],'detection_fields')
+clear detection_fields
+
+%----------------------------------------
+% Build I/O matfile
+fields_mat = matfile([path_out,'fields_inter.mat']);
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Find centers ---------------------------------------------
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+disp(' === Find potential centers ===')
+disp(' ')
+
+load([path_out,'eddy_centers'],'centers0','centers')
+
+parfor stp = step0:stepF
+    % load inter fields at step stp
+    %----------------------------------------
+    fields = fields_mat.detection_fields(:,stp);
     %----------------------------------------
     % Detection of eddy centers for step stp
-    [centers0,centers] = mod_eddy_centers(source,stp,fields);
-    
-    %----------------------------------------
-    % Write in I/O matfile step stp
-    centers_mat.centers0(:,stp) = centers0;
-    centers_mat.centers(:,stp) = centers;
+    [centers0(stp),centers(stp)] = mod_eddy_centers(source,stp,fields);
+end
 
-    
+%----------------------------------------
+% Save centers
+save([path_out,'eddy_centers'],'centers0','centers','-append')
+clear centers0 centers
+
+%----------------------------------------
+% Build I/O matfile
+centers_mat = matfile([path_out,'eddy_centers.mat']);
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Find eddies ---------------------------------------------
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+disp(' === Determine eddies features ===')
+disp(' ')
+
+load([path_out,'eddy_centers'],'centers2')
+load([path_out,'eddy_shapes'])
+
+parfor stp = step0:stepF
+    %----------------------------------------
+    % load fields at step stp
+    fields = fields_mat.detection_fields(:,stp);
+    %----------------------------------------
+    % load potential centers at step stp
+    centers = centers_mat.centers(:,stp);
     %----------------------------------------
     % Determination of eddy features for step stp
-    [centers2,shapes1,shapes2,profil2,warn_shapes,warn_shapes2] = ...
+    [centers2(stp),shapes1(stp),shapes2(stp),profil2(stp),...
+        warn_shapes(stp),warn_shapes2(stp)] = ...
         mod_eddy_shapes(source,stp,fields,centers);
-    
-    %----------------------------------------
-    % Write in I/O matfile step stp
-    centers_mat.centers2(:,stp) = centers2;
-    shapes_mat.shapes1(:,stp) = shapes1;
-    shapes_mat.shapes2(:,stp) = shapes2;
-    shapes_mat.warn_shapes(:,stp) = warn_shapes;
-    shapes_mat.warn_shapes2(:,stp) = warn_shapes2;
-    if streamlines
-        shapes_mat.profil2(:,stp) = profil2;
-    end
-    
-%----------------------------------------
-% close log file
-%diary off
-
 end
 
-diary off
-
-%system(['cat ',path_out,'log/log_eddy_stp*.txt >> ',path_out,'log_eddy.txt']);
+% save warnings, shapes and their centers
+%----------------------------------------
+save([path_out,'eddy_centers'],'centers2','-append')
+if streamlines
+    save([path_out,'eddy_shapes'],'shapes1','shapes2','warn_shapes','warn_shapes2','profil2')
+else
+    save([path_out,'eddy_shapes'],'shapes1','shapes2','warn_shapes','warn_shapes2')
+end
+clear centers2 shapes1 shapes2 profil2 warn_shapes warn_shapes2 struct1 struct2 struct3
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Track eddies ---------------------------------------------
