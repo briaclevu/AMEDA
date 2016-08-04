@@ -69,7 +69,11 @@ update = 0; % the serie from the begenning
 
 %----------------------------------------
 % Possibility to shorter the serie
-stepF = 2;
+%stepF = 2;
+
+%----------------------------------------
+% Set parallel computation
+cpus=12;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Initialisation ---------------------------------------------
@@ -82,7 +86,7 @@ if exist('stepF','var')
 else
     mod_eddy_params(['keys_sources_',source])
 end
-load('param_eddy_tracking','path_out','streamlines','resol','stepF')
+load('param_eddy_tracking','path_out','streamlines','resol','stepF');
 
 %----------------------------------------
 % Preallocate structure array and mat-file or prepare update
@@ -90,7 +94,6 @@ step0 = mod_init(update);
 
 %----------------------------------------
 % Set parallel computation
-cpus=2;
 cpus=min([cpus,stepF-step0+1,12]);%maximum of 12 procs
 
 disp('Check that you have access to "Parallel Computing Toolbox" to use PARPOOL')
@@ -98,7 +101,7 @@ disp(' ')
 
 myCluster = parcluster('local');
 delete(myCluster.Jobs)
-eval(['matlabpool open ',num2str(cpus)])
+matlabpool(myCluster,cpus)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Compute LNAM ---------------------------------------------
@@ -117,7 +120,7 @@ end
 
 %----------------------------------------
 % Save non interpolated fields
-save([path_out,'fields'],'detection_fields')
+save([path_out,'fields'],'detection_fields','-append')
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Compute interpolated LNAM ---------------------------------------------
@@ -142,7 +145,7 @@ end
 
 %----------------------------------------
 % Save interpolated fields
-save([path_out,'fields_inter'],'detection_fields')
+save([path_out,'fields_inter'],'detection_fields','-append')
 clear detection_fields
 
 %----------------------------------------
@@ -200,15 +203,21 @@ parfor stp = step0:stepF
         mod_eddy_shapes(source,stp,fields,centers);
 end
 
-% save warnings, shapes and their centers
 %----------------------------------------
+% save warnings, shapes and their centers
 save([path_out,'eddy_centers'],'centers2','-append')
 if streamlines
-    save([path_out,'eddy_shapes'],'shapes1','shapes2','warn_shapes','warn_shapes2','profil2')
+    save([path_out,'eddy_shapes'],'shapes1','shapes2',...
+        'warn_shapes','warn_shapes2','profil2','-append')
 else
-    save([path_out,'eddy_shapes'],'shapes1','shapes2','warn_shapes','warn_shapes2')
+    save([path_out,'eddy_shapes'],'shapes1','shapes2',...
+        'warn_shapes','warn_shapes2','-append')
 end
 clear centers2 shapes1 shapes2 profil2 warn_shapes warn_shapes2 struct1 struct2 struct3
+
+%----------------------------------------
+% Free workers
+matlabpool close
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Track eddies ---------------------------------------------
