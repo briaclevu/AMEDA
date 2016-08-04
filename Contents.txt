@@ -1,7 +1,7 @@
 % Eddy detection and tracking package
 %-------------------------
 %   Ver. 3.2 2016 by Le Vu et al.
-%   Ver. 3.1 2014 LMD from nencioli et al. routines
+%   Ver. 3.1 2014 LMD from Nencioli et al. routines
 %-------------------------
 %
 %===================%
