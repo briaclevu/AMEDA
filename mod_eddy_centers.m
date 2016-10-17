@@ -48,6 +48,8 @@ function [centers0,centers] = mod_eddy_centers(source,stp,fields)
 %
 %=========================
 
+plo=0; % debug mode
+
 %---------------------------------------------
 % read fields and initialisation
 %---------------------------------------------
@@ -114,7 +116,7 @@ while j < size(CS,2)
         Lm = LNAM.*maskin;
 
         % L maximum value inside the contour(j)  
-        if sum(maskin(:))>0
+        if any(maskin(:)>0)
 
             LC = Lm(abs(Lm)==max(abs(Lm(:))));
 
@@ -125,6 +127,8 @@ while j < size(CS,2)
                 centers0.x(k)    = x(find(Lm==LC,1));
                 centers0.y(k)    = y(find(Lm==LC,1));
                 [centers0.j(k),centers0.i(k)] = find(Lm==LC,1);
+                MaxL(k) = LC;
+                
 
                 % increment the counter
                 k = k + 1; % next contour
@@ -139,20 +143,15 @@ end
 disp(['  -> ',num2str(k-1),' max LNAM found'])
 
 %----------------------------------------------
-% Remove 'centers0' with no close curve around only one max LNAM
+% Remove 'centers0' with no close curve around one or two max LNAM
 %----------------------------------------------
 
 disp('  Remove max LNAM without closed streamlines')
 
 % all max LNAM coordinates for the given step stp
 centers.step = stp;
-centers_type = centers0.type;
-centers_x    = centers0.x;
-centers_y    = centers0.y;
-centers_i    = centers0.i;
-centers_j    = centers0.j;
 
-type1 = nan(1,length(centers_x));
+type1 = nan(1,length(centers0.type));
 x1    = type1;
 y1    = type1;
 j1    = type1;
@@ -160,31 +159,33 @@ i1    = type1;
 
 %----------------------------------------------
 % compute each centers in a smaller area
-for ii=1:length(centers_x)
+for ii=1:length(centers0.x)
 
     % fix the indice of the main center
-    C_I = centers_i(ii);
-    C_J = centers_j(ii);
+    C_I = centers0.i(ii);
+    C_J = centers0.j(ii);
     % center coordinates
-    xy_ci = centers_x(ii);
-    xy_cj = centers_y(ii);
+    xy_ci = centers0.x(ii);
+    xy_cj = centers0.y(ii);
+    % box size around the main center
+    bx=bxi(C_J,C_I);
 
     % resize coordinate and velocity matrix 
     % (making sure not to go outside the domain)
-    xx = x(max(C_J-round(bxi/2),1):min(C_J+round(bxi/2),size(x,1)), ...
-        max(C_I-round(bxi/2),1):min(C_I+round(bxi/2),size(x,2)));
-    yy = y(max(C_J-round(bxi/2),1):min(C_J+round(bxi/2),size(y,1)), ...
-        max(C_I-round(bxi/2),1):min(C_I+round(bxi/2),size(y,2)));
-    mk = mask(max(C_J-round(bxi/2),1):min(C_J+round(bxi/2),size(mask,1)), ...
-        max(C_I-round(bxi/2),1):min(C_I+round(bxi/2),size(mask,2)));
-    vv = v(max(C_J-round(bxi/2),1):min(C_J+round(bxi/2),size(v,1)), ...
-        max(C_I-round(bxi/2),1):min(C_I+round(bxi/2),size(v,2)));
-    uu = u(max(C_J-round(bxi/2),1):min(C_J+round(bxi/2),size(u,1)), ...
-        max(C_I-round(bxi/2),1):min(C_I+round(bxi/2),size(u,2)));
+    xx = x(max(C_J-bx,1):min(C_J+bx,size(x,1)), ...
+        max(C_I-bx,1):min(C_I+bx,size(x,2)));
+    yy = y(max(C_J-bx,1):min(C_J+bx,size(y,1)), ...
+        max(C_I-bx,1):min(C_I+bx,size(y,2)));
+    mk = mask(max(C_J-bx,1):min(C_J+bx,size(mask,1)), ...
+        max(C_I-bx,1):min(C_I+bx,size(mask,2)));
+    vv = v(max(C_J-bx,1):min(C_J+bx,size(v,1)), ...
+        max(C_I-bx,1):min(C_I+bx,size(v,2)));
+    uu = u(max(C_J-bx,1):min(C_J+bx,size(u,1)), ...
+        max(C_I-bx,1):min(C_I+bx,size(u,2)));
 
     if type_detection>=2
-        sshh = ssh(max(C_J-round(bxi/2),1):min(C_J+round(bxi/2),size(ssh,1)), ...
-            max(C_I-round(bxi/2),1):min(C_I+round(bxi/2),size(ssh,2)));
+        sshh = ssh(max(C_J-bx,1):min(C_J+bx,size(ssh,1)), ...
+            max(C_I-bx,1):min(C_I+bx,size(ssh,2)));
     end
 
     % indice of the center in the small domain
@@ -192,11 +193,11 @@ for ii=1:length(centers_x)
 
     % indices of all eddy centers in the smaller area
     % (contains at least c_j and c_i)
-    cts_j = zeros(length(centers_y),1);
+    cts_j = zeros(length(centers0.y),1);
     cts_i = cts_j;
-    for k=1:length(centers_y)
+    for k=1:length(centers0.y)
         try
-            [cts_j(k),cts_i(k)] = find(yy==centers_y(k) & xx==centers_x(k));
+            [cts_j(k),cts_i(k)] = find(yy==centers0.y(k) & xx==centers0.x(k));
         catch
         end
     end
@@ -227,29 +228,29 @@ for ii=1:length(centers_x)
     % compute the psi field from velocity fields
     if type_detection==1 || type_detection==3
 
-        psi = compute_psi(xx,yy,mk,uu/100,vv/100,ci,cj,grid_ll);
+        psi1 = compute_psi(xx,yy,mk,uu/100,vv/100,ci,cj,grid_ll);
 
         % test if the grid is regular or not
         if min(xx(1,:)==xx(end,:)) && min(yy(:,1)==yy(:,end))
-            CS1 = contourc(xx(1,:),yy(:,1),psi,H/2);
+            CS1 = contourc(xx(1,:),yy(:,1),psi1,H/2);
         else
             figure('visible','off')
-            CS1 = contour(xx,yy,psi,H/2);
+            CS1 = contour(xx,yy,psi1,H/2);
         end
     end
-
+    
     %----------------------------------------------
     % compute the psi field from ssh
     if type_detection==2 || type_detection==3
 
-        psi = squeeze(sshh);
+        psi2 = squeeze(sshh);
 
         % test if the grid is regular or not
         if min(xx(1,:)==xx(end,:)) && min(yy(:,1)==yy(:,end))
-            CS2 = contourc(xx(1,:),yy(:,1),psi,H/2);
+            CS2 = contourc(xx(1,:),yy(:,1),psi2,H/2);
         else
             figure('visible','off')
-            CS2 = contour(xx,yy,psi,H/2);
+            CS2 = contour(xx,yy,psi2,H/2);
         end
     end
 
@@ -266,6 +267,7 @@ for ii=1:length(centers_x)
 
     % Initialization
     j = 1; % first coordinates of the contour scan
+    double = 0; % no double center by default
 
     while j <= length(isolines)
 
@@ -279,7 +281,7 @@ for ii=1:length(centers_x)
         if xdata(1)==xdata(end) && ydata(1)==ydata(end) && ...
                 inpolygon(xy_ci,xy_cj,xdata,ydata) && length(xdata)>=n_min
 
-            % searchs the coordinates of the centers in the contour 
+            % search the coordinates of the centers in the contour 
             IN = inpolygon(xy_ctsi,xy_ctsj,xdata,ydata);
             [p,~] = find(IN==1); % index of the coordinates in the contour
             nc = length(p); % number of center in the contour
@@ -287,23 +289,88 @@ for ii=1:length(centers_x)
             % only one center include in the streamline
             if nc==1
 
-                type1(ii) = centers_type(ii);
+                type1(ii) = centers0.type(ii);
                 x1(ii)    = xy_ci;
                 y1(ii)    = xy_cj;
                 i1(ii)    = C_I;
                 j1(ii)    = C_J;
-
-            % the contour contains more than 1 center
-            elseif nc>1
-
+                
+                double = 0;
+                
                 j = length(isolines); % stop the scan
-
+                
+            % the contour contains 2 centers
+            elseif nc==2 && ii>1
+                
+                % second max LNAM centers indice
+                q = find(xy_ctsi(p)~=xy_ci | xy_ctsj(p)~=xy_cj);
+                
+                try
+                    % the second max already scanned
+                    jj = find(centers0.x(1:ii-1)==xy_ctsi(p(q)) &...
+                        centers0.y(1:ii-1)==xy_ctsj(p(q)));
+                    % and not recorded yet
+                    if isnan(x1(jj))
+                        % change flag
+                        double = jj;
+                    end
+                catch
+                end
+                
+            % the contour contains more than 2 centers
+            % !!! potential bug if an other streamline could have less !!!
+            elseif nc>2
+                j = length(isolines); % stop the scan
             end
+            
         end
 
         % increment the counter
         j = j + 1;
     end
+    
+    % record max LNAM as eddy center if 2 max LNAM in the same strealine
+    if double
+        
+        display(['   2 max LNAM: ',num2str(ii),' and ',num2str(double)])
+        
+        % search for the higher LNAM
+        if MaxL(double) > MaxL(ii)
+            ii = double;
+        end
+        
+        display(['   -> keep center ',num2str(ii)])
+        
+        % keep the higher LNAM
+        type1(ii) = centers0.type(ii);
+        x1(ii)    = centers0.x(ii);
+        y1(ii)    = centers0.y(ii);
+        i1(ii)    = centers0.i(ii);
+        j1(ii)    = centers0.j(ii);
+    end
+        
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% plot the potential centers detected in the domain
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+if plo && double
+    figure
+    contour(xx,yy,psi1,H/2,'k')
+    hold on
+    contour(xx,yy,psi2,H/2,'r')
+    quiver(xx,yy,uu,vv,'k')
+
+    plot(xy_ctsi,xy_ctsj,'r*')
+    plot(xy_ci,xy_cj,'k*')
+
+    if ~isnan(x1(ii))
+        plot(x1(ii),y1(ii),'ok');
+    end
+
+    hold off
+    title(['Center ',num2str(ii)])
+
+end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 end % centers ii loop
 
@@ -330,6 +397,6 @@ for k=1:length(type1)
 end
 
 disp(['   -> ',num2str(j-1),' potential centers found'])
-disp(['      (',num2str(k-j+1),' max LNAM removed)'])
+disp(['     (',num2str(k-j+1),' max LNAM removed)'])
     
 disp(' ')

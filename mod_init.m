@@ -1,5 +1,5 @@
-function step0 = mod_init(update)
-%step0 = mod_init({,update})
+function step0 = mod_init(stepF,update)
+%step0 = mod_init({stepF,update})
 %
 %   mod_init preallocate structure or update the structure in mat file
 %
@@ -21,7 +21,11 @@ function step0 = mod_init(update)
 
 % Load default parameters
 %----------------------------------------
-load('param_eddy_tracking','path_out','streamlines','extended_diags','stepF')
+if nargin==0
+    load('param_eddy_tracking','path_out','streamlines','extended_diags','stepF')
+else
+    load('param_eddy_tracking','path_out','streamlines','extended_diags')
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Updating structure ---------------------------------------------
@@ -81,7 +85,7 @@ else
     centers0(stepF) = struct('step',[],'type',[],'x',[],'y',[],'i',[],'j',[]);
     centers = centers0;
     centers2(stepF) = struct('step',[],'type',[],'x1',[],'y1',[],...
-        'x2',[],'y2',[],'dc',[],'ds',[]);
+        'x2',[],'y2',[],'dc',[],'ind2',[]);
     
     % Preallocate shapesstruct array
     %----------------------------------------
@@ -112,7 +116,7 @@ else
     % Preallocate warnings struct array
     %----------------------------------------
     warn_shapes(stepF) = struct('no_curve',[],'Rd',[],'gama',[],'bx',[],'calcul_curve',[],...
-                    'large_curve1',[],'large_curve2',[],'too_large2',[]);
+                    'large_curve1',[],'large_curve2',[],'too_weak2',[]);
     warn_shapes2 = warn_shapes;
 
 end

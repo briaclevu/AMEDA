@@ -64,11 +64,11 @@ source = 'AVISO';
 
 %----------------------------------------
 % domaine
-dom = 'ALG';
+dom = 'MED';
 
 %----------------------------------------
 % Update option
-update = 0; % the serie from the begenning
+update = 0; % the serie from the beginning
 
 %----------------------------------------
 % Possibility to shorter the serie
@@ -86,7 +86,7 @@ disp(' ')
 
 myCluster = parcluster('local');
 delete(myCluster.Jobs)
-matlabpool(myCluster,cpus)
+parpool(myCluster,cpus)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Initialisation ---------------------------------------------
@@ -99,70 +99,83 @@ if exist('stepF','var')
 else
     mod_eddy_params(['keys_sources_',source,'_',dom])
 end
+run(['keys_sources_',source,'_',dom])
 load('param_eddy_tracking','path_out','streamlines','resol','stepF');
+
+%----------------------------------------
+% list of steps (from 2000 to 2015)
+list=[1 367 732 1097 1462 1828 2193 2558 2923 3289 3654 4019 4384 4750 5115 5480 stepF];
+
+for i=2:length(list)-1
+    
+stepF=list(i+1)-list(i);
+dstp = list(i)-1;
 
 %----------------------------------------
 % Preallocate structure array and mat-file or prepare update
 % !! replace or reinitialise previous results !!
-step0 = mod_init(update);
+step0 = mod_init(stepF,update);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Compute LNAM ---------------------------------------------
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-disp(' === Compute non interpolated LNAM ===')
+disp([' === Compute LNAM ',num2str(1999+i),' ==='])
 disp(' ')
 
 load([path_out,'fields'],'detection_fields')
+detection_fields_ni = detection_fields;
+
+load([path_out,'fields_inter.mat'],'detection_fields')
 
 parfor stp = step0:stepF
     %----------------------------------------
     % Compute non interpolated fields for step stp
-    detection_fields(stp) = mod_fields(source,stp,1);
-end
-
-%----------------------------------------
-% Save non interpolated fields
-save([path_out,'fields'],'detection_fields','-append')
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Compute interpolated LNAM ---------------------------------------------
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-if resol>1
-    disp(' === Compute interpolated LNAM ===')
-    disp(' ')
-    
-    load([path_out,'fields_inter.mat'],'detection_fields')
-    
-    parfor stp = step0:stepF
+    detection_fields_ni(stp) = mod_fields(source,stp+dstp,1);
+    if resol>1
         %----------------------------------------
         % Compute interpolated fields for step stp
-        detection_fields(stp) = mod_fields(source,stp,resol);
+        detection_fields(stp) = mod_fields(source,stp+dstp,resol);
+    else
+        %----------------------------------------
+        % Interpolated and non interpolated field are the same
+        disp(' === Interpolated LNAM is the same ===')
+        detection_fields(stp) = detection_fields_ni(stp);
     end
-else
-    %----------------------------------------
-    % Interpolated and non interpolated field are the same
-    disp(' === Interpolated LNAM is the same ===')
 end
 
 %----------------------------------------
-% Save interpolated fields
-save([path_out,'fields_inter'],'detection_fields','-append')
-clear detection_fields
+% Save fields
+save([path_out,'fields_inter_',num2str(1999+i)],'detection_fields','-v7.3')
+
+detection_fields = detection_fields_ni;
+save([path_out,'fields_',num2str(1999+i)],'detection_fields','-v7.3')
+clear detection_fields detection_fields_ni
+
+end % end loop for detection_fields
+
+for i=1:length(list)-1
+
+stepF=list(i+1)-list(i);
+dstp = list(i)-1;
 
 %----------------------------------------
-% Build I/O matfile
-fields_mat = matfile([path_out,'fields_inter.mat']);
+% Preallocate structure array and mat-file or prepare update
+% !! replace or reinitialise previous results !!
+step0 = mod_init(stepF,update);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Find centers ---------------------------------------------
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-disp(' === Find potential centers ===')
+disp([' === Find potential centers ',num2str(1999+i),' ==='])
 disp(' ')
 
-load([path_out,'eddy_centers'],'centers0','centers')
+load([path_out,'eddy_centers'])
+
+%----------------------------------------
+% Build I/O matfile
+fields_mat = matfile([path_out,'fields_inter_',num2str(1999+i),'.mat']);
 
 parfor stp = step0:stepF
     % load inter fields at step stp
@@ -170,27 +183,39 @@ parfor stp = step0:stepF
     fields = fields_mat.detection_fields(:,stp);
     %----------------------------------------
     % Detection of eddy centers for step stp
-    [centers0(stp),centers(stp)] = mod_eddy_centers(source,stp,fields);
+    [centers0(stp),centers(stp)] = mod_eddy_centers(source,stp+dstp,fields);
 end
 
 %----------------------------------------
 % Save centers
-save([path_out,'eddy_centers'],'centers0','centers','-append')
+save([path_out,'eddy_centers_',num2str(1999+i)],'centers0','centers','centers2','-v7.3')
 clear centers0 centers
 
+end % end loop for centers
+
+for i=1:length(list)-1
+
+stepF=list(i+1)-list(i);
+dstp = list(i)-1;
+
 %----------------------------------------
-% Build I/O matfile
-centers_mat = matfile([path_out,'eddy_centers.mat']);
+% Preallocate structure array and mat-file or prepare update
+% !! replace or reinitialise previous results !!
+step0 = mod_init(stepF,update);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Find eddies ---------------------------------------------
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-disp(' === Determine eddies shapes ===')
+disp([' === Determine eddies shapes ',num2str(1999+i),' ==='])
 disp(' ')
 
-load([path_out,'eddy_centers'],'centers2')
+load([path_out,'eddy_centers_',num2str(1999+i)],'centers2')
 load([path_out,'eddy_shapes'])
+
+%----------------------------------------
+% Build I/O matfile
+centers_mat = matfile([path_out,'eddy_centers_',num2str(1999+i),'.mat']);
 
 parfor stp = step0:stepF
     %----------------------------------------
@@ -203,35 +228,43 @@ parfor stp = step0:stepF
     % Determination of eddy features for step stp
     [centers2(stp),shapes1(stp),shapes2(stp),profil2(stp),...
         warn_shapes(stp),warn_shapes2(stp)] = ...
-        mod_eddy_shapes(source,stp,fields,centers);
+        mod_eddy_shapes(source,stp+dstp,fields,centers);
 end
 
 %----------------------------------------
 % save warnings, shapes and their centers
-save([path_out,'eddy_centers'],'centers2','-append')
+save([path_out,'eddy_centers_',num2str(1999+i)],'centers2','-append')
 if streamlines
-    save([path_out,'eddy_shapes'],'shapes1','shapes2',...
-        'warn_shapes','warn_shapes2','profil2','-append')
+    save([path_out,'eddy_shapes_',num2str(1999+i)],'shapes1','shapes2',...
+        'warn_shapes','warn_shapes2','profil2','-v7.3')
 else
-    save([path_out,'eddy_shapes'],'shapes1','shapes2',...
-        'warn_shapes','warn_shapes2','-append')
+    save([path_out,'eddy_shapes_',num2str(1999+i)],'shapes1','shapes2',...
+        'warn_shapes','warn_shapes2','-v7.3')
 end
 clear centers2 shapes1 shapes2 profil2 warn_shapes warn_shapes2 struct1 struct2 struct3
 
+end % end loop for shapes
+
 %----------------------------------------
 % Free workers
-matlabpool close
+delete(gcp('nocreate'))
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Track eddies ---------------------------------------------
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %----------------------------------------
+% concatenete years
+name=num2cell(2000:2015);
+concat_eddy(name)
+
+%----------------------------------------
 % Tracking and record interacting events
-mod_eddy_tracks(update)
+mod_eddy_tracks([num2str(name{1}),'_',num2str(name{end})],update)
 
-
-
+%----------------------------------------
+% Resolve merging and spltting event and filter eddies shorter than cut_off
+mod_merging_splitting([num2str(name{1}),'_',num2str(name{end})],stepF);
 
 
 

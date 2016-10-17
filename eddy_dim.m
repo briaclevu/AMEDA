@@ -115,28 +115,28 @@ switch type_detection
         % compute eddy shape with psi
         [cd,eddy_lim,lines,velmax,tau,eta,nrho,large] =...
             max_curve(x,y,psi,xy_ci,xy_cj,xy_ctsi,xy_ctsj,u,v,Rd,...
-            H,n_min,k_vel_decay,nR_lim,nrho_lim,grid_ll);
+            H,n_min,k_vel_decay,nR_lim,Np,nrho_lim,grid_ll);
         calcul=1;
     
     case 2
         % compute eddy shape with ssh
         [cd,eddy_lim,lines,velmax,tau,eta,nrho,large] =...
             max_curve(x,y,ssh,xy_ci,xy_cj,xy_ctsi,xy_ctsj,u,v,Rd,...
-            H,n_min,k_vel_decay,nR_lim,nrho_lim,grid_ll);
+            H,n_min,k_vel_decay,nR_lim,Np,nrho_lim,grid_ll);
         calcul=0;
 
     case 3
         % compute eddy shape with ssh
         [cd,eddy_lim,lines,velmax,tau,eta,nrho,large] =...
             max_curve(x,y,ssh,xy_ci,xy_cj,xy_ctsi,xy_ctsj,u,v,Rd,...
-            H,n_min,k_vel_decay,nR_lim,nrho_lim,grid_ll);
+            H,n_min,k_vel_decay,nR_lim,Np,nrho_lim,grid_ll);
         calcul=0;
 
         if isnan(large(1))
             % compute eddy shape with psi
             [cd,eddy_lim,lines,velmax,tau,eta,nrho,large] =...
                 max_curve(x,y,psi,xy_ci,xy_cj,xy_ctsi,xy_ctsj,u,v,Rd,...
-                H,n_min,k_vel_decay,nR_lim,nrho_lim,grid_ll);
+                H,n_min,k_vel_decay,nR_lim,Np,nrho_lim,grid_ll);
             calcul=1;
         end
 end
@@ -148,7 +148,7 @@ if ~calcul
 end
 
 % Rmove streamfunction curve closed around an island
-% still a probleme because don't recover a smaller curve without island!!!
+% still a problem because don't recover a smaller curve without island!!!
 %in_eddy=find(inpolygon(x,y,eddy_lim{1}(1,:),eddy_lim{1}(2,:)));
 %if min(mask(in_eddy))==0
 %    large(1) = NaN;
@@ -159,7 +159,7 @@ deta = nan(1,3);
 
 % In case there is no streamfunction curve closed around the main center
 % the eddy contour is erased
-if isnan(large(1)) || isempty(eddy_lim{1})
+if isnan(large(1)) || isempty(eddy_lim{3})
     
     warn = 1;
     CD = [];
@@ -167,18 +167,11 @@ if isnan(large(1)) || isempty(eddy_lim{1})
     allines = [];
     
 else
+
     warn = 0;
     CD = cd;
     xy = eddy_lim;
     allines = lines;
-    
-    % compute deta1
-    in_eddy = inpolygon(x,y,xy{1}(1,:),xy{1}(2,:));
-    if max(psi(in_eddy~=0)) > eta(1)
-        deta(1) = max(psi(in_eddy~=0))-eta(1);
-    elseif min(psi(in_eddy~=0)) < eta(1)
-        deta(1) = min(psi(in_eddy~=0))-eta(1);
-    end
     
     % compute deta3
     in_eddy = inpolygon(x,y,xy{3}(1,:),xy{3}(2,:));
@@ -187,10 +180,19 @@ else
     elseif min(psi(in_eddy~=0)) < eta(3)
         deta(3) = min(psi(in_eddy~=0))-eta(3);
     end
+
+    % compute deta1
+    if ~isempty(eddy_lim{1})
+        in_eddy = inpolygon(x,y,xy{1}(1,:),xy{1}(2,:));
+        if max(psi(in_eddy~=0)) > eta(1)
+            deta(1) = max(psi(in_eddy~=0))-eta(1);
+        elseif min(psi(in_eddy~=0)) < eta(1)
+            deta(1) = min(psi(in_eddy~=0))-eta(1);
+        end
+    end
     
-    if ~isnan(large(2))
-        
-        % compute deta2
+    % compute deta2
+    if ~isempty(eddy_lim{2})
         in_eddy = inpolygon(x,y,xy{2}(1,:),xy{2}(2,:));
         if max(psi(in_eddy~=0)) > eta(2)
             deta(2) = max(psi(in_eddy~=0))-eta(2);
@@ -198,13 +200,14 @@ else
             deta(2) = min(psi(in_eddy~=0))-eta(2);
         end
     end
+
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % plot the shapes of the eddies detected in the domain
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-if plo && (~isempty(eddy_lim{1}) || ~isempty(eddy_lim{2}))
+if plo && (~isempty(eddy_lim{1}) || ~isempty(eddy_lim{2}) || ~isempty(eddy_lim{3}))
     
  figure
  contour(x,y,psi,H)
@@ -221,7 +224,6 @@ if plo && (~isempty(eddy_lim{1}) || ~isempty(eddy_lim{2}))
     else
         plot(xy{1}(1,:),xy{1}(2,:),'-k','linewidth',2);
     end
-    plot(xy{3}(1,:),xy{3}(2,:),':k','linewidth',2);
  end
  
  if ~isempty(xy{2})
@@ -231,6 +233,10 @@ if plo && (~isempty(eddy_lim{1}) || ~isempty(eddy_lim{2}))
     else
         plot(xy{2}(1,:),xy{2}(2,:),'-k','linewidth',2);
     end
+ end
+ 
+ if ~isempty(xy{3})
+    plot(xy{3}(1,:),xy{3}(2,:),':k','linewidth',2);
  end
  
  hold off

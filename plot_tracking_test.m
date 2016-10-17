@@ -7,7 +7,7 @@
 start
 clear; clc;
 
-movie=0;
+movie=1;
 h_coast=1;
 bath=1;
 
@@ -15,26 +15,33 @@ bath=1;
 % source of data driving the netcdf format
 source = 'AVISO';
 
+%----------------------------------------
+% domaine
+dom = 'MED';
+
 % Definition of the parameters specific for the experiment is needed 
-mod_eddy_params(['keys_sources_',source])
+run(['keys_sources_',source,'_',dom])
 load('param_eddy_tracking')
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Computation vorticity, Okubo-Weiss and LNAM
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+path_out2='/home/blevu/Resultats/AVISO/ALG/adt_2013/tests_v2/';
+name='2015';
+
 %% Plot figrue
 
 if movie || plo
 
 % make figure's dir
-system(['mkdir ',path_out,'figures']);
-system(['mkdir ',path_out,'figures/pdf']);
+system(['mkdir ',path_out2,'figures']);
+system(['mkdir ',path_out2,'figures/pdf']);
 
 % Load eddy detection result
-load([path_out,'fields_inter'])
-load([path_out,'eddy_centers'])
-load([path_out,'eddy_shapes'])
+%load([path_out,'fields_inter_2013'])
+load([path_out,'eddy_centers_',name])
+load([path_out,'eddy_shapes_',name])
 
 % load bathymetry
 if bath
@@ -55,10 +62,22 @@ maxlat=max(y(:));
 minlon=min(x(:));
 maxlon=max(x(:));
 
+% set boundaries
+minlat=36;
+maxlat=41;
+minlon=-1;
+maxlon=10;
+% east
+minlat=30;
+maxlat=36;
+minlon=20;
+maxlon=32;
+
 % set the limit of eddies life
-dayi=[2013 01 01 12 0 0];
-stepF=10;
+dayi=[2015 01 01 12 0 0];
+stepF=365;
 st=[1 stepF];
+dstp=4749+365*2;
 
 % set the limit of eddies life
 cut=0;
@@ -72,11 +91,11 @@ for n=1:length(st)-1
     % prepare fig
         hfig=figure('visible','off');
         set(hfig,'Position',[0 0 1000 600])
-        M=VideoWriter([path_out,'figures/shapes_',num2str(st(n)),'_',num2str(st(n+1)),'_deg',num2str(deg),'_sm2.avi']);
+        M=VideoWriter([path_out2,'figures/shapes_',num2str(st(n)),'_',num2str(st(n+1)),'_new2.avi']);
         M.FrameRate = 1;
         open(M);
     end
-    for day=st(n):st(n+1)
+    for day=30%st(n):st(n+1)
         if ~movie
             figure, close
             hfig=figure('visible','on');
@@ -91,31 +110,30 @@ for n=1:length(st)-1
         CD12 = [centers(day).x;centers(day).y];
         CD21 = [centers2(day).x1;centers2(day).y1];
         CD22 = [centers2(day).x1;centers2(day).y1];
-        eval(['[x,y,mask,u1,v1,ssh1] = load_fields_',source,'(day,1,deg);'])
-        eval(['[xi,yi,maski,~,~,~] = load_fields_',source,'(day,resol,deg);'])
-        L1=detection_fields(day).LNAM;
-        L2=L1;
-        LOW=detection_fields(day).LOW;
-        OW=detection_fields(day).OW;
-        vort=detection_fields(day).vort;
-        L1(OW>0)=nan;
-        L2(LOW>0)=nan;
-        maski(maski==0)=nan;
+        eval(['[x,y,mask,u1,v1,ssh1] = load_fields_',source,'(day+dstp,1,deg);'])
+        %eval(['[xi,yi,maski,~,~,~] = load_fields_',source,'(day+dstp,resol,deg);'])
+        %L1=detection_fields(day).LNAM;
+        %L2=L1;
+        %LOW=detection_fields(day).LOW;
+        %OW=detection_fields(day).OW;
+        %vort=detection_fields(day).vort;
+        %L1(OW>0)=nan;
+        %L2(LOW>0)=nan;
+        %maski(maski==0)=nan;
         xnan=x;
         ynan=y;
         vel=sqrt(u1.^2+v1.^2);
         xnan(isnan(vel) | vel<0.05) = nan;
         ynan(isnan(vel) | vel<0.05) = nan;
-        %m_contourf(x,y,ssh1*100,50)
-        m_contourf(xi,yi,L2.*maski)
+        m_contourf(x,y,ssh1*100,50)
+        %m_contourf(xi,yi,L2.*maski)
         shading flat
         colorbar
-        caxis([-20 25])
-        caxis([-1 1])
+        caxis([-30 15])
+        %caxis([-1 1])
         % add quiver velocities
         hold on
         m_quiver(xnan,ynan,u1,v1,3,'color',[0.3 0.3 0.3])
-        % put a land mask
         % put a land mask
         if h_coast
             [X,~]=m_ll2xy(coast(:,1),coast(:,2),'clip','patch');
@@ -131,55 +149,72 @@ for n=1:length(st)-1
         % grid and fancy the map
         m_grid('tickdir','in','linewidth',1,'linestyle','none');
         colormap(soft(40,0.3))
-        ncol=50;
-        color=flipud(cbrewer('div','RdBu',ncol));
-        colormap(color(4:ncol-4,:,:))
+        %ncol=50;
+        %color=flipud(cbrewer('div','RdBu',ncol));
+        %colormap(color(4:ncol-4,:,:))
         set(gcf,'color','w'); % set figure background to white
         % plot centers
-        m_plot(CD01(1,:),CD01(2,:),'ok','MarkerSize',4)
-        m_plot(CD11(1,:),CD11(2,:),'ok','MarkerFaceColor','w','MarkerSize',4)
-        m_plot(CD21(1,:),CD21(2,:),'ok','MarkerFaceColor','k','MarkerSize',4)
+        ind=find(CD01(1,:)<maxlon & CD01(1,:)>minlon & CD01(2,:)>minlat & CD01(2,:)<maxlat);
+        m_plot(CD01(1,ind),CD01(2,ind),'xk','MarkerSize',4)
+        ind=find(CD11(1,:)<maxlon & CD11(1,:)>minlon & CD11(2,:)>minlat & CD11(2,:)<maxlat);
+        m_plot(CD11(1,ind),CD11(2,ind),'ok','MarkerFaceColor','w','MarkerSize',4)
+        ind=find(CD21(1,:)<maxlon & CD21(1,:)>minlon & CD21(2,:)>minlat & CD21(2,:)<maxlat);
+        m_plot(CD21(1,ind),CD21(2,ind),'ok','MarkerFaceColor','k','MarkerSize',4)
+        for i=1:length(CD11)
+            if CD11(1,i)<maxlon && CD11(1,i)>minlon && CD11(2,i)>minlat && CD11(2,i)<maxlat
+        %        m_text(CD11(1,i),CD11(2,i),['  ',num2str(i)],...
+         %           'color',[0 0 0],'FontSize',8,'fontWeight','bold')
+            end
+        end
         for i=1:length(CD21)
-            m_text(CD21(1,i),CD21(2,i),['  ',num2str(i)],...
-                'color',[0 0 0],'FontSize',8,'fontWeight','bold')
+            if CD21(1,i)<maxlon && CD21(1,i)>minlon && CD21(2,i)>minlat && CD21(2,i)<maxlat
+                m_text(CD21(1,i),CD21(2,i),['  ',num2str(i)],...
+                    'color',[0 0 0],'FontSize',8,'fontWeight','bold')
+            end
         end
         % plot shapes
         for i=1:length(shapes1(day).xy)
-            lonlat1=shapes1(day).xy{i};
-            lonlat2=shapes2(day).xy{i};
-            type=centers2(day).type(i);
-            calcul=warn_shapes2(day).calcul_curve(i);
-            large1=warn_shapes2(day).large_curve1(i);
-            if type==-1
-                col=[.1 .1 .9]; % anticyclone
-            else
-                col=[.9 .1 .1]; % cyclone
-            end
-            if calcul==1
-                col(2)=.5; % calculated contour
-            end
-            if large1==0
-                wid='-'; % largest eddy
-            else
-                wid='--'; % true eddy
-            end
-            m_plot(lonlat1(1,:),lonlat1(2,:),wid,'color',col,'linewidth',2)
-            if ~isnan(lonlat2)
-                m_plot(lonlat2(1,:),lonlat2(2,:),'color',[.1 .9 .1],'linewidth',1) % double eddy
+            if CD21(1,i)<maxlon && CD21(1,i)>minlon && CD21(2,i)>minlat && CD21(2,i)<maxlat
+                lonlat1=shapes1(day).xy{i};
+                lonlat2=shapes2(day).xy{i};
+                lonlat3=shapes1(day).xy_end{i};
+                type=centers2(day).type(i);
+                calcul=warn_shapes2(day).calcul_curve(i);
+                large1=warn_shapes2(day).large_curve1(i);
+                if type==-1
+                    col=[.1 .1 .9]; % anticyclone
+                else
+                    col=[.9 .1 .1]; % cyclone
+                end
+                if calcul==1
+                    col(2)=.5; % calculated contour
+                end
+                if large1==0
+                    wid='-'; % largest eddy
+                else
+                    wid='--'; % true eddy
+                end
+                if ~isempty(lonlat3)
+                    m_plot(lonlat3(1,:),lonlat3(2,:),'--k','linewidth',1.5)
+                end
+                if ~isempty(lonlat1)
+                    m_plot(lonlat1(1,:),lonlat1(2,:),wid,'color',col,'linewidth',2)
+                end
+                if ~isnan(lonlat2)
+                    m_plot(lonlat2(1,:),lonlat2(2,:),'color',[.1 .9 .1],'linewidth',2) % double eddy
+                end
             end
         end
         hold off
         % add legend on the map and information
-        if cut_off==0
-            title(['AVISO from ',datestr(dayi,'dd mmm yyyy'),' for eddies living more than turnover time'])
-        else
-            title(['AVISO from ',datestr(dayi,'dd mmm yyyy'),' for eddies living more than ',num2str(cut_off),' days'])
-        end
+        title(['AVISO from ',datestr(dayi,'dd mmm yyyy'),' for eddies living more than ',num2str(cut),' days'])
         %m_text(minlon+0.35,maxlat-0.3,[datestr(dr,1),' / degradation = ',num2str(deg)],...
         %    'FontSize',10,'fontWeight','bold')
         m_text(5.5,36.3,[datestr(dr,1),' / <gama> = ',num2str(0.8/deg)],...
             'FontSize',10,'fontWeight','bold')
-        m_text(9.5,40.7,'ADT (cm)','FontSize',8,'fontWeight','bold')
+        m_text(minlon+0.5,minlat+0.5,[datestr(dr,1)],...
+            'FontSize',10,'fontWeight','bold')
+        m_text(maxlon,maxlat+0.15,'ADT (cm)','FontSize',8,'fontWeight','bold')
         % prepare the print in a pdf
         if movie
             figinfo = hardcopy(hfig,'-dzbuffer','-r0');

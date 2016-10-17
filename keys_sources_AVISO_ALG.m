@@ -66,16 +66,16 @@
 %----------------------------------------------
 
 % postfix name of the data
-postname = '2000_2015';
+postname = '2013';
 
 % set name of the domain
-domain='MED';
+domain='ALG';
 
 % use to diferenciate source field of surface height (adt, ssh, psi,...)
 sshtype='adt'; % adt or sla
 
 % use to differenciate job
-runname = '';
+runname = 'tests_v2';
 
 % set the paths
 path_in=['/home/blevu/DATA/AVISO/',domain,'/'];

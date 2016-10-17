@@ -48,7 +48,7 @@ for point=1:lim+1
     ys(2)=xy(2,point);
 
     if grid_ll
-        distance(point) = sw_dist(ys,xs,'km');
+        distance(point) = sw_dist2(ys,xs,'km');
     else
         distance(point) = sqrt(diff(xs).^2+diff(ys).^2); % km
     end
@@ -57,7 +57,7 @@ end
 %----------------------------------------
 % Distance2 = distance between 2 consecutives points of the polygon
 if grid_ll
-    distance2 = sw_dist(xy(2,:),xy(1,:),'km');
+    distance2 = sw_dist2(xy(2,:),xy(1,:),'km');
 else
     distance2 = sqrt(diff(xy(1,:)).^2+diff(xy(2,:)).^2); % km
 end

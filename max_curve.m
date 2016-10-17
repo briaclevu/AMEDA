@@ -1,9 +1,9 @@
 function [cd,eddy_lim,lines,velmax,tau,eta,nrho,large] =...
             max_curve(x,y,psi,xy_ci,xy_cj,xy_ctsi,xy_ctsj,u,v,Rd,...
-            H,n_min,k_vel_decay,nR_lim,nrho_lim,grid_ll)
+            H,n_min,k_vel_decay,nR_lim,Np,nrho_lim,grid_ll)
 %[cd,eddy_lim,lines,velmax,tau,eta,nrho,large] =...
 %           max_curve(x,y,psi,xy_ci,xy_cj,xy_ctsi,xy_ctsj,u,v,Rd,...
-%           H,n_min,k_vel_decay,nR_lim,nrho_lim {,grid_ll} )
+%           H,n_min,k_vel_decay,nR_lim,Np,nrho_lim {,grid_ll} )
 %
 %  Computes the eddy shape defined as the largest closed contour of the
 %  streamfunction (PSI/SSH) field in meter, across which velocity magnitude
@@ -64,7 +64,7 @@ function [cd,eddy_lim,lines,velmax,tau,eta,nrho,large] =...
 %=========================
 
 % Default grid is (lon,lat)
-if nargin==15
+if nargin==16
     grid_ll = 1;
 end
 
@@ -147,7 +147,7 @@ while i<=length(isolines)
             
             %-----------------------------------------------------------
             % compute the local curvature (C) and the segment length (P)
-            [C,P] = compute_curve([xdata;ydata],Rd,grid_ll);
+            [C,P] = compute_curve([xdata;ydata],Np,grid_ll);
             
             %-----------------------------------------------------------
             % compute the revolution time (Tau)
@@ -155,7 +155,8 @@ while i<=length(isolines)
             
             %-----------------------------------------------------------
             % part of the contour with negative curvature weighted by
-            % the discrete curvature
+            % the discrete curvature normalised by the equivalent radius
+            % over the equivalent circle perimeter
             N = abs(sum(P(C<0).*C(C<0))/(2*pi));
             
             %-----------------------------------------------------------
@@ -187,7 +188,7 @@ while i<=length(isolines)
                     velmax(3) = V;
                     eddy_lim{3} = [xdata;ydata]; % save the last shape
                     eta(3) = lvl(i); % save the ssh contour
-                else
+                elseif N>nrho_lim
                     return % stop the scan
                 end
                 
@@ -256,3 +257,4 @@ while i<=length(isolines)
     end
     i = i+1; % increase the counter
 end
+

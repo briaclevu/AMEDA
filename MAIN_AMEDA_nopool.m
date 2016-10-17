@@ -1,4 +1,3 @@
-function MAIN_AMEDA
 %MAIN_AMEDA
 %
 %   MAIN_AMEDA is the main function of the eddy detection and
@@ -64,6 +63,10 @@ clear; clc;
 source = 'AVISO';
 
 %----------------------------------------
+% domaine
+dom = 'ALG';
+
+%----------------------------------------
 % Update option
 update = 0; % the serie from the begenning
 
@@ -78,14 +81,15 @@ stepF = 2;
 %----------------------------------------
 % Produce default parmeters in param_eddy_tracking
 if exist('stepF','var')
-    mod_eddy_params(['keys_sources_',source],stepF)
+    mod_eddy_params(['keys_sources_',source,'_',dom],stepF)
 else
-    mod_eddy_params(['keys_sources_',source])
+    mod_eddy_params(['keys_sources_',source,'_',dom])
 end
 load('param_eddy_tracking','path_out','streamlines','resol','stepF')
 
 %----------------------------------------
 % Preallocate structure array and mat-file or prepare update
+% !! replace or reinitialise previous results !!
 step0 = mod_init(update);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

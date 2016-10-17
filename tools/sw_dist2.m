@@ -1,11 +1,11 @@
-function [dist,phaseangle] = sw_dist(lat,lon,units)
+function [dist] = sw_dist2(lat,lon,units)
 
 % SW_DIST    Distance between two lat,lon coordinates
 %===================================================================
 % SW_DIST  $Id: sw_dist.m,v 1.1 2003/12/12 04:23:22 pen078 Exp $
 %          Copyright (C) CSIRO, Phil Morgan & Steve Rintoul 1992.
 %
-% USAGE:  [dist,phaseangle] = sw_dist(lat,lon {,units} )
+% USAGE:  [dist] = sw_dist(lat,lon {,units} )
 %
 % DESCRIPTION:
 %   Calculate distance between two positions on glode using the "Plane
@@ -21,10 +21,10 @@ function [dist,phaseangle] = sw_dist(lat,lon,units)
 %
 % OUTPUT:
 %    dist        = distance between positions in units
-%    phaseangle  = angle of line between stations with x axis (East).
-%                  Range of values are -180..+180. (E=0, N=90, S=-90)
 %
 % AUTHOR:   Phil Morgan and Steve Rintoul 92-02-10
+%           Modif by B. LE VU (2016) to remove phase angle
+%
 %
 % DISCLAIMER:
 %   This software is provided "as is" without warranty of any kind.
@@ -70,7 +70,6 @@ end%if
 % DEFINE CONSTANTS
 %-----------------
 DEG2RAD = (2*pi/360);
-RAD2DEG = 1/DEG2RAD;
 DEG2NM  = 60;
 NM2KM   = 1.8520;    % Defined in Pond & Pickard p303.
 
@@ -92,6 +91,4 @@ if strcmp(units,'km')   % defaults to n.miles
     dist = dist * NM2KM;
 end %if
 
-% CALCUALTE ANGLE TO X AXIS
-phaseangle  = angle(dep+dlat*sqrt(-1))*RAD2DEG;
 return

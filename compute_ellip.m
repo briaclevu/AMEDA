@@ -28,11 +28,8 @@ lim = size(xy,2)-1;
 
 %----------------------------------------
 % Barycenter computation
-somme_x = sum(xy(1,1:lim));
-somme_y = sum(xy(2,1:lim));
-
-xbary = somme_x/lim;
-ybary = somme_y/lim;
+xbary = mean(xy(1,1:lim));
+ybary = mean(xy(2,1:lim));
 
 %----------------------------------------
 % Ellipse fitting
@@ -55,8 +52,8 @@ if lim >= 5
 
                 %----------------------------------------
                 % distances in km of every point from the barycenter
-                coord(1,pt) = sign(diff(xs)) * sw_dist([ybary ybary],xs,'km');
-                coord(2,pt) = sign(diff(ys)) * sw_dist(ys,[xbary xbary],'km');
+                coord(1,pt) = sign(diff(xs)) * sw_dist2([ybary ybary],xs,'km');
+                coord(2,pt) = sign(diff(ys)) * sw_dist2(ys,[xbary xbary],'km');
             end
 
             [~, a, b, alpha] = fitellipse(coord,'linear');
@@ -76,7 +73,7 @@ if lim >= 5
             alpha = NaN;
         end
         
-    catch erre
+    catch
         z = [NaN NaN];
         a = NaN;
         b = NaN;

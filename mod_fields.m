@@ -158,9 +158,10 @@ for i=borders:length(vv(:,1))-borders+1
             dot     = (ulocal.*d_xcentre) + (vlocal.*d_ycentre);
             produit = sqrt(ulocal.^2 + vlocal.^2)...
                     .*sqrt(d_xcentre.^2 + d_ycentre.^2);
+            sumdp = sum(dot(:))+sum(produit(:));
 
-            if (sum(dot(:))+sum(produit(:))) ~= 0
-                L(i,ii) = sum(cross(:)) / (sum(dot(:)) + sum(produit(:)));
+            if sumdp ~= 0
+                L(i,ii) = sum(cross(:)) / sumdp;
             else
                 L(i,ii) = 0;
             end

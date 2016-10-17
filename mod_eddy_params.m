@@ -21,11 +21,13 @@ function mod_eddy_params(keys_sources,stepF)
 % Fixed parameters
 % (you can play with Dt and cut_off but don't touch too much others):
 %   - K: LNAM(LOW<0) threshold to detect the potential eddy centers
+%   - r: center amximale speed during tracking of an eddy
 %   - Dt: delay in days for the tracking tolerance
 %   - cut_off: in days for eddies duration filtration after the tracking
 %           0 : use the turnover time from each eddies
 %           1 : keep all the tracked eddies
 %   - D_stp: in steps to define the averaged eddy features during the tracking
+%   - N_scan: maximum number of candidat the assignment must resolve
 %   - C_rad: number of the averaged radius for the search limit area
 %   - H: number of scanned streamlines in the initial area
 %       for each eddies (see 'box' parameter below)
@@ -38,8 +40,6 @@ function mod_eddy_params(keys_sources,stepF)
 %   - ds_max: maximal distance between 2 eddies centers to have a potential
 %       interaction (merging or splitting)
 %   - dc_max: maximal distance between 2 eddies contours
-%   - aire_max: maximal surface area of a double contour to be assimilated
-%       to a single eddy when only one center is clearly determine
 %
 %----------------------------------------------
 % This parametrisation come from the test with AVISO, ROMS and PIV
@@ -78,6 +78,71 @@ end
 % Calculate coriolis parameter
 f = 4*pi/T; % in s-1
 
+g=9.8;
+
+%% fixed parameters
+%----------------------------------------------
+
+% Scanning parameters:
+%----------------------------------------------
+% H is number of contour scanned in box during detection of potential centers
+% (centers0 to centers) and shapes (centers to centers2).
+% After test [100-200] seems a good compromise.
+% This parameter is directly link to the time computation!
+H = 200; % number of contour scanned
+
+% these contours must contain a minimal number of dots ([4-6])
+n_min = 4; % minimal number of point to defined a contour as streamlines
+
+% minimal number of point to calculate curvature along a segment at point i
+Np = 3; % (segment i-Np:i+Np)
+
+% minimal difference ([1-2]*1e-4) between 2 tests of the velocity
+% to admit an increase
+vel_epsil = 1e-4; % in m/s
+
+% coefficient of velmax to detect a decrease ([0.95-0.99])
+k_vel_decay = 0.95; % in term of velmax
+
+% size limite in term of deformation radius ([4-7]Rd) for a single eddy
+nR_lim = 5; % [4-7]Rd
+
+% limite of the length of the contour with negative curvature for a single
+% eddy from empirical determination based on ROMS, PIV and AVISO tests
+nrho_lim = 0.2; % [1/5-1/2]*2*pi*Rmax of the equivalent circle
+
+% Double eddy parameters
+%----------------------------------------------
+% maximal distance distances between 2 eddies centers to have a potential
+% interaction (merging or splitting) are based on von Hardenberg et al. (2000).
+% study and synthesis on vortex merging in barotropic flows
+% (ie d=3.3Rmax the critical merging distance).
+
+% maximal distance between 2 eddies centers in term of Rmax
+dc_max = 3.5; 
+
+% Tracking parameters:
+%----------------------------------------------
+% maximal eddy tracking distance between 2 time steps.
+%!!! can be change to vmax for each eddy !!!
+r = 6.5; % 6.5km/day
+
+% maximal delay after its last detection for tracking an eddy [1-15]
+% represent the temporal correlation depending on the coverage of an area
+% 2 steps for model, 3-5 steps for imagery experiment.
+%!!! in case of AVISO this will be ajusted with the error map of aviso !!!
+Dt = 10; % in days
+
+% minimal duration of recorded eddies [0-100]
+% 0 for keeping only eddies longer than their turnover time
+cut_off = 0; % in days
+
+% number of steps to define the averaged eddy features during the tracking
+D_stp = 4; % in steps
+
+% number of candidats during the tracking (better to be high)
+N_can = 20; % in steps
+
 %% Calculate parameters needed for AMEDA at Dx and a given Rd
 %----------------------------------------------
 
@@ -93,11 +158,11 @@ Rd = interp2(lon_Rd,lat_Rd,Rd_baroc1_extra,x,y); % 10km in average AVISO 1/8
 % After test gama>3 is required to get the max number of eddies.
 gama = Rd ./ Dx; % [0.1-1.5] for AVISO 1/8 (0.8 in average)
 
-% resol is an integer and used to improve the precision of centers detection
+% resol is an integer used to improve the precision of centers detection
 % close to 3 pixels per Rd. resol can goes up to 3
 resol = max(1,min(3,round(3/min(gama(:))))); % [1 - 3]
 
-% Detection parameters:
+% Detection parameters (cf. Le Vu et al. 2016 for test results):
 %----------------------------------------------
 % K is LNAM(LOW<0) threshold to fixed contours where to detect potential center
 % (one per contour). After test: no sensibility to K between 0.2 and 0.7
@@ -106,7 +171,7 @@ K = 0.7; % [.4-.8]
 
 % b is half length of the box in pixels used to normalise the LNAM and LOW.
 % After test the optimal length of the box ( Lb = 2b*Dx*deg )
-% is fixed to one and half the size of Rd (Lb/Rd=1.2).
+% is fixed to 1.2 the size of Rd (Lb/Rd=1.2).
 b = max(1,round((1.2*gama)/2)); % always 1 for AVISO 1/8
 
 % Rb (=Lb/Rd) is to check that the b setting and the gama are optimal.
@@ -117,68 +182,7 @@ Rb = 2*b ./ gama; % [1-100] for AVISO 1/8 (2.5 in average)
 
 % box is half length of the box used in pixels to find contour streamlines
 % in pixels box = 10 times the Rd is enough to start testing any eddies
-bx = round(10*gama); % [1-14] for AVISO 1/8 (8 in average)
-
-%% fixed parameters
-%----------------------------------------------
-
-% Tracking parameters:
-%----------------------------------------------
-% maximal delay after its last detection for tracking an eddy [1-15]
-Dt = 10; % in days
-
-% minimal duration of recorded eddies [0-100]
-% 0 for keeping only eddies longer than their turnover time
-cut_off = 0; % in days
-
-% number of steps to define the averaged eddy features during the tracking
-D_stp = 4; % in steps
-
-% coefficient to be applied to the averaged radius for the search limit area
-C_rad = 2;
-
-% Scanning parameters:
-%----------------------------------------------
-% H is number of contour scanned in box during detection of potential centers
-% (centers0 to centers) and shapes (centers to centers2).
-% After test [100-200] seems a good compromise.
-% This parameter is directly link to the time computation!
-H = 200; % number of contour scanned
-
-% these contours must contain a minimal number of dots ([4-6])
-n_min = 4; % minimal number of point to defined a contour as streamlines
-
-% minimal difference ([1-2]*1e-4) between 2 tests of the velocity
-% to admit an increase
-vel_epsil = 1e-4; % in m/s
-
-% coefficient of velmax to detect a decrease ([0.95-0.99])
-k_vel_decay = 0.95; % in term of velmax
-
-% size limite in term of deformation radius ([5-7]Rd) for a single eddy
-nR_lim = 5; % [4-7]Rd
-
-% limite of the length of the contour with negative curvature for a single
-% eddy from empirical determination based on ROMS, PIV and AVISO tests
-nrho_lim = 0.33; % [1/3-1/2]*2piRmax of the equivalent circle
-
-% Double eddy parameters
-%----------------------------------------------
-% maximal distance distances between 2 eddies centers and between their
-% contour to have a potential interaction (merging or splitting) are based
-% on von Hardenberg et al. (2000). study and synthesis on vortex merging
-% in barotropic flows (ie d=3.3Rmax the critical merging distance).
-
-% maximal distance between 2 eddies contours in term of Rmax
-ds_max = 1.5; 
-
-% maximal distance between 2 eddies centers in term of Rmax
-dc_max = 3.5; 
-
-% maximal surface area of a double contour to be assimilated to a
-% single eddy when only one center is clearly determine (end of a merging
-% or beginning of a splitting; ie. see end of mod_eddy_shapes) ([1.5-3])
-aire_max = 2; % in term of surface area
+bx = max(1,round(2*nR_lim*gama)); % [1-14] for AVISO 1/8 (8 in average)
 
 %% interpolated parameters
 %----------------------------------------------
@@ -217,13 +221,13 @@ end
     
 %% Save parameters and paths
 %----------------------------------------------
-save([path_ameda,'param_eddy_tracking'],...
-    'postname','domain','sshtype','path_ameda','path_in','path_out',...
+save([path_out,'param_eddy_tracking'],...
+    'postname','domain','sshtype','path_in','path_out',...
     'nc_dim','nc_u','nc_v','nc_ssh','x_name','y_name','m_name','u_name','v_name','s_name',...
     'grid_ll','type_detection','extended_diags','streamlines','daystreamfunction','periodic',...
     'deg','resol','K','b','bx','Dx','Rd','gama','Rb','bi','bxi','Dxi','Rdi','gamai','Rb',...
-    'stepF','T','f','dps','Dt','cut_off','D_stp','C_rad','H','n_min','vel_epsil','k_vel_decay',...
-    'ds_max','dc_max','nR_lim','nrho_lim','aire_max')
+    'stepF','T','f','g','dps','r','Dt','cut_off','D_stp','N_can','H','n_min',...
+    'vel_epsil','k_vel_decay','dc_max','nR_lim','Np','nrho_lim')
 
 
 
