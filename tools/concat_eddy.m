@@ -12,6 +12,8 @@ function concat_eddy(name)
 
 load('param_eddy_tracking','path_out')
 
+disp(['Concatenate year ',num2str(name{1}),'...'])
+
 % load first 
 load([path_out,'fields_',num2str(name{1})])
 detection_fields1=detection_fields;
@@ -28,6 +30,8 @@ warn_1=warn_shapes;
 warn2_1=warn_shapes2;
 
 for i=2:length(name)
+    
+    disp(['Concatenate year ',num2str(name{i}),'...'])
     
     % load fields, centers, shapes and warns
     load([path_out,'fields_',num2str(name{i})])
@@ -63,20 +67,14 @@ end
 detection_fields=detection_fields1;
 save([path_out,'fields_',num2str(name{1}),'_',num2str(name{end})],'detection_fields','-v7.3')
 
-for i=1:length(centers_1)
-    centers0_1(i).step=i;
-    centers_1(i).step=i;
-    centers2_1(i).step=i;
-end
-
 centers2=centers2_1;
 centers=centers_1;
 centers0=centers0_1;
-save([path_out,'eddy_centers_',num2str(name{1}),'_',num2str(name{end})],'centers0','centers','centers2')
+save([path_out,'eddy_centers_',num2str(name{1}),'_',num2str(name{end})],'centers0','centers','centers2','-v7.3')
 
 shapes1=shapes1_1;
 shapes2=shapes2_1;
 warn_shapes=warn_1;
 warn_shapes2=warn2_1;
-save([path_out,'eddy_shapes_',num2str(name{1}),'_',num2str(name{end})],'shapes1','shapes2','warn_shapes','warn_shapes2')
+save([path_out,'eddy_shapes_',num2str(name{1}),'_',num2str(name{end})],'shapes1','shapes2','warn_shapes','warn_shapes2','-v7.3')
 

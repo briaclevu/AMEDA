@@ -64,7 +64,7 @@ source = 'AVISO';
 
 %----------------------------------------
 % domaine
-dom = 'ALG';
+dom = 'MED';
 
 %----------------------------------------
 % Update option
@@ -72,25 +72,26 @@ update = 0; % the serie from the begenning
 
 %----------------------------------------
 % Possibility to shorter the serie
-stepF = 2;
+%stepF = 2;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Initialisation ---------------------------------------------
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %----------------------------------------
-% Produce default parmeters in param_eddy_tracking
+% Produce default parameters in param_eddy_tracking
 if exist('stepF','var')
     mod_eddy_params(['keys_sources_',source,'_',dom],stepF)
 else
     mod_eddy_params(['keys_sources_',source,'_',dom])
 end
+run(['keys_sources_',source,'_',dom])
 load('param_eddy_tracking','path_out','streamlines','resol','stepF')
 
 %----------------------------------------
 % Preallocate structure array and mat-file or prepare update
 % !! replace or reinitialise previous results !!
-step0 = mod_init(update);
+%step0 = mod_init(stepF,update);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Main routines ---------------------------------------------
@@ -203,6 +204,10 @@ system(['cat ',path_out,'log/log_eddy_stp*.txt >> ',path_out,'log_eddy.txt']);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %----------------------------------------
-% Tracking and record interacting events
-mod_eddy_tracks(update)
+% Tracking eddies and record interacting events
+mod_eddy_tracks('',update)
+
+%----------------------------------------
+% Resolve merging and spltting event and filter eddies shorter than cut_off
+mod_merging_splitting('');
 

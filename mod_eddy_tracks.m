@@ -1,5 +1,5 @@
 function mod_eddy_tracks(name,update)
-%mod_eddy_tracks(name,{,update})
+%mod_eddy_tracks(name {,update})
 %
 %  Computes eddy tracking from the eddies features, and saves them
 %  as {eddy_tracks(n)} in [path_out,'eddy_tracks_',name].
@@ -48,24 +48,29 @@ function mod_eddy_tracks(name,update)
 %           the eddy shape for the 'm'-th step.
 %   ...
 %{
+second center in interaction location:
     x2
     y2
     dc
-    ds
+    ind2
+features of the Vmax profil:
     velmax1
     tau1
     deta1
     nrho1
     rmax1
     aire1
-    alpha
-    rsquare
-    rmse
+features of the Vend profil:
     velmax3
     tau3
     deta3
     rmax3
     aire3
+if streamlines=1, features of the V-R profil:
+    alpha
+    rsquare
+    rmse
+if extended_diags=1, additional diags:
     xbary1
     ybary1
     ellip1
@@ -74,6 +79,7 @@ function mod_eddy_tracks(name,update)
     vortM1
     OW1
     LNAM1
+features and additional diags of the interacting contour
     shapes2
     velmax2
     tau2
@@ -89,12 +95,16 @@ function mod_eddy_tracks(name,update)
     vortM2
     OW2
     LNAM2
+flag of the interacting contour
     calcul
     large1
     large2
-    toobig
+    weak
+indice of the interaction
+    ind
     interaction
     interaction2
+flag about the merging and splitting
     split
     merge
     split2
@@ -108,8 +118,8 @@ function mod_eddy_tracks(name,update)
 %
 %  The function returns a log file [path_out,'log_eddy_tracks_',name,'.txt']
 %  which contains warnings relative to the presence of multiple eddies
-%  and the evolution of the search matrix within the searching area used
-%  to determine the tracks.
+%  candidats during the tracking within the searching area to determine the tracks
+%  and the potential interaction.
 %
 %  (NOTE: if the file already exist, the new log file will be append to it)
 %
@@ -138,15 +148,15 @@ if nargin==1
 end
 
 % begin the log file
-diary([path_out,'log_eddy_tracks_',name,'.txt']);
+diary([path_out,'log_eddy_tracks',name,'.txt']);
 
 %----------------------------------------------------------
 % load eddy centers and eddy shapes
 
 disp('Load centers and shapes ...')
 
-load([path_out,'eddy_centers_',name]);
-load([path_out,'eddy_shapes_',name]);
+load([path_out,'eddy_centers',name]);
+load([path_out,'eddy_shapes',name]);
 
 stepF = length(centers);
 
@@ -156,18 +166,17 @@ stepF = length(centers);
 var_name1 = fieldnames(centers2);
 var_name2 = fieldnames(shapes1);
 var_name3 = fieldnames(shapes2);
-var_name4 = {'Rd','gama','calcul_curve','large_curve1','large_curve2','too_large2'};
+var_name4 = {'Rd','gama','calcul_curve','large_curve1','large_curve2','too_weak2'};
 
 %----------------------------------------------------------
-% intitialize/update tracks and search structure arrays
-% - search contains all the open tracks;
-% - tracks contains all the closed tracks which will be saved;
+% intitialize/update tracks structure arrays
+% - tracks contains all the open and closed tracks which will be saved;
 
-if update && exist([path_out,'eddy_tracks_',name,'.mat'],'file')
+if update && exist([path_out,'eddy_tracks',name,'.mat'],'file')
     
 % Build record tracks and active search
     
-    load([path_out,'eddy_tracks_',name])
+    load([path_out,'eddy_tracks',name])
     
     step0 = stepF - update + 1;
     
@@ -198,26 +207,7 @@ if update && exist([path_out,'eddy_tracks_',name,'.mat'],'file')
  	tracks(moved) = [];
     warn_tracks(moved) = [];
     
-% Remove eddies non active from search and eddies still active from tracks
-
-    search = tracks;
-    warn_search = warn_tracks;
-    
-    moved = false(1,length(search));
-
-    for i=1:length(search)
-
-        moved(i) = search(i).step(end) <= (step0 - Dt/dps - 1) ;
-
-    end
-
-    search(moved) = [];
-    tracks(~moved) = [];
-    warn_search(moved) = [];
-    warn_tracks(~moved) = [];
-    
-    disp(['  update eddy_tracks_',name,'.mat'])
-    disp('  !!! be sure to use at least the last 30 days !!!')
+    disp(['  update eddy_tracks',name])
     
 else
 % preallocate tracks array
@@ -253,21 +243,19 @@ else
     end
 
     struct1 = struct('Rd',[],'gama',[],'calcul',[],'large1',[],'large2',[],...
-        'toobig',[],'ind',[],'interaction',[],'interaction2',[]);
+        'weak',[],'ind',[],'interaction',[],'interaction2',[]);
     names3 = [fieldnames(tracks); fieldnames(struct1)];
     tracks = cell2struct([struct2cell(tracks); struct2cell(struct1)], names3, 1);
     
-    search = tracks;
-    
     warn_tracks = struct('step',[],'last',[],'ind',[],'can',[],...
                         'd',[],'D',[],'C',[],...
-                        'interaction',[],'interaction2',[]);
-    warn_search = warn_tracks;
-    
+                        'interaction',[],'interaction2',[],'far1',[],'far2',[]);
     step0 = 1;
 
     tracks_name = fieldnames(tracks);
-    
+    n1 = find(strcmp(tracks_name,'x2'));
+    n2 = find(strcmp(tracks_name,'shapes2'));
+
 end
 
 disp(' ')
@@ -327,13 +315,17 @@ for i=step0:stepF
 
     % allocate case with a second interacting eddy
     [u,Ia,~] = unique(ind,'first');
-    n = logical(hist(ind,u)-1);
-    eddy.interaction2(u(n)) = Nind(Ia(n));
+    if ~isscalar(u)
+        n = logical(hist(ind,u)-1);
+        eddy.interaction2(u(n)) = Nind(Ia(n));
+    elseif ~isscalar(~isnan(ind))
+        eddy.interaction2(u) = Nind(Ia);
+    end
 
     % check every eddy gots less than 2 candidats
     Nind3 = find(~isnan(eddy.ind2) &...
-        eddy.ind2~=eddy.interaction & ...
-        eddy.ind2~=eddy.interaction2 & ...
+        eddy.ind2 ~= eddy.interaction & ...
+        eddy.ind2 ~= eddy.interaction2 & ...
         eddy.interaction ~= eddy.interaction2,1);
 
     if ~isempty(Nind3)
@@ -351,32 +343,34 @@ for i=step0:stepF
     
         %----------------------------------------------------------
         % if first time-step, then all the eddies are open tracks 
-        % (added to search open tracks matrix)
+        % (added to tracks matrix)
         if i==1
             
             for i2=1:length(eddy.type)
                 
-                search(i2).step = stp;
+                tracks(i2).step = stp;
 
                 for n=2:length(tracks_name)
-                    search(i2).(tracks_name{n}) = eddy.(tracks_name{n})(i2);
+                    tracks(i2).(tracks_name{n}) = eddy.(tracks_name{n})(i2);
                 end
                 
-                % initialize warn_search
-                warn_search(i2).step = stp;
-                warn_search(i2).last = 0;
-                warn_search(i2).ind = eddy.ind(i2);
-                warn_search(i2).can = zeros(1,10);
-                warn_search(i2).d = inf(1,10);
-                warn_search(i2).D = zeros(1,10);
-                warn_search(i2).C = inf(1,10);
-                warn_search(i2).interaction = eddy.interaction(i2);
-                warn_search(i2).interaction2 = eddy.interaction(i2);
+                % initialize warn_tracks
+                warn_tracks(i2).step = stp;
+                warn_tracks(i2).last = 0;
+                warn_tracks(i2).ind = eddy.ind(i2);
+                warn_tracks(i2).can = zeros(1,N_can);
+                warn_tracks(i2).d = inf(1,N_can);
+                warn_tracks(i2).D = zeros(1,N_can);
+                warn_tracks(i2).C = inf(1,N_can);
+                warn_tracks(i2).interaction = eddy.interaction(i2);
+                warn_tracks(i2).interaction2 = eddy.interaction(i2);
+                warn_tracks(i2).far1 = NaN;
+                warn_tracks(i2).far2 = NaN;
 
             end
 
             % display number of first eddies
-            disp(['  -> ',num2str(length(search)),' total eddies'])
+            disp(['  -> ',num2str(length(tracks)),' total eddies'])
     
         %----------------------------------------------------------
         % if not first step, then open tracks from previous steps
@@ -421,23 +415,23 @@ for i=step0:stepF
             ind_new(:,8) = ind_new(:,7) / T / f ./ ind_new(:,6); % Ro = velmax/f./rmax*1e-3
             ind_new(:,9) = g * eddy.deta1 ./ (f*eddy.rmax1.^2) * 1e-3; % Bu = g*deta./(f^2*rmax.^2)*1e-3
             
-            % Cost matrice Nsearch in row X Mnew in column
-            C = Inf(length(search),length(ind_new(:,1)));
+            % Cost matrice Ntracks in row X Mnew in column
+            C = Inf(length(tracks),length(ind_new(:,1)));
     
             %----------------------------------------------------------
-            % loop all open tracks from the previous time steps
-            for i2=1:length(search)
+            % loop all tracks from the previous time steps
+            for i2=1:length(tracks)
                 
                 % initialise 
                 ind_old = nan(1,10);
                 ind = [];
                 % time steps since every detection
-                last = stp - search(i2).step;
+                last = stp - tracks(i2).step;
                 
                 j = length(last);
                 
                 %------------------------------------------------------
-                % 1st: find x and y of the eddy centers in open tracks by 
+                % 1st: find x and y of the eddy centers in tracks by 
                 % scanning among the 'Dt' previous
                 % days starting with latest step
                 %------------------------------------------------------
@@ -446,61 +440,67 @@ for i=step0:stepF
 
                     %--------------------------------------------------
                     % features of eddy i2 in previous time steps
-                    ind_old(1) = search(i2).type(j);
-                    ind_old(2) = search(i2).x1(j);
-                    ind_old(3) = search(i2).y1(j);
+                    ind_old(1) = tracks(i2).type(j);
+                    ind_old(2) = tracks(i2).x1(j);
+                    ind_old(3) = tracks(i2).y1(j);
 
                     switch extended_diags
                         case {0, 2}
                             
                             % LNAM center
-                            ind_old(4) = search(i2).x1(j);
-                            ind_old(5) = search(i2).y1(j);
+                            ind_old(4) = tracks(i2).x1(j);
+                            ind_old(5) = tracks(i2).y1(j);
                         
                         case 1
                             
                             % barycenter is more centred and stable
-                            ind_old(4) = search(i2).xbary1(j); % baryneter x
-                            ind_old(5) = search(i2).ybary1(j); % barycenter y
+                            ind_old(4) = tracks(i2).xbary1(j); % baryneter x
+                            ind_old(5) = tracks(i2).ybary1(j); % barycenter y
                             if ind_old(4)==0 && ind_old(5)==0
-                                ind_old(4) = search(i2).x1(j);
-                                ind_old(5) = search(i2).y1(j);
+                                ind_old(4) = tracks(i2).x1(j);
+                                ind_old(5) = tracks(i2).y1(j);
                             end
 
                             % maximale vorticity
-                            ind_old(10) = nanmean(search(i2).vortM1(max(1,j-D_stp):j)) * 1e6;
+                            ind_old(10) = nanmean(tracks(i2).vortM1(max(1,j-D_stp):j)) * 1e6;
                     end
 
-                    % rmax from the D_stp+1 previous detection
-                    ind_old(6) = nanmean(search(i2).rmax1(max(1,j-D_stp):j));
+                    % rmax from the D_stp+1 previous detections
+                    ind_old(6) = nanmean(tracks(i2).rmax1(max(1,j-D_stp):j));
                     
-                    % velmax from the D_stp+1 previous detection
-                    ind_old(7) = nanmean(search(i2).velmax1(max(1,j-D_stp):j)) * T * 1e-3;
+                    % velmax from the D_stp+1 previous detections
+                    ind_old(7) = nanmean(tracks(i2).velmax1(max(1,j-D_stp):j)) * T * 1e-3;
                     
                     % Ro number Ro = velmax/f./rmax*1e-3
-                    ind_old(8) = nanmean(search(i2).velmax1(max(1,j-D_stp):j)) /f .* ...
-                                nanmean(search(i2).rmax1(max(1,j-D_stp):j)) * 1e-3;
+                    ind_old(8) = nanmean(tracks(i2).velmax1(max(1,j-D_stp):j)) /f .* ...
+                                nanmean(tracks(i2).rmax1(max(1,j-D_stp):j)) * 1e-3;
                             
-                    % Bu number Bu = g*deta./(f^2*rmax.^2)*1e-3
-                    ind_old(9) = g * nanmean(search(i2).deta1(max(1,j-D_stp):j)) ./ ...
-                                nanmean(f*search(i2).rmax1(max(1,j-D_stp):j)).^2 * 1e-3;
+                    % Bu_eta number Bu = g*deta./(f^2*rmax.^2)*1e-3
+                    ind_old(9) = g * nanmean(tracks(i2).deta1(max(1,j-D_stp):j)) ./ ...
+                                nanmean(f*tracks(i2).rmax1(max(1,j-D_stp):j)).^2 * 1e-3;
 
                     %--------------------------------------------------
                     % 2nd: find centers after 'last' steps no more than
-                    % 'Dt' days that are within 'D' from the search
+                    % 'Dt' days that are within 'D' from the tracked
                     % center then calculate the cost matrix C which is:
                     % C = sqrt ( d/D ² + dR/Rmax ² + dRo/Ro ² )
                     % with D, Rmax and Ro from the last D_stp steps
                     %--------------------------------------------------
 
                     % - assumed maximum distance (D):
-                    % theorical center moving + last D_stp+1 radius + new radius
-                    D = r*dps*last(j) + ind_old(6) + ind_new(:,6);
+                    % last D_stp+1 radius + new radius
+                    % + typical center deplacement
+                    if V_eddy>0
+                        D = V_eddy*dps*(1+last(j))/2 + ind_old(6) + ind_new(:,6);
+                    else
+                    % or + maximal velocity speed = Vmax/2
+                        D = ind_old(7)/2*dps*(1+last(j))/2 + ind_old(6) + ind_new(:,6);
+                    end
                     
                     % - Distance between centers (d1)
-                    d1 = zeros(size(D));
-
-                    for i3=1:size(ind_new,1)
+                    d1 = zeros(size(ind_new,1),1);
+                    
+                    for i3=1:size(d1)
 
                         if grid_ll
                             d1(i3) = sw_dist2([ind_new(i3,3) ind_old(3)],...
@@ -514,11 +514,10 @@ for i=step0:stepF
                     
                     % - Cost for eddy of same type at less than 'D' km
                     %   center or barycenter to center or barycenter
-                    
                     ind = find( ind_new(:,1)==ind_old(1) & d1<=D );
                     
                     if ~isempty(ind)
-                        C(i2,ind) = sqrt( (d1(ind) ./ D(ind)).^2 +...
+                        C(i2,ind) = sqrt( (d1(ind) ./ D(ind) * last(j)).^2 +...
                         ( (ind_new(ind,6) - ind_old(6)) / ind_old(6) ).^2 +...
                         ( (ind_new(ind,8) - ind_old(8)) / ind_old(8) ).^2 );
                     end
@@ -526,54 +525,43 @@ for i=step0:stepF
                     %--------------------------------------------------
                     % Record case in which more than one center is found
                     % within the 'D' area for searching eddies
-                    
                     ind = find(C(i2,:)<inf);
                     mov = length(ind);
 
                     % display and update warning
                     switch mov
                         case 0
-                            disp(['  Old eddy ',num2str(i2),' (center ',...
-                                    num2str(search(i2).ind(end)),')',...
+                            disp(['  Tracked eddy ',num2str(i2),' (center ',...
+                                    num2str(tracks(i2).ind(end)),')',...
                                     ' at stp-',num2str(last(j)),...
                                     ' temporaly lost'])
                         case 1
                         otherwise
-                            disp(['  Old eddy ',num2str(i2),' (center ',...
-                                    num2str(search(i2).ind(end)),')',...
+                            disp(['  Tracked eddy ',num2str(i2),' (center ',...
+                                    num2str(tracks(i2).ind(end)),')',...
                                     ' at stp-',num2str(last(j)),', '...
                                     num2str(mov),' possibilities: ',...
                                     num2str(ind)])
                     end
                     
-                else
-                    
                     %--------------------------------------------------
-                    % Record case > Dt eddies too old
-                    
-                    disp(['  Old eddy ',num2str(i2),' (center ',...
-                                num2str(search(i2).ind(end)),')',...
-                            ' at stp-',num2str(last(j)),...
-                            ' definitely lost'])
-                        
+                    % Record tracking choices
+                    warn_tracks(i2).step = [warn_tracks(i2).step; stp];
+                    warn_tracks(i2).last = [warn_tracks(i2).last; last(j)];
+                    warn_tracks(i2).can = [warn_tracks(i2).can; [ind zeros(1,N_can-mov)]];
+                    warn_tracks(i2).d = [warn_tracks(i2).d; [d1(ind)' inf(1,N_can-mov)]];
+                    warn_tracks(i2).D = [warn_tracks(i2).D; [D(ind)' zeros(1,N_can-mov)]];
+                    warn_tracks(i2).C = [warn_tracks(i2).C; [C(i2,ind) inf(1,N_can-mov)]];
+                    warn_tracks(i2).far1 = [warn_tracks(i2).far1; NaN];
+                    warn_tracks(i2).far2 = [warn_tracks(i2).far2; NaN];
+            
                 end % record too old
                 
-                %--------------------------------------------------
-                % Record search choices
-                
-                warn_search(i2).step = [warn_search(i2).step; stp];
-                warn_search(i2).last = [warn_search(i2).last; last(j)];
-                warn_search(i2).can = [warn_search(i2).can; [ind zeros(1,10-mov)]];
-                warn_search(i2).d = [warn_search(i2).d; [d1(ind)' inf(1,10-mov)]];
-                warn_search(i2).D = [warn_search(i2).D; [D(ind)' zeros(1,10-mov)]];
-                warn_search(i2).C = [warn_search(i2).C; [C(i2,ind) inf(1,10-mov)]];
-            
-            end % loop on search
+            end % loop on tracks
             
             %--------------------------------------------------
             % Record case in which more than one center is found
             % within the 'D' area for new eddies at step stp
-            
             disp(' ')
             
             for i3=1:size(C,2)
@@ -611,31 +599,29 @@ for i=step0:stepF
                 display ('Could not find solution')
                 display (['Check the computation of Cost matrix ''C'' ',...
                     'with the ''assignmentoptimal.m'' routine'])
-                break
+                return
             end
                 
             %----------------------------------------------------------
-            % 4th: update open tracks with center from current step
+            % 4th: update tracks with centers from current step
             %----------------------------------------------------------
             
-            %--------------------------------------------------
-            % convert eddy indice to search indice
-            
-            N = length(search);
+            % convert eddy indice to tracks indice
+            N = length(tracks);
             Nind = zeros(length(eddy.type),1);
             
             % convert old eddy
             Nass = find(assign~=0);
             Nind(assign(Nass)) = Nass;
             added = Nind==0;
+
             % convert new eddy
             Sind = cumsum(added);
             Nind(added) = N + Sind(added);
             
             %--------------------------------------------------
-            % update open tracks if any
-            
-            for i2=1:length(search)
+            % update tracks if any
+            for i2=1:length(tracks)
                 
                 old = assign(i2);
                 
@@ -643,33 +629,33 @@ for i=step0:stepF
 
                     % add info of the new eddy center to the open 
                     % track array
-                    search(i2).step = [search(i2).step; stp];
+                    tracks(i2).step = [tracks(i2).step; stp];
                     
                     for n=2:length(tracks_name)-2
-                        search(i2).(tracks_name{n}) =...
-                            [search(i2).(tracks_name{n});...
+                        tracks(i2).(tracks_name{n}) =...
+                            [tracks(i2).(tracks_name{n});...
                             eddy.(tracks_name{n})(old)];
                     end
                     
                     % allocate tracks indice to interaction
                     if ~isnan(eddy.interaction(old))
-                        search(i2).interaction = [search(i2).interaction; ...
+                        tracks(i2).interaction = [tracks(i2).interaction; ...
                             Nind(eddy.interaction(old))];
                     else
-                        search(i2).interaction = [search(i2).interaction; NaN];
+                        tracks(i2).interaction = [tracks(i2).interaction; NaN];
                     end
                     if ~isnan(eddy.interaction2(old))
-                        search(i2).interaction2 = [search(i2).interaction2; ...
+                        tracks(i2).interaction2 = [tracks(i2).interaction2; ...
                             Nind(eddy.interaction2(old))];
                     else
-                        search(i2).interaction2 = [search(i2).interaction2; NaN];
+                        tracks(i2).interaction2 = [tracks(i2).interaction2; NaN];
                     end
                     
                     % record the assigned and interacting eddies indices
-                    warn_search(i2).ind = [warn_search(i2).ind; eddy.ind(old)];
-                    warn_search(i2).interaction = [warn_search(i2).interaction; ...
+                    warn_tracks(i2).ind = [warn_tracks(i2).ind; eddy.ind(old)];
+                    warn_tracks(i2).interaction = [warn_tracks(i2).interaction; ...
                         eddy.interaction(old)];
-                    warn_search(i2).interaction2 = [warn_search(i2).interaction2; ...
+                    warn_tracks(i2).interaction2 = [warn_tracks(i2).interaction2; ...
                         eddy.interaction2(old)];
                     
                 end
@@ -677,7 +663,7 @@ for i=step0:stepF
             
             %----------------------------------------------------------
             % 5th: remaining eddies from present step are new tracks
-            % and added to open track array
+            % and added to tracks array
             %----------------------------------------------------------
             
             % extract remaining eddies
@@ -690,36 +676,38 @@ for i=step0:stepF
                 for i3=1:length(eddy.type)
                     
                     % start new tracks
-                    search(length(search)+1).step = stp;  
+                    tracks(length(tracks)+1).step = stp;  
                     
                     % record new tracks
                     for n=2:length(tracks_name)-2
-                        search(length(search)).(tracks_name{n}) =...
+                        tracks(length(tracks)).(tracks_name{n}) =...
                             eddy.(tracks_name{n})(i3);
                     end
                     
                     % allocate tracks indice to interaction
                     if ~isnan(eddy.interaction(i3))
-                        search(length(search)).interaction = Nind(eddy.interaction(i3));
+                        tracks(length(tracks)).interaction = Nind(eddy.interaction(i3));
                     else
-                        search(length(search)).interaction = NaN;
+                        tracks(length(tracks)).interaction = NaN;
                     end
                     if ~isnan(eddy.interaction2(i3))
-                        search(length(search)).interaction2 = Nind(eddy.interaction2(i3));
+                        tracks(length(tracks)).interaction2 = Nind(eddy.interaction2(i3));
                     else
-                        search(length(search)).interaction2 = NaN;
+                        tracks(length(tracks)).interaction2 = NaN;
                     end
                     
                     % record the assigned and interacting eddies indices
-                    warn_search(length(warn_search)+1).step = stp;
-                    warn_search(length(warn_search)).last = 0;
-                    warn_search(length(warn_search)).ind = eddy.ind(i3);
-                    warn_search(length(warn_search)).can = zeros(1,10);
-                    warn_search(length(warn_search)).d = inf(1,10);
-                    warn_search(length(warn_search)).D = zeros(1,10);
-                    warn_search(length(warn_search)).C = inf(1,10);
-                    warn_search(length(warn_search)).interaction = eddy.interaction(i3);
-                    warn_search(length(warn_search)).interaction2 = eddy.interaction2(i3);
+                    warn_tracks(length(warn_tracks)+1).step = stp;
+                    warn_tracks(length(warn_tracks)).last = 0;
+                    warn_tracks(length(warn_tracks)).ind = eddy.ind(i3);
+                    warn_tracks(length(warn_tracks)).can = zeros(1,N_can);
+                    warn_tracks(length(warn_tracks)).d = inf(1,N_can);
+                    warn_tracks(length(warn_tracks)).D = zeros(1,N_can);
+                    warn_tracks(length(warn_tracks)).C = inf(1,N_can);
+                    warn_tracks(length(warn_tracks)).interaction = eddy.interaction(i3);
+                    warn_tracks(length(warn_tracks)).interaction2 = eddy.interaction2(i3);
+                    warn_tracks(length(warn_tracks)).far1 = NaN;
+                    warn_tracks(length(warn_tracks)).far2 = NaN;
                     
                 end
             end
@@ -727,106 +715,145 @@ for i=step0:stepF
             % display number of new eddies
             disp([' Step ',num2str(stp)])
             disp(['  -> ',num2str(sum(added)),' new eddies'])
-
-            %----------------------------------------------------------
-            % 6th: eddies are considered dissipated when tracks are not
-            % updated for longer than 'Dt' days; tracks are then removed
-            % from open tracks array and stored in the closed track array.
-            %----------------------------------------------------------
-            
-            moved = false(1,length(search));
-            
-            for i2=1:length(search)
-                
-                % find dissipated tracks
-                moved(i2) = search(i2).step(end) <= stp - Dt/dps;
-                ind1 = search(i2).interaction(end);
-                ind2 = search(i2).interaction2(end);
-                
-                if search(i2).step(end) == stp && ~isnan(ind1)
-                    
-                    % filter too far interaction at step stp
-                    r = nanmean(search(i2).rmax1(max(1,end-D_stp):end));
-                    r1 = nanmean(search(ind1).rmax1(max(1,end-D_stp):end));
-                    
-                    % disance between 2 centers
-                    if grid_ll
-                        d1 = sw_dist2([search(i2).y1(end) search(ind1).y1(end)],...
-                                    [search(i2).x1(end) search(ind1).x1(end)],'km');
-                    else
-                        d1 = sqrt((search(i2).x1(end) - search(ind1).x1(end)).^2 +...
-                                (search(i2).y1(end) - search(ind1).y1(end)).^2);
-                    end
-                    
-                    % remove too far interaction
-                    if ( ~isnan(r1) && d1 > 3.5*(r+r1) ) || ( isnan(r1) && d1 > 7*(r) )
-                        search(i2).interaction(end) = NaN;
-                        search(ind1).interaction(end) = NaN;
-                    end
-                    
-                    if ~isnan(ind2)
-                        
-                        % filter too far interaction2 at step stp
-                        r2 = nanmean(search(ind2).rmax1(max(1,end-D_stp):end));
-                        
-                        % disance between 2 centers
-                        if grid_ll
-                            d2 = sw_dist2([search(i2).y1(end) search(ind2).y1(end)],...
-                                        [search(i2).x1(end) search(ind2).x1(end)],'km');
-                        else
-                            d2 = sqrt((search(i2).x1(end) - search(ind2).x1(end)).^2 +...
-                                    (search(i2).y1(end) - search(ind2).y1(end)).^2);
-                        end
-                        
-                        % remove too far interaction2
-                        if ( ~isnan(r2) && d2 > 3.5*(r+r2) ) || ( isnan(r2) && d2 > 7*(r) )
-                            search(i2).interaction(end) = NaN;
-                            search(ind2).interaction(end) = NaN;
-                        end
-                    end
-                    
-                elseif moved(i2)
-                    
-                    % create array to change search indice to tracks indice
-                    Nt = length(tracks);
-                    Smoved(i2) = Nt + 1;
-
-                    % move search to closed tracks array
-                    tracks(Nt+1) = search(i2);
-                    
-                    % move search to closed warn array
-                    warn_tracks(Nt+1) = warn_search(i2);
-                    
-                end
-                
-                for i2=1:length(search)
-                    
-                    Nind = find(Smoved(search(i2).interaction));
-                    
-                    for i3=1:length(Nind)
-                        if Nind~=0
-                            search(i2).interaction(Nind(i3)) = Smoved(Nind(i3))
-                        end
-                    end
-                    
-                end
-                
-            end
-            
-            % remove tracks from open track array
-            search(moved) = [];
-
-            % remove warn from open warn array
-            warn_search(moved) = [];
-            
-            % display number of old eddies
-            disp(['    (',num2str(sum(moved)),' too old eddies)'])
             
             % clear some variables (re-initialized at next loop)
-            clear ind_new moved
+            clear ind_new
             
         end % end if first time step or not
         
+        %----------------------------------------------------------
+        % 6th: eddies are considered dissipated when tracks are not
+        % updated for longer than 'Dt' days.
+        %----------------------------------------------------------
+
+        moved = 0;
+
+        for i2=1:length(tracks)
+
+            % find interacting tracks
+            ind1 = tracks(i2).interaction(end);
+            ind2 = tracks(i2).interaction2(end);
+
+            if tracks(i2).step(end) <= stp - Dt/dps &&...
+                    tracks(i2).step(end) > stp - Dt/dps - 1
+
+                % create array to change search indice to tracks indice
+                moved = moved + 1;
+
+            %----------------------------------------------------------
+            % 7th: Remove interaction between eddies too far from each other
+            % if 2 shapes1 exist
+            %   remove interaction with dc > 3.5 * (rmax1 + rmax2)/2
+            % else
+            %   remove interaction if dc > 3.5 * rmax
+            % end
+            %----------------------------------------------------------
+            elseif tracks(i2).step(end) == stp
+
+                % for every interaction
+                if ~isnan(ind1)
+                    
+                    j = length(tracks(i2).rmax1);
+                    j1= length(tracks(ind1).rmax1);
+
+                    % mmean radius
+                    r = nanmean(tracks(i2).rmax1(max(1,j-D_stp):end));
+                    r1 = nanmean(tracks(ind1).rmax1(max(1,j1-D_stp):end));
+
+                    % disance between 2 centers
+                    if grid_ll
+                        d1 = sw_dist2([tracks(i2).y1(end) tracks(ind1).y1(end)],...
+                                    [tracks(i2).x1(end) tracks(ind1).x1(end)],'km');
+                    else
+                        d1 = sqrt((tracks(i2).x1(end) - tracks(ind1).x1(end)).^2 +...
+                                (tracks(i2).y1(end) - tracks(ind1).y1(end)).^2);
+                    end
+
+                    % remove too far interaction
+                    if ( ~isnan(r) && ~isnan(r1) && d1 > (dc_max+1) /2 * (r+r1) ) ||...
+                        ( ~isnan(r) && isnan(r1) && d1 > (dc_max+1) * (r) ) ||...
+                        ( isnan(r) && ~isnan(r1) && d1 > (dc_max+1) * (r1) )
+                        
+                        tracks(i2).interaction(end) = NaN;
+                        warn_tracks(i2).far1(end) = 1;
+
+                        if isnan(tracks(i2).interaction2(end))
+                            tracks(i2).shapes2{end} = NaN;
+                            for n=[n1:n1+3 n2+1:n2+8]
+                                tracks(i2).(tracks_name{n})(end) = NaN;
+                            end
+                        end
+
+                        if tracks(ind1).interaction(end)~=i2 && ...
+                                tracks(ind1).interaction2(end)~=i2
+                            disp(['       remove interaction between ',...
+                                num2str(i2),' and ',num2str(ind1)])
+                        end
+
+                    else
+                        warn_tracks(i2).far1(end) = 0;
+                        if tracks(ind1).interaction(end) == i2
+                            warn_tracks(ind1).far1(end) = 0;
+                        else
+                            warn_tracks(ind1).far2(end) = 0;
+                        end
+                    end
+                end
+
+                % for every interaction2
+                if ~isnan(ind2)
+
+                    % mean radius
+                    r = nanmean(tracks(i2).rmax1(max(1,end-D_stp):end));
+                    r2 = nanmean(tracks(ind2).rmax1(max(1,end-D_stp):end));
+
+                    % disance between 2 centers
+                    if grid_ll
+                        d2 = sw_dist2([tracks(i2).y1(end) tracks(ind2).y1(end)],...
+                                    [tracks(i2).x1(end) tracks(ind2).x1(end)],'km');
+                    else
+                        d2 = sqrt((tracks(i2).x1(end) - tracks(ind2).x1(end)).^2 +...
+                                (tracks(i2).y1(end) - tracks(ind2).y1(end)).^2);
+                    end
+
+                    % remove too far interaction2
+                    if ( ~isnan(r) && ~isnan(r2) && d2 > (dc_max+1) /2 * (r+r2) ) ||...
+                        ( ~isnan(r) && isnan(r2) && d2 > (dc_max+1) * (r) ) ||...
+                        ( isnan(r) && ~isnan(r2) && d2 > (dc_max+1) * (r2) )
+                        
+                        tracks(i2).interaction2(end) = NaN;
+                        warn_tracks(i2).far2(end) = 1;
+
+                        if isnan(tracks(i2).interaction(end))
+                            tracks(i2).shapes2{end} = NaN;
+                            for n=[n1:n1+3 n2+1:n2+8]
+                                tracks(i2).(tracks_name{n})(end) = NaN;
+                            end
+                        end
+
+                        if tracks(ind2).interaction(end)~=i2 && ...
+                                tracks(ind2).interaction2(end)~=i2
+                            disp(['       remove interaction between ',...
+                                num2str(i2),' and ',num2str(ind2)])
+                        end
+
+                    else
+                        warn_tracks(i2).far2(end) = 0;
+                        if tracks(ind2).interaction(end) == i2
+                            warn_tracks(ind2).far1(end) = 0;
+                        else
+                            warn_tracks(ind2).far2(end) = 0;
+                        end
+                    end
+                end
+
+            end
+
+        end
+
+        % display number of old eddies
+        disp(['  -> ',num2str(moved),' too old eddies'])
+
     end % end if eddy present at that specific step
     
 end % end updating eddy tracks for all step
@@ -834,28 +861,13 @@ end % end updating eddy tracks for all step
 disp(' ')
 
 %----------------------------------------------------------
-% Add tracks that are still in the search array at the end of the
-% time-series
-for i=1:length(search)
-    
-    if i==1
-        tracks(1) = search(i);
-        warn_tracks(1) = warn_search(i);
-    else
-        tracks(length(tracks)+1) = search(i);
-        warn_tracks(length(warn_tracks)+1) = warn_search(i);
-    end       
-    
-end
-
-%----------------------------------------------------------
 % save tracks and warnings in structure array
 
 disp(' ')
 
-disp(['Save tracks in eddy_tracks_',name,'.mat ...'])
+disp(['Save tracks in eddy_tracks',name,'.mat ...'])
 
-save([path_out,'eddy_tracks_',name],'tracks','warn_tracks')
+save([path_out,'eddy_tracks',name],'tracks','warn_tracks','-v7.3')
 
 % close log file
 diary off

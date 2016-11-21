@@ -102,6 +102,7 @@ nc_ssh=[path_in,'ssh_',sshtype,'_',domain,'_',postname,'.nc'];
 
 % Rossby deformation radius file
 mat_Rd = [path_rossby,'Rossby_radius'];
+name_Rd = 'Rd_baroc1_extra';
 
 % variable names (could be automatised)
 y_name = 'lat';

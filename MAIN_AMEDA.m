@@ -64,11 +64,11 @@ source = 'AVISO';
 
 %----------------------------------------
 % domaine
-dom = 'ALG';
+dom = 'MED';
 
 %----------------------------------------
 % Update option
-update = 0; % the serie from the begenning
+update = 1; % the serie from the begenning
 
 %----------------------------------------
 % Possibility to shorter the serie
@@ -76,8 +76,9 @@ update = 0; % the serie from the begenning
 
 %----------------------------------------
 % Set parallel computation
-cpus=12;
+cpus=1;
 
+if cpus>1
 cpus=min([cpus,12]);%maximum of 12 procs
 
 disp('Check that you have access to "Parallel Computing Toolbox" to use PARPOOL')
@@ -87,24 +88,25 @@ disp(' ')
 myCluster = parcluster('local');
 delete(myCluster.Jobs)
 matlabpool(myCluster,cpus)
-
+end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Initialisation ---------------------------------------------
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %----------------------------------------
-% Produce default parmeters in param_eddy_tracking
+% Produce default parameters in param_eddy_tracking
 if exist('stepF','var')
     mod_eddy_params(['keys_sources_',source,'_',dom],stepF)
 else
     mod_eddy_params(['keys_sources_',source,'_',dom])
 end
+run(['keys_sources_',source,'_',dom])
 load('param_eddy_tracking','path_out','streamlines','resol','stepF');
 
 %----------------------------------------
 % Preallocate structure array and mat-file or prepare update
 % !! replace or reinitialise previous results !!
-step0 = mod_init(update);
+step0 = mod_init(stepF,update);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Compute LNAM ---------------------------------------------
@@ -151,10 +153,6 @@ end
 save([path_out,'fields_inter'],'detection_fields','-append')
 clear detection_fields
 
-%----------------------------------------
-% Build I/O matfile
-fields_mat = matfile([path_out,'fields_inter.mat']);
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Find centers ---------------------------------------------
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -163,6 +161,10 @@ disp(' === Find potential centers ===')
 disp(' ')
 
 load([path_out,'eddy_centers'],'centers0','centers')
+
+%----------------------------------------
+% Build I/O matfile
+fields_mat = matfile([path_out,'fields_inter.mat']);
 
 parfor stp = step0:stepF
     % load inter fields at step stp
@@ -178,10 +180,6 @@ end
 save([path_out,'eddy_centers'],'centers0','centers','-append')
 clear centers0 centers
 
-%----------------------------------------
-% Build I/O matfile
-centers_mat = matfile([path_out,'eddy_centers.mat']);
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Find eddies ---------------------------------------------
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -191,6 +189,10 @@ disp(' ')
 
 load([path_out,'eddy_centers'],'centers2')
 load([path_out,'eddy_shapes'])
+
+%----------------------------------------
+% Build I/O matfile
+centers_mat = matfile([path_out,'eddy_centers.mat']);
 
 parfor stp = step0:stepF
     %----------------------------------------
@@ -227,10 +229,12 @@ matlabpool close
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %----------------------------------------
-% Tracking and record interacting events
-mod_eddy_tracks(update)
+% Tracking eddies and record interacting events
+mod_eddy_tracks('_2013',update)
 
-
+%----------------------------------------
+% Resolve merging and spltting event and filter eddies shorter than cut_off
+mod_merging_splitting('_2013');
 
 
 

@@ -93,7 +93,7 @@ parpool(myCluster,cpus)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %----------------------------------------
-% Produce default parmeters in param_eddy_tracking
+% Produce default parameters in param_eddy_tracking
 if exist('stepF','var')
     mod_eddy_params(['keys_sources_',source,'_',dom],stepF)
 else
@@ -104,9 +104,9 @@ load('param_eddy_tracking','path_out','streamlines','resol','stepF');
 
 %----------------------------------------
 % list of steps (from 2000 to 2015)
-list=[1 367 732 1097 1462 1828 2193 2558 2923 3289 3654 4019 4384 4750 5115 5480 stepF];
+list=[1 367 732 1097 1462 1828 2193 2558 2923 3289 3654 4019 4384 4750 5115 5480 stepF+1];
 
-for i=2:length(list)-1
+for i=1:length(list)-1
     
 stepF=list(i+1)-list(i);
 dstp = list(i)-1;
@@ -255,16 +255,17 @@ delete(gcp('nocreate'))
 
 %----------------------------------------
 % concatenete years
-name=num2cell(2000:2015);
-concat_eddy(name)
+concat_eddy(num2cell(2000:2015))
 
 %----------------------------------------
-% Tracking and record interacting events
-mod_eddy_tracks([num2str(name{1}),'_',num2str(name{end})],update)
+% Tracking eddies and record interacting events
+name=['_',num2str(2000),'_',num2str(2015)];
+mod_eddy_tracks(name,update);
 
 %----------------------------------------
 % Resolve merging and spltting event and filter eddies shorter than cut_off
-mod_merging_splitting([num2str(name{1}),'_',num2str(name{end})],stepF);
+mod_merging_splitting(name);
+
 
 
 

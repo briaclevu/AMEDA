@@ -21,13 +21,13 @@ function mod_eddy_params(keys_sources,stepF)
 % Fixed parameters
 % (you can play with Dt and cut_off but don't touch too much others):
 %   - K: LNAM(LOW<0) threshold to detect the potential eddy centers
-%   - r: center amximale speed during tracking of an eddy
+%   - V_eddy: center maximale speed during tracking of an eddy
 %   - Dt: delay in days for the tracking tolerance
 %   - cut_off: in days for eddies duration filtration after the tracking
 %           0 : use the turnover time from each eddies
 %           1 : keep all the tracked eddies
 %   - D_stp: in steps to define the averaged eddy features during the tracking
-%   - N_scan: maximum number of candidat the assignment must resolve
+%   - N_can: maximum number of candidat the assignment must resolve
 %   - C_rad: number of the averaged radius for the search limit area
 %   - H: number of scanned streamlines in the initial area
 %       for each eddies (see 'box' parameter below)
@@ -78,7 +78,7 @@ end
 % Calculate coriolis parameter
 f = 4*pi/T; % in s-1
 
-g=9.8;
+g = 9.8; % m.s-2
 
 %% fixed parameters
 %----------------------------------------------
@@ -102,7 +102,7 @@ Np = 3; % (segment i-Np:i+Np)
 vel_epsil = 1e-4; % in m/s
 
 % coefficient of velmax to detect a decrease ([0.95-0.99])
-k_vel_decay = 0.95; % in term of velmax
+k_vel_decay = 0.97; % in term of velmax
 
 % size limite in term of deformation radius ([4-7]Rd) for a single eddy
 nR_lim = 5; % [4-7]Rd
@@ -123,9 +123,9 @@ dc_max = 3.5;
 
 % Tracking parameters:
 %----------------------------------------------
-% maximal eddy tracking distance between 2 time steps.
-%!!! can be change to vmax for each eddy !!!
-r = 6.5; % 6.5km/day
+% typical eddy speed deplacement in a day
+% 0 to use <Vmax> for each eddy instead
+V_eddy = 6.5; % km/day
 
 % maximal delay after its last detection for tracking an eddy [1-15]
 % represent the temporal correlation depending on the coverage of an area
@@ -141,7 +141,7 @@ cut_off = 0; % in days
 D_stp = 4; % in steps
 
 % number of candidats during the tracking (better to be high)
-N_can = 20; % in steps
+N_can = 30;
 
 %% Calculate parameters needed for AMEDA at Dx and a given Rd
 %----------------------------------------------
@@ -150,7 +150,7 @@ N_can = 20; % in steps
 % (taken from 2D file Rossby_radius computed using Chelton et al. 1998)
 %----------------------------------------------
 load(mat_Rd)
-Rd = interp2(lon_Rd,lat_Rd,Rd_baroc1_extra,x,y); % 10km in average AVISO 1/8
+eval(['Rd = interp2(lon_Rd,lat_Rd,',name_Rd,',x,y);']) % 10km in average AVISO 1/8
 
 % Resolution parameters:
 %----------------------------------------------
@@ -214,7 +214,7 @@ else
 
     % Dx, Rd, gama on interpolated grid
     Dxi = get_Dx_from_ll(xi,yi);
-    Rdi = interp2(lon_Rd,lat_Rd,Rd_baroc1_extra,xi,yi); % 10km in average AVISO 1/8
+    eval(['Rdi = interp2(lon_Rd,lat_Rd,',name_Rd,',xi,yi);']) % 10km in average AVISO 1/8
     gamai = Rdi ./ Dxi / resol;
 
 end
@@ -226,7 +226,7 @@ save([path_out,'param_eddy_tracking'],...
     'nc_dim','nc_u','nc_v','nc_ssh','x_name','y_name','m_name','u_name','v_name','s_name',...
     'grid_ll','type_detection','extended_diags','streamlines','daystreamfunction','periodic',...
     'deg','resol','K','b','bx','Dx','Rd','gama','Rb','bi','bxi','Dxi','Rdi','gamai','Rb',...
-    'stepF','T','f','g','dps','r','Dt','cut_off','D_stp','N_can','H','n_min',...
+    'stepF','T','f','g','dps','V_eddy','Dt','cut_off','D_stp','N_can','H','n_min',...
     'vel_epsil','k_vel_decay','dc_max','nR_lim','Np','nrho_lim')
 
 

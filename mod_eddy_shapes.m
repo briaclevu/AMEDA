@@ -21,6 +21,7 @@ function [centers2,shapes1,shapes2,profil2,warn_shapes,warn_shapes2] = ...
 %  if any, are:
 %  - x1,y1(n): coordinates of the main centers
 %  - x2,y2(n): coordinates of the double center if any (NaN otherwise)
+%  - ind2(n): indice in centers2 of the second center in interaction
 %
 %  Also features of validated eddy are saved/updated in
 %  [path_out,'eddy_shapes',runname] as structure arrays:

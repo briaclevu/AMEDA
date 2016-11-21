@@ -23,6 +23,10 @@ function step0 = mod_init(stepF,update)
 %----------------------------------------
 if nargin==0
     load('param_eddy_tracking','path_out','streamlines','extended_diags','stepF')
+    update = 0;
+elseif nargin==1
+    load('param_eddy_tracking','path_out','streamlines','extended_diags')
+    update = 0;
 else
     load('param_eddy_tracking','path_out','streamlines','extended_diags')
 end
@@ -35,17 +39,16 @@ if update
     
     step0 = stepF - update+1;
     
+    % Load struct array
+    %----------------------------------------
     load([path_out,'fields']);
-    if detection_fields(step0-1).step ~= step0-1
-        display('Gap with the last recorded step!')
-        display('Initial step has changed --> STOP!')
-        return
-    end
     detection_fields_ni = detection_fields;
     load([path_out,'fields_inter']);
     load([path_out,'eddy_centers']);
     load([path_out,'eddy_shapes'])
 
+    % Keep steps preexisting update
+    %----------------------------------------
     detection_fields_ni = detection_fields_ni(1:step0-1);
     detection_fields = detection_fields(1:step0-1);
     centers0 = centers0(1:step0-1);
@@ -60,18 +63,55 @@ if update
     if streamlines
         profil2  = profil2(1:step0-1);
     end
+
+    % Preallocate steps next to update
+    %----------------------------------------
+    names = fieldnames(detection_fields);
+    for n=1:length(names)
+        detection_fields_ni(stepF).(names{n}) = [];
+        detection_fields(stepF).(names{n}) = [];
+    end
+
+    names = fieldnames(centers);
+    for n=1:length(names)
+        centers0(stepF).(names{n}) = [];
+        centers(stepF).(names{n}) = [];
+    end
     
+    names = fieldnames(centers2);
+    for n=1:length(names)
+        centers2(stepF).(names{n}) = [];
+    end
+
+    names = fieldnames(shapes1);
+    for n=1:length(names)
+        shapes1(stepF).(names{n}) = [];
+    end
+
+    names = fieldnames(shapes2);
+    for n=1:length(names)
+        shapes2(stepF).(names{n}) = [];
+    end
+
+    names = fieldnames(warn_shapes);
+    for n=1:length(names)
+        warn_shapes(stepF).(names{n}) = [];
+        warn_shapes2(stepF).(names{n}) = [];
+    end
+
+    if streamlines
+        names = fieldnames(profil2);
+        for n=1:length(names)
+            profil2(stepF).(names{n}) = [];
+        end
+    end
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Preallocate structure ---------------------------------------------
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 else
 
-    clear detection_fields detection_fields_ni
-    clear centers0 centers centers2
-    clear shapes1 shapes2 profi2
-    clear warn_shapes warn_shapes2
-    clear struct1 struct2 struct2
     step0 = 1;
     
     % Preallocate fields struct array

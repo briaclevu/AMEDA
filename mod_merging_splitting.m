@@ -1,5 +1,5 @@
 function mod_merging_splitting(name)
-%mod_merging_splitting(tracks)
+%mod_merging_splitting(name)
 %
 %  Resolve merging and splitting interaction from trajectories
 %
@@ -30,14 +30,14 @@ load('param_eddy_tracking')
 
 % begin the log file
 %----------------------------------------------
-diary([path_out,'log_eddy_merging_splitting_',name,'.txt']);
+diary([path_out,'log_eddy_merging_splitting',name,'.txt']);
 
 %----------------------------------------------------------
 % load unfiltrated eddy tracks
 
 disp('Load tracks ...')
 
-load([path_out,'eddy_tracks_',name],'tracks')
+load([path_out,'eddy_tracks',name],'tracks')
 stepF = max(tracks(end).step);
 
 %----------------------------------------------------------
@@ -72,28 +72,28 @@ for j=1:length(tracks)
     Nind = tracks(j).interaction(ind);
     
     % flag as splitting if eddy starts after step(i)-Dt
-    tracks(j).split(ind & tracks(j).step - Dt <= tracks(j).step(1)) = 1;
-    tracks(j).split(ind & tracks(j).step - Dt > tracks(j).step(1)) = 0;
+    tracks(j).split(ind & tracks(j).step - Dt/2 <= tracks(j).step(1)) = 1;
+    tracks(j).split(ind & tracks(j).step - Dt/2 > tracks(j).step(1)) = 0;
     % flag as merging if eddy finishes before step(i)+Dt
-    tracks(j).merge(ind & tracks(j).step + Dt >= tracks(j).step(end)) = 1;
-    tracks(j).merge(ind & tracks(j).step + Dt < tracks(j).step(end)) = 0;
+    tracks(j).merge(ind & tracks(j).step + Dt/2 >= tracks(j).step(end)) = 1;
+    tracks(j).merge(ind & tracks(j).step + Dt/2 < tracks(j).step(end)) = 0;
     
     % flag second interaction
     ind2 = ~isnan(tracks(j).interaction2);
     Nind2 = tracks(j).interaction2(ind2);
     
     % flag as splitting if eddy starts after step(i)-Dt
-    tracks(j).split2(ind2 & tracks(j).step - Dt <= tracks(j).step(1)) = 1;
-    tracks(j).split2(ind2 & tracks(j).step - Dt > tracks(j).step(1)) = 0;
+    tracks(j).split2(ind2 & tracks(j).step - Dt/2 <= tracks(j).step(1)) = 1;
+    tracks(j).split2(ind2 & tracks(j).step - Dt/2 > tracks(j).step(1)) = 0;
     % flag as merging if eddy finishes before step(i)+Dt
-    tracks(j).merge2(ind2 & tracks(j).step + Dt >= tracks(j).step(end)) = 1;
-    tracks(j).merge2(ind2 & tracks(j).step + Dt < tracks(j).step(end)) = 0;
+    tracks(j).merge2(ind2 & tracks(j).step + Dt/2 >= tracks(j).step(end)) = 1;
+    tracks(j).merge2(ind2 & tracks(j).step + Dt/2 < tracks(j).step(end)) = 0;
     
     % first and last detection of the eddy j
     delta = [tracks(j).step(1) tracks(j).step(end)];
     tau = tracks(j).tau1;
     
-    % increase detection limit with merged or spitted eddies
+    % increase detection limit with merged or splitted eddies
     if nanmax(tracks(j).merge)==1 || nanmax(tracks(j).split)==1 ||...
             nanmax(tracks(j).merge2)==1 || nanmax(tracks(j).split2)==1
 
@@ -124,14 +124,12 @@ for j=1:length(tracks)
     
     % taking merging and spltting flag eddies
     % shorter than their turnover time or the cut_off time
-    if cut_off==0 && ( stepF - delta(1) )*dps >= mean(tau) + Dt
-        
-        short(j) = (diff(delta) + 1)*dps < mean(tau);
-        
-    elseif ( stepF - delta(1) )*dps >= cut_off + Dt
-        
+    if isnan(nanmean(tau))
+        short(j) = true;
+    elseif cut_off==0 && ( stepF - delta(1) )*dps >= nanmean(tau) + Dt
+        short(j) = (diff(delta) + 1)*dps < nanmean(tau);
+    elseif cut_off>0 && ( stepF - delta(1) )*dps >= cut_off + Dt
         short(j) = (diff(delta) + 1)*dps < cut_off;
-        
     end
     
 end
@@ -218,7 +216,7 @@ for j=1:length(tracks)
     if any(ind3)
         % move interaction2 to interaction
         tracks(j).interaction(ind3) = tracks(j).interaction2(ind3);
-        tracks(j).split(ind3) = tracks(j).interaction2(ind3);
+        tracks(j).split(ind3) = tracks(j).split2(ind3);
         tracks(j).merge(ind3) = tracks(j).merge2(ind3);
     end
     
@@ -249,30 +247,28 @@ for j=1:length(tracks)
 
             % check the interacting eddy of eddy j and the step stp(i)
             if isnan(tracks(j).interaction(i))
-
                 % no interaction
                 tracks(j).shapes2{i} = NaN;
                 for n=[n1:n1+3 n2+1:n2+8]
                     tracks(j).(tracks_name{n})(i) = NaN;
                 end
-
             end
+            
         end
     end
     
     if moved2(j)
         for i=1:length(tracks(j).step)
-
+            
             % check the interacting eddy of eddy j and the step stp(i)
             if isnan(tracks(j).interaction2(i))
-
                 % no interaction
                 tracks(j).shapes2{i} = NaN;
                 for n=[n1:n1+3 n2+1:n2+8]
                     tracks(j).(tracks_name{n})(i) = NaN;
                 end
-
             end
+            
         end
     end
         
@@ -284,10 +280,10 @@ disp(' ')
 %----------------------------------------------------------
 % save tracks after merging spltting and cut_off
 
-disp(['Save tracks2 in eddy_tracks_',name,'.mat ...'])
+disp(['Save tracks2 in eddy_tracks',name,'.mat ...'])
 
 tracks2=tracks;
 
-save([path_out,'eddy_tracks_',name],'tracks2','short','-append')
+save([path_out,'eddy_tracks2',name],'tracks2','short','-v7.3')
 
 diary off
