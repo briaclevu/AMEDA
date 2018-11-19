@@ -64,7 +64,7 @@ source = 'AVISO';
 
 %----------------------------------------
 % domaine
-config = 'DYNED_MED_adt';
+keys = 'DYNED_MED_adt';
 
 %----------------------------------------
 % Update option
@@ -89,11 +89,11 @@ cpus=24;
 %----------------------------------------
 % Produce default parameters in param_eddy_tracking
 if exist('stepF','var')
-    mod_eddy_params(['keys_sources_',source,'_',config],stepF)
+    mod_eddy_params(['keys_sources_',source,'_',keys],stepF)
 else
-    mod_eddy_params(['keys_sources_',source,'_',config])
+    mod_eddy_params(['keys_sources_',source,'_',keys])
 end
-run(['keys_sources_',source,'_',config])
+run(['keys_sources_',source,'_',keys])
 load('param_eddy_tracking','path_out','streamlines','resol','stepF');
 
 %----------------------------------------
@@ -280,7 +280,6 @@ end
 %----------------------------------------
 % Resolve merging and spltting event and filter eddies shorter than cut_off
 mod_merging_splitting(name);
-
 
 
 

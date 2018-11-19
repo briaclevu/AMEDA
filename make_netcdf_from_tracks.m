@@ -4,8 +4,8 @@ clear all
 
 % configuration to be used has reference of the v1 of the atlas
 source = 'AVISO';
-config = 'DYNED_MED_adt';
-%config = 'DYNED_MED_cyclo';
+%config = 'DYNED_MED_adt';
+config = 'DYNED_MED_cyclo';
 
 % Definition of the parameters specific for the experiment is needed 
 run(['keys_sources_',source,'_',config])
@@ -39,7 +39,7 @@ NV3 = [];
 % scan and record eddy longer than turnover time (tindracks2 and duralim==0)
 for i=1:length(tracks)
     
-    display(['track ',num2str(i)])
+    %display(['track ',num2str(i)])
     
     %if length(tracks(i).step)>nanmean(tracks(i).tau1)
     if tracks(i).step(end) - tracks(i).step(1)>=duralim
@@ -82,6 +82,9 @@ for i=1:length(tracks)
             if streamlines
                 ind = tracks(i).ind(j);
                 NV3(j) = length(profil2(time(j)).rmoy{ind});
+                if NV3(j)<1
+                    disp(['PROFIL default value tracks ',num2str(i),' step ',num2str(ind(j))])
+                end
             end
         end
         
@@ -150,7 +153,7 @@ for i=1:length(tracks)
         %
         varid(50) = netcdf.defVar(nc,'splitting_ID','int',dimid(1));
         varid(51) = netcdf.defVar(nc,'merging_ID','int',dimid(1));
-        varid(52) = netcdf.defVar(nc,'argo_ID','int',dimid(1));
+%        varid(52) = netcdf.defVar(nc,'argo_ID','int',dimid(1));
 %         varid(53) = netcdf.defVar(nc,'satellite_ID','int',dimid(1));
 %         varid(54) = netcdf.defVar(nc,'interaction_ID','int',dimid(1));
         %
@@ -206,7 +209,7 @@ for i=1:length(tracks)
         netcdf.putAtt(nc,varid(15),'units','m');
         netcdf.putAtt(nc,varid(15),'_Fillvalue',FV2);
         %
-        netcdf.putAtt(nc,varid(16),'long_name','surface of the streamline with the maximum mean velocity');
+        netcdf.putAtt(nc,varid(16),'long_name','surface inside the streamline with the maximum mean velocity');
         netcdf.putAtt(nc,varid(16),'units','km^2');
         netcdf.putAtt(nc,varid(16),'_Fillvalue',FV2);
         %
@@ -276,8 +279,8 @@ for i=1:length(tracks)
         netcdf.putAtt(nc,varid(51),'long_name','interacting eddy ID which merge');
         netcdf.putAtt(nc,varid(51),'_Fillvalue',FV1);
         %
-        netcdf.putAtt(nc,varid(52),'long_name','argo profile ID inside the last streamline');
-        netcdf.putAtt(nc,varid(52),'_Fillvalue',FV1);
+%         netcdf.putAtt(nc,varid(52),'long_name','argo profile ID inside the last streamline');
+%         netcdf.putAtt(nc,varid(52),'_Fillvalue',FV1);
         %
 %         netcdf.putAtt(nc,varid(53),'long_name','satellite tracks ID crossing the last streamline');
 %         netcdf.putAtt(nc,varid(53),'_Fillvalue',FV1);
@@ -339,7 +342,7 @@ for i=1:length(tracks)
             netcdf.putAtt(nc,netcdf.getConstant('NC_GLOBAL'),'eddy_death','0')
         end
         netcdf.putAtt(nc,netcdf.getConstant('NC_GLOBAL'),'number_of_detections',num2str(length(time)));
-        netcdf.putAtt(nc,netcdf.getConstant('NC_GLOBAL'),'life_length',num2str(time(end)-time(1)+1));
+        netcdf.putAtt(nc,netcdf.getConstant('NC_GLOBAL'),'life_time',num2str(time(end)-time(1)+1));
         netcdf.putAtt(nc,netcdf.getConstant('NC_GLOBAL'),'date_first_detection',datestr(time(1)+datei,'yyyy-mm-dd'));
         netcdf.putAtt(nc,netcdf.getConstant('NC_GLOBAL'),'date_last_detection',datestr(time(end)+datei,'yyyy-mm-dd'));
         netcdf.putAtt(nc,netcdf.getConstant('NC_GLOBAL'),'center_lon_min',num2str(min(tracks(i).x1)));
@@ -380,8 +383,8 @@ for i=1:length(tracks)
                 end
             end
         end
-        netcdf.putAtt(nc,netcdf.getConstant('NC_GLOBAL'),'list_of_eddies_which_split',SE);
-        netcdf.putAtt(nc,netcdf.getConstant('NC_GLOBAL'),'list_of_eddies_which_merge',ME);
+%         netcdf.putAtt(nc,netcdf.getConstant('NC_GLOBAL'),'list_of_eddies_which_split',SE);
+%         netcdf.putAtt(nc,netcdf.getConstant('NC_GLOBAL'),'list_of_eddies_which_merge',ME);
         %
         % Leave define mode
         %
@@ -390,10 +393,10 @@ for i=1:length(tracks)
         % Write variables
         %
         netcdf.putVar(nc,varid(1),time);
-        netcdf.putVar(nc,varid(2),tracks(i).x1);
-        netcdf.putVar(nc,varid(3),tracks(i).y1);
-        netcdf.putVar(nc,varid(4),tracks(i).xbary1);
-        netcdf.putVar(nc,varid(5),tracks(i).ybary1);
+        netcdf.putVar(nc,varid(2),round(tracks(i).x1*1000)/1000);
+        netcdf.putVar(nc,varid(3),round(tracks(i).y1*1000)/1000);
+        netcdf.putVar(nc,varid(4),round(tracks(i).xbary1*1000)/1000);
+        netcdf.putVar(nc,varid(5),round(tracks(i).ybary1*1000)/1000);
         %
         if any(isnan(tracks(i).tau1)) || any(tracks(i).tau1<=0)
             ind=find(isnan(tracks(i).tau1) | tracks(i).tau1<=0);
@@ -401,15 +404,15 @@ for i=1:length(tracks)
                 disp(['TAU1 default value tracks ',num2str(i),' step ',num2str(ind(j))])
             end
         end
-        netcdf.putVar(nc,varid(6),tracks(i).tau1);
+        netcdf.putVar(nc,varid(6),round(tracks(i).tau1*1000)/1000);
         %
         netcdf.putVar(nc,varid(10),NV1);
         n=0;
         for j=1:length(time)
             S=tracks(i).shapes1{j};
             if NV1(j)>0
-                netcdf.putVar(nc,varid(11),n,NV1(j),S(1,:));
-                netcdf.putVar(nc,varid(12),n,NV1(j),S(2,:));
+                netcdf.putVar(nc,varid(11),n,NV1(j),round(S(1,:)*1000)/1000);
+                netcdf.putVar(nc,varid(12),n,NV1(j),round(S(2,:)*1000)/1000);
             else
                 disp(['SHAPES1 default tracks ',num2str(i),' step ',num2str(j)])
             end
@@ -422,7 +425,7 @@ for i=1:length(tracks)
                 disp(['VELMAX1 default value tracks ',num2str(i),' step ',num2str(ind(j))])
             end
         end
-        netcdf.putVar(nc,varid(13),tracks(i).velmax1);
+        netcdf.putVar(nc,varid(13),round(tracks(i).velmax1*10000)/10000);
         %
         if any(isnan(tracks(i).rmax1)) || any(tracks(i).rmax1<=0)
             ind=find(isnan(tracks(i).rmax1) | tracks(i).rmax1<=0);
@@ -430,7 +433,7 @@ for i=1:length(tracks)
                 disp(['RMAX1 default value tracks ',num2str(i),' step ',num2str(ind(j))])
             end
         end
-        netcdf.putVar(nc,varid(14),tracks(i).rmax1);
+        netcdf.putVar(nc,varid(14),round(tracks(i).rmax1*100)/100);
         %
         DE=ones(length(time),1)*FV2;
         for j=1:length(time)
@@ -448,7 +451,7 @@ for i=1:length(tracks)
                 end
             end
         end
-        netcdf.putVar(nc,varid(15),DE);
+        netcdf.putVar(nc,varid(15),round(DE*1000)/1000);
         %
         if any(isnan(tracks(i).aire1)) || any(tracks(i).aire1<=0)
             ind=find(isnan(tracks(i).aire1) | tracks(i).aire1<=0);
@@ -456,7 +459,7 @@ for i=1:length(tracks)
                 disp(['AIRE1 default value tracks ',num2str(i),' step ',num2str(ind(j))])
             end
         end
-        netcdf.putVar(nc,varid(16),tracks(i).aire1);
+        netcdf.putVar(nc,varid(16),round(tracks(i).aire1*10)/10);
         %
         if any(isnan(tracks(i).ellip1)) || any(tracks(i).ellip1<0)
             ind=find(isnan(tracks(i).ellip1) | tracks(i).ellip1<0);
@@ -464,7 +467,7 @@ for i=1:length(tracks)
                 disp(['ELLIP1 default value tracks ',num2str(i),' step ',num2str(ind(j))])
             end
         end
-        netcdf.putVar(nc,varid(17),tracks(i).ellip1);
+        netcdf.putVar(nc,varid(17),round(tracks(i).ellip1*100)/100);
         %
         if any(isnan(tracks(i).theta1))
             ind=find(isnan(tracks(i).theta1));
@@ -489,7 +492,7 @@ for i=1:length(tracks)
         if length(tracks(i).theta1)~=length(tracks(i).ellip1)
             tracks(i).theta1=tracks(i).theta1(1:length(tracks(i).ellip1));
         end
-        netcdf.putVar(nc,varid(18),tracks(i).theta1);
+        netcdf.putVar(nc,varid(18),round(tracks(i).theta1*100)/100);
         %
         netcdf.putVar(nc,varid(19),uint8(abs(tracks(i).large1-1)));
         %
@@ -502,7 +505,7 @@ for i=1:length(tracks)
                 disp(['Ro1 default value tracks ',num2str(i),' step ',num2str(ind(j))])
             end
         end
-        netcdf.putVar(nc,varid(20),tracks(i).type.*Ro1);
+        netcdf.putVar(nc,varid(20),round(tracks(i).type.*Ro1*1000)/1000);
         %
         % voricity maximal
         VO=ones(length(time),1)*FV2;
@@ -521,19 +524,20 @@ for i=1:length(tracks)
                 end
             end
         end
-        netcdf.putVar(nc,varid(21),VO);
+        netcdf.putVar(nc,varid(21),round(VO*1e8)/1e8);
         %
         netcdf.putVar(nc,varid(30),NV2);
         n = 0;
         for j=1:length(time)
             if any(tracks(i).rmax3./tracks(i).rmax1<1)
-                S=tracks(i).shapes1{j};
+                disp(['RMAX3 default value tracks ',num2str(i),' step ',num2str(ind(j))])
+                %S=tracks(i).shapes1{j};
             else
                 S=tracks(i).shapes3{j};
             end
             if NV2(j)>0
-                netcdf.putVar(nc,varid(31),n,NV2(j),S(1,:));
-                netcdf.putVar(nc,varid(32),n,NV2(j),S(2,:));
+                netcdf.putVar(nc,varid(31),n,NV2(j),round(S(1,:)*1000)/1000);
+                netcdf.putVar(nc,varid(32),n,NV2(j),round(S(2,:)*1000)/1000);
             else
                 disp(['SHAPES3 default tracks ',num2str(i),' step ',num2str(j)])
             end
@@ -547,9 +551,9 @@ for i=1:length(tracks)
             end
         end
         if any(isnan(tracks(i).rmax3)) || any(tracks(i).rmax3<=0)
-            netcdf.putVar(nc,varid(33),tracks(i).velmax1);
+            %netcdf.putVar(nc,varid(33),round(tracks(i).velmax1*10000)/10000);
         else
-            netcdf.putVar(nc,varid(33),tracks(i).velmax3);
+            netcdf.putVar(nc,varid(33),round(tracks(i).velmax3*10000)/10000);
         end
         %
         if any(isnan(tracks(i).rmax3)) || any(tracks(i).rmax3<=0)
@@ -563,9 +567,9 @@ for i=1:length(tracks)
             for j=1:length(ind)
                 disp(['RMAX3 smaller than RMAX1 tracks ',num2str(i),' step ',num2str(ind(j))])
             end
-            netcdf.putVar(nc,varid(34),tracks(i).rmax1);
+            %netcdf.putVar(nc,varid(34),round(tracks(i).rmax1*100)/100);
         else
-            netcdf.putVar(nc,varid(34),tracks(i).rmax3);
+            netcdf.putVar(nc,varid(34),round(tracks(i).rmax3*100)/100);
         end
         %
         DE=ones(length(time),1)*FV2;
@@ -573,7 +577,8 @@ for i=1:length(tracks)
             if tracks(i).type(1) == 1 %cyclone
                 if tracks(i).deta3(j)<0
                     if any(tracks(i).rmax3./tracks(i).rmax1<1)
-                        DE(j)=tracks(i).deta1(j);
+                        disp(['RMAX3 default value tracks ',num2str(i),' step ',num2str(ind(j))])
+                        %DE(j)=tracks(i).deta1(j);
                     else
                         DE(j)=tracks(i).deta3(j);
                     end
@@ -583,7 +588,8 @@ for i=1:length(tracks)
             else % anticylone
                 if tracks(i).deta3(j)>0
                     if any(tracks(i).rmax3./tracks(i).rmax1<1)
-                        DE(j)=tracks(i).deta1(j);
+                        disp(['RMAX3 default value tracks ',num2str(i),' step ',num2str(ind(j))])
+                        %DE(j)=tracks(i).deta1(j);
                     else
                         DE(j)=tracks(i).deta3(j);
                     end
@@ -592,7 +598,7 @@ for i=1:length(tracks)
                 end
             end
         end
-        netcdf.putVar(nc,varid(35),DE);
+        netcdf.putVar(nc,varid(35),round(DE*10000)/10000);
         %
         if any(isnan(tracks(i).aire3)) || any(tracks(i).aire3<=0)
             ind=find(isnan(tracks(i).aire3) | tracks(i).aire3<=0);
@@ -605,19 +611,21 @@ for i=1:length(tracks)
             for j=1:length(ind)
                 disp(['AIRE3 smaller than AIRE1 tracks ',num2str(i),' step ',num2str(ind(j))])
             end
-            netcdf.putVar(nc,varid(36),tracks(i).aire1);
+            %netcdf.putVar(nc,varid(36),round(tracks(i).aire1*10)/10);
         else
-            netcdf.putVar(nc,varid(36),tracks(i).aire3);
+            netcdf.putVar(nc,varid(36),round(tracks(i).aire3*10)/10);
         end
         %
         if any(tracks(i).alpha<=0)
             ind=find(tracks(i).alpha<=0);
             for j=1:length(ind)
                 disp(['ALPHA <0 tracks ',num2str(i),' step ',num2str(ind(j))])
-                tracks(i).alpha(ind(j)) = NaN;
+                tracks(i).alpha(ind(j)) = FV2;
             end
         end
-        netcdf.putVar(nc,varid(37),tracks(i).alpha);
+        ind = isnan(tracks(i).alpha);
+        tracks(i).alpha(ind) = FV2;
+        netcdf.putVar(nc,varid(37),round(tracks(i).alpha*100)/100);
         if length(tracks(i).step) > 200 && nanmean(tracks(i).rmax1) > 30 && length(find(~isnan(tracks(i).alpha))) > 10
             disp(['--> Lifetime ',num2str(length(tracks(i).step)),...
             ' | Meansize ',num2str(nanmean(tracks(i).rmax1)),...
@@ -635,8 +643,8 @@ for i=1:length(tracks)
                     disp(['V-R default value tracks ',num2str(i),' step ',num2str(ind(j))])
                 end
                 if NV3(j)>0
-                    netcdf.putVar(nc,varid(41),n,NV3(j),V);
-                    netcdf.putVar(nc,varid(42),n,NV3(j),R);
+                    netcdf.putVar(nc,varid(41),n,NV3(j),round(V*10000)/10000);
+                    netcdf.putVar(nc,varid(42),n,NV3(j),round(R*100)/100);
                 end
                 n=n+NV3(j);
             end

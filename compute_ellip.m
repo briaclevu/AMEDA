@@ -1,5 +1,5 @@
-function [xbary,ybary,z,a,b,alpha,lim]=compute_ellip(xy,grid_ll)
-%[xbary,ybary,z,a,b,alpha,lim]=compute_ellip(xy {,grid_ll})
+function [xbary,ybary,z,a,b,theta,lim]=compute_ellip(xy,grid_ll)
+%[xbary,ybary,z,a,b,theta,lim]=compute_ellip(xy {,grid_ll})
 %
 % Compute the barycentre of a closed polygon 2xN array xy where
 %   x or lon is in xy(1,:)
@@ -10,6 +10,8 @@ function [xbary,ybary,z,a,b,alpha,lim]=compute_ellip(xy,grid_ll)
 % and fit an ellipse using fitellipse
 %
 % (xbary,ybary) barycenter from coordinates of the polygon
+% (z,a,b,theta) from fitellipse.m where alpha becomes theta here
+% (lim) is the vertices number of the polygon output return nan if lim<=5
 %
 %-------------------------
 %  Jan 2016 by B. LE VU
@@ -56,13 +58,13 @@ if lim >= 5
                 coord(2,pt) = sign(diff(ys)) * sw_dist2(ys,[xbary xbary],'km');
             end
 
-            [~, a, b, alpha] = fitellipse(coord,'linear');
+            [~, a, b, theta] = fitellipse(coord,'linear');
             z = [xbary,ybary];
             
         else
 
             coord = [xy(1,1:lim);xy(2,1:lim)];
-            [z, a, b, alpha] = fitellipse(coord,'linear');
+            [z, a, b, theta] = fitellipse(coord,'linear');
             
         end
 
@@ -70,14 +72,14 @@ if lim >= 5
             z = [NaN NaN];
             a = NaN;
             b = NaN;
-            alpha = NaN;
+            theta = NaN;
         end
         
     catch
         z = [NaN NaN];
         a = NaN;
         b = NaN;
-        alpha = NaN;
+        theta = NaN;
     end
     
 else
@@ -85,7 +87,7 @@ else
     z = [NaN NaN];
     a = NaN;
     b = NaN;
-    alpha = NaN;
+    theta = NaN;
     
 end
 

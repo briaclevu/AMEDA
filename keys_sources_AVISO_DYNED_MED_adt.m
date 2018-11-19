@@ -127,6 +127,9 @@ name_Rd = 'Rd_baroc1_extra';
 % eddies smaller than 1/4 this radius will be smoothed
 Rd_typ = 12; % km
 
+% minimal size for rmax to be reasonably detected
+nRmin = 1/2; % half of the native Dx grid size
+
 % variable names (could be automatised)
 y_name = 'lat';
 x_name = 'lon';
@@ -187,6 +190,9 @@ daystreamfunction = 1:stepF;
 
 % in case of periodic grid along x boundaries
 periodic = 0;
+
+% to keep firts and last detection after the tracking in NRT configuration
+nrt = 1;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% End of user modification ---------------------------------------------

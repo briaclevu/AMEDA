@@ -64,7 +64,7 @@ source = 'AVISO';
 
 %----------------------------------------
 % domaine
-config = 'DYNED_MED_cyclo';
+keys = 'DYNED_MED_cyclo';
 
 %----------------------------------------
 % Update option
@@ -89,21 +89,21 @@ cpus=1;
 %----------------------------------------
 % Produce default parameters in param_eddy_tracking
 if exist('stepF','var')
-    %mod_eddy_params(['keys_sources_',source,'_',config],stepF)
+    %mod_eddy_params(['keys_sources_',source,'_',keys],stepF)
 else
-    %mod_eddy_params(['keys_sources_',source,'_',config])
+    %mod_eddy_params(['keys_sources_',source,'_',keys])
 end
-run(['keys_sources_',source,'_',config])
+run(['keys_sources_',source,'_',keys])
 load('param_eddy_tracking','path_out','streamlines','resol','stepF');
 
 %----------------------------------------
-% list of steps (from 2000 to 2015)
+% list of steps (from 2000 to 2017)
 % 2000 2001 2002 2003 2004 2005 2006 2007 2008 2009 2010 2011 2012 2013 2014 2015 2016 2017
 list=[1 367 732 1097 1462 1828 2193 2558 2923 3289 3654 4019 4384 4750 5115 5480 5845 6211 stepF+1];
 
 %----------------------------------------
 % Activate matlab pool
-cpus=min([cpus,24]);%maximum of 24 procs
+cpus=min([cpus,32]);%maximum of 24 procs
 
 if cpus>1
     disp('Check that you have access to "Parallel Computing Toolbox" to use PARPOOL')
@@ -118,7 +118,7 @@ end
 %----------------------------------------
 % process detection in yearly loops
 
-for i=15:length(list)-1%(Yf-2000)+1%1:length(list)-1
+for i=1:length(list)-1%(Yf-2000)+1%1:length(list)-1
     
     stepFF=list(i+1)-list(i);
     dstp = list(i)-1;
@@ -165,7 +165,7 @@ for i=15:length(list)-1%(Yf-2000)+1%1:length(list)-1
     detection_fields = detection_fields_ni;
     save([path_out,'fields_',num2str(2000-1+i)],'detection_fields','-v7.3')
     clear detection_fields detection_fields_ni
-    
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Find centers ---------------------------------------------
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -190,7 +190,7 @@ for i=15:length(list)-1%(Yf-2000)+1%1:length(list)-1
 
     %----------------------------------------
     % Save centers
-    save([path_out,'eddy_centers_',num2str(2000-1+i)],'centers0','centers','centers2','-v7.3')
+    save([path_out,'eddy_centers_',num2str(2000-1+i)],'centers0','centers','-v7.3')
     clear centers0 centers
     
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -200,7 +200,7 @@ for i=15:length(list)-1%(Yf-2000)+1%1:length(list)-1
     disp([' === Determine eddies shapes ',num2str(2000-1+i),' ==='])
     disp(' ')
 
-    load([path_out,'eddy_centers_',num2str(2000-1+i)],'centers2')
+    load([path_out,'eddy_centers'],'centers2')
     load([path_out,'eddy_shapes'])
 
     %----------------------------------------
@@ -239,20 +239,19 @@ for i=15:length(list)-1%(Yf-2000)+1%1:length(list)-1
             'warn_shapes','warn_shapes2','-v7.3')
     end
     clear centers2 shapes1 shapes2 profil2 warn_shapes warn_shapes2 struct1 struct2 struct3
+end
 
- end
- 
 end % end loop for year
 
 %----------------------------------------
 % Free workers
-% delete(gcp('nocreate'))
+delete(gcp('nocreate'))
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Track eddies ---------------------------------------------
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% name='_2010';
+% name='_2012';
 % 
 % %----------------------------------------
 % % Tracking eddies and record interacting events
@@ -266,7 +265,7 @@ end % end loop for year
 
 %----------------------------------------
 % concatenete years
-% concat_eddy(num2cell(Yi:Yf))
+concat_eddy(num2cell(Yi:Yf))
 
 %----------------------------------------
 % Tracking eddies and record interacting events
@@ -280,7 +279,6 @@ end
 %----------------------------------------
 % Resolve merging and spltting event and filter eddies shorter than cut_off
 mod_merging_splitting(name);
-
 
 
 

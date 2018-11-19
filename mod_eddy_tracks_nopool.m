@@ -148,7 +148,7 @@ disp('Load centers and shapes ...')
 load([path_out,'eddy_centers',name],'centers2');
 load([path_out,'eddy_shapes',name]);
 
-stepF = length(centers2);
+stepF = length(shapes1);
 
 %----------------------------------------------------------
 % Names list from centers and shapes structure
@@ -212,7 +212,7 @@ else
                 'x2',[],'y2',[],'dc',[],'ind2',[],...
                 'shapes1',[],'velmax1',[],'deta1',[],'tau1',[],'nrho1',[],...
                 'rmax1',[],'aire1',[],'xbary1',[],'ybary1',[],'ellip1',[],'theta1',[],...
-                'shapes3',[],'velmax3',[],'deta3',[],'rmax3',[],'aire3',[]);
+                'shapes3',[],'velmax3',[],'deta3',[],'nrho3',[],'rmax3',[],'aire3',[]);
             
     % add streamlines profiles if needed
     if streamlines
@@ -336,7 +336,7 @@ for i=step0:stepF
     %----------------------------------------------------------
     % Begin updating eddy tracks ------------------------------
     %----------------------------------------------------------
-    if ~isempty(eddy.type)% be sure eddies were present that specific step
+    if ~isempty(eddy.type) && ~isempty(eddy.velmax1)% be sure eddies were present that specific step
         
         %----------------------------------------------------------
         % if first time-step, then all the eddies are open tracks 

@@ -2,10 +2,10 @@ function psi = compute_psi(x,y,mask,u,v,ci,cj,grid_ll)
 %[psi] = compute_psi(x,y,mask,u,v,ci,cj {,grid_ll} )
 %
 %  Computes the streamfunction (PSI) field by spatially integrating of
-%  the u- and v-component of velocity within the 4 area around a detected
-%  eddy center (ci,cj).
+%  the u- and v-component of velocity in the geostrophic equilibrium
+%  within the 4 area around a detected eddy center (ci,cj).
 %  The underlaying assumption is that in the presence of an eddy the
-%  the velocity field is characterized by weak divergence, so that contours
+%  velocity field is characterized by weak divergence, so that contours
 %  of PSI are tangential to the velocity vectors.
 %  To reduce the error associated with this assumption PSI is computed
 %  integrating u and v along two different paths, and the two fields are

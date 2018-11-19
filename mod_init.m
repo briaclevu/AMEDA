@@ -129,14 +129,16 @@ else
     
     % Preallocate shapesstruct array
     %----------------------------------------
-    shapes1(stepF) = struct('step',[],'xy',[],'velmax',[],'taumin',[],...
-        'deta',[],'nrho',[],'rmax',[],'aire',[],...
-        'xy_end',[],'vel_end',[],'deta_end',[],'r_end',[],'aire_end',[]);
+    shapes1(stepF) = struct('step',[],'xy',[],'velmax',[],...
+        'deta',[],'taumin',[],'nrho',[],'rmax',[],'aire',[],...
+        'xbary',[],'ybary',[],'ellip',[],'theta',[],...
+        'xy_end',[],'vel_end',[],'deta_end',[],'nrho_end',[],'r_end',[],'aire_end',[]);
     shapes2(stepF) = struct('step',[],'xy',[],'velmax',[],...
-        'deta',[],'nrho',[],'rmax',[],'aire',[]);
+        'deta',[],'taumin',[],'nrho',[],'rmax',[],'aire',[],...
+        'xbary',[],'ybary',[],'ellip',[],'theta',[]);
     
     if streamlines
-        profil2(stepF) = struct('step',[],'nc',[],'eta',[],'rmoy',[],'vel',[],'tau',[],'myfit',[]);
+        profil2(stepF) = struct('step',[],'nc',[],'eta',[],'rmoy',[],'vel',[],'tau',[],'nrhoi',[],'myfit',[]);
         struct1(stepF) = struct('alpha',[],'rsquare',[],'rmse',[]);
         names1 = [fieldnames(shapes1); fieldnames(struct1)];
         shapes1 = cell2struct([struct2cell(shapes1); struct2cell(struct1)], names1, 1);
@@ -144,18 +146,14 @@ else
     end
     
     if extended_diags==1
-        struct2(stepF) = struct('xbary',[],'ybary',[],'ellip',[],...
-                    'ke',[],'vort',[],'vortM',[],'OW',[],'LNAM',[]);
-        struct3(stepF) = struct('xbary',[],'ybary',[],'ellip',[]);
+        struct2(stepF) = struct('ke',[],'vort',[],'vortM',[],'OW',[],'LNAM',[]);
         names2 = [fieldnames(shapes1); fieldnames(struct2)];
-        names3 = [fieldnames(shapes2); fieldnames(struct3)];
         shapes1 = cell2struct([struct2cell(shapes1); struct2cell(struct2)], names2, 1);
-        shapes2 = cell2struct([struct2cell(shapes2); struct2cell(struct3)], names3, 1);
     end
     
     % Preallocate warnings struct array
     %----------------------------------------
-    warn_shapes(stepF) = struct('no_curve',[],'Rd',[],'gama',[],'bx',[],'calcul_curve',[],...
+    warn_shapes(stepF) = struct('no_curve',[],'f',[],'Rd',[],'gama',[],'bx',[],'calcul_curve',[],...
                     'large_curve1',[],'large_curve2',[],'too_weak2',[]);
     warn_shapes2 = warn_shapes;
 

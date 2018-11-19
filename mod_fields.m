@@ -9,7 +9,7 @@ function fields = mod_fields(source,stp,resolution)
 %  with the first b pixel of land (must include the interpolation factor
 %  'resolution' if any) and NaN in other land pixel.
 %
-%  For a description of the input parameters see param_eddy_tracking.m.
+%  For a description of the input parameters see mod_eddy_param.m.
 
 %
 %  Computed 2-Dfields are saved/update in [path_out,'fields_',runname] as:
@@ -32,7 +32,7 @@ disp([' <<< Compute fields step ',num2str(stp)])
 
 %----------------------------------------
 % load keys_sources and parameters (use mod_eddy_params.m first)
-load('param_eddy_tracking','grid_ll','resol','deg','b','bi')
+load('param_eddy_tracking','grid_ll','resol','deg','b','bi','f','f_i')
 
 %----------------------------------------
 % replace parameters by arguments
@@ -44,6 +44,7 @@ end
 % update b parameter and define I/O matfile
 if resol>1
     b=bi;
+    f=f_i;
 end
 
 %----------------------------------------
@@ -103,7 +104,7 @@ div = (dux./dx) + (dvy./dy);
 
 %----------------------------------------
 % Calculation of vorticity field (typically +/-10^-5 s-1)
-vorticity = om;
+vorticity = om.*sign(f);
 
 %----------------------------------------
 % border is a parameter which prevents the constraints
@@ -161,7 +162,7 @@ for i=borders:length(vv(:,1))-borders+1
             sumdp = sum(dot(:))+sum(produit(:));
 
             if sumdp ~= 0
-                L(i,ii) = sum(cross(:)) / sumdp;
+                L(i,ii) = sum(cross(:)) / sumdp * sign(f(i,ii));
             else
                 L(i,ii) = 0;
             end
