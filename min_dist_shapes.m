@@ -26,7 +26,7 @@ for i=1:length(xy1)
         ys=[xy1(2,i),xy2(2,j)];
         xs=[xy1(1,i),xy2(1,j)];
         if grid_ll
-            ds(i,j) = sw_dist(ys,xs,'km');
+            ds(i,j) = sw_dist2(ys,xs,'km');
         else
             ds(i,j) = sqrt(diff(xs).^2+diff(ys).^2); % km
         end

@@ -3,7 +3,7 @@ function field=get_missing_val(lon,lat,field,missvalue,default)
 %
 %  function field=get_missing_val(lon,lat,field,missvalue,ro,default)
 %
-%  pierrick 2001
+%  pierrick 2001, penven part of romstools
 %
 %  perform an objective analysis to fill
 %  the missing points of an horizontal gridded slice

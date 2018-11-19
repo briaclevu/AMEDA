@@ -1,15 +1,21 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 function load_fields_AVISO(nc_dim,nc_u,nc_v,nc_ssh,b,bx,res,deg)
 %load_field(nc_dim,nc_u,nc_v,nc_ssh,b,bx,res {,deg});
 =======
 function [lon,lat,mask,u,v,ssh] = load_fields_AVISO(stp,resolution,degra)
 %[lon,lat,mask,u,v,ssh]=load_field(stp {,resolution,degra});
 >>>>>>> ameda_v2
+=======
+function [x,y,mask,u,v,ssh] = load_fields_AVISO(stp,resolution,degra)
+%[x,y,mask,u,v,ssh]=load_field(stp {,resolution,degra});
+>>>>>>> ameda_v2
 %
 %  Get netcdf and load the grid and the velocities field (also ssh if any)
-%  for AVISO fields like.
-%  degrad ('deg') is a sample factor (use in some experiment).
-%  resolution ('resol') is the factor to interpolate the grid (to find centers)
+%  for AVISO fields like. Other load_fields routines are used for models
+%  or experiment.
+%  - degrad ('deg') is a sample factor (use in some experiment).
+%  - resolution ('resol') is the factor to interpolate the grid by a resolution factor res.
 %
 %  Enlarge the mask into land by adding b pixels of nil velocities into the
 %  land and 1 pixel in land from an averaged of 9 neighbours for ssh
@@ -18,12 +24,16 @@ function [lon,lat,mask,u,v,ssh] = load_fields_AVISO(stp,resolution,degra)
 %	ssh(b)=mean(ssh)(b-1) or mean(ssh),ssh(~mask(b-1))=nan;
 %
 %  Output are matlab matrice used with tracking_plot routines and should be
+<<<<<<< HEAD
 %  saved in fields.mat file fieldsi must be save in fields_inter.mat.
 %  fields size must be [lat,lon,time] and output velocities must be in m/s and ssh in m
+=======
+%  saved in fields.mat file and in fields_inter.mat.
+%  fields size must be [lat,lon,time]
+%  output velocities must be in m/s and ssh in m
+>>>>>>> ameda_v2
 %
-%  Other load_fields routines are used for models or experiment.
-%
-%  For a description of the input parameters see param_eddy_tracking.m.
+%  For a description of the input parameters see param_eddy_tracking.m
 %
 %-------------------------
 %  June 2016 Briac Le Vu
@@ -31,6 +41,7 @@ function [lon,lat,mask,u,v,ssh] = load_fields_AVISO(stp,resolution,degra)
 %
 %=========================
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 global path_out
 global path_rossby
@@ -43,34 +54,40 @@ if nargin==7
 end
 =======
 % load keys_sources and parameters (use mod_eddy_params.m first)
+=======
+>>>>>>> ameda_v2
 %----------------------------------------
+% load keys_sources and parameters (use mod_eddy_params.m first)
 load('param_eddy_tracking')
 >>>>>>> ameda_v2
 
-% replace parameters by arguments
 %----------------------------------------
+% replace parameters by arguments
 if nargin==3
+% No interpolation by default
     deg = degra;
     resol = resolution;
 elseif nargin==2
+% No degradation and No interpolation by default
     resol = resolution;
 end
 
-% get netcdf
 %----------------------------------------
+% get netcdf
+disp(['Get grid and velocities field at step ',num2str(stp),' ...'])
+
 lon0 = double(ncread(nc_dim,x_name))';
 lat0 = double(ncread(nc_dim,y_name))';
-% ! mask0 not constant with time ! don't trust that one
-%mask0 = double(ncread(nc_dim,m_name))';
-u0 = squeeze(permute(ncread(nc_u,u_name,[1 1 stp],[Inf Inf 1]),[2,1,3]));
-v0 = squeeze(permute(ncread(nc_v,v_name,[1 1 stp],[Inf Inf 1]),[2,1,3]));
-
+mask0 = double(ncread(nc_dim,m_name))';
+u0 = double(squeeze(permute(ncread(nc_u,u_name,[1 1 stp],[Inf Inf 1]),[2,1,3])));
+v0 = double(squeeze(permute(ncread(nc_v,v_name,[1 1 stp],[Inf Inf 1]),[2,1,3])));
 if type_detection>=2
-    ssh0 = squeeze(permute(ncread(nc_ssh,s_name,[1 1 stp],[Inf Inf 1]),[2,1,3]));
+    ssh0 = double(squeeze(permute(ncread(nc_ssh,s_name,[1 1 stp],[Inf Inf 1]),[2,1,3])));
 else
-    ssh0 = [];
+    ssh = [];
 end
 
+<<<<<<< HEAD
 % produce degraded field 
 <<<<<<< HEAD
 x = lon0(1:deg:end,1:deg:end);
@@ -80,13 +97,26 @@ v = v0(1:deg:end,1:deg:end,:);
 if type_detection>=2
     ssh = ssh0(1:deg:end,1:deg:end,:);
 =======
+=======
+>>>>>>> ameda_v2
 %----------------------------------------
-lon0 = lon0(1:deg:end,1:deg:end);
-lat0 = lat0(1:deg:end,1:deg:end);
-u0 = u0(1:deg:end,1:deg:end);
-v0 = v0(1:deg:end,1:deg:end);
+% produce degraded field 
+if deg~=1
+    disp(['  Fields are degraded by a factor ',num2str(deg)])
+    disp('  (degraded grid becomes native grid)')
+end
+
+x = lon0(1:deg:end,1:deg:end);
+y = lat0(1:deg:end,1:deg:end);
+mask = mask0(1:deg:end,1:deg:end);
+u = u0(1:deg:end,1:deg:end);
+v = v0(1:deg:end,1:deg:end);
 if type_detection>=2
+<<<<<<< HEAD
     ssh0 = ssh0(1:deg:end,1:deg:end);
+>>>>>>> ameda_v2
+=======
+    ssh = ssh0(1:deg:end,1:deg:end);
 >>>>>>> ameda_v2
 end
 
@@ -95,6 +125,7 @@ b = b(1:deg:end,1:deg:end);
 bx = bx(1:deg:end,1:deg:end);
 
 % get the grid size
+<<<<<<< HEAD
 <<<<<<< HEAD
 [N,M,stp] = size(u);
 =======
@@ -140,17 +171,15 @@ for n=1:max(b(:))
 =======
 mask0 = u0.*v0*0+1;
 mask0(isnan(mask0)) = 0;
+=======
+[N,M] = size(x);
+>>>>>>> ameda_v2
 
-% fix fields to 0 in land and in miscellaneous AVISO mask
 %----------------------------------------
-u0(mask0==0) = 0;
-v0(mask0==0) = 0;
-u0(isnan(u0)) = 0;
-v0(isnan(v0)) = 0;
-if type_detection>=2
-    ssh0(mask0==0) = NaN;
-end
+% Increase resolution r factor by linear interpolation
+if resol==1
 
+<<<<<<< HEAD
 % Enlarge mask into land by b pixels
 %----------------------------------------
 mask1 = mask0;
@@ -166,10 +195,26 @@ for n=1:b
                         ssh0(i,j) = nanmean(ssh1(:));
 >>>>>>> ameda_v2
                     end
+=======
+    disp('NO INTERPOLATION')
+    
+    % Enlarge mask into land by 1 pixel and compute ssh in the first land pixel if needed
+    disp('Enlarge coastal mask by adding 1 pixel of ocean to the coast ...')
+    for i=1:N
+        for j=1:M
+            if mask(i,j)==0 &&...
+                    sum(sum(mask(max(i-1,1):min(i+1,N),max(j-1,1):min(j+1,M))))~=0
+                u(i,j) = 0;
+                v(i,j) = 0;
+                if type_detection>=2 && isnan(ssh(i,j))
+                    ssh1 = ssh(max(i-1,1):min(i+1,N),max(j-1,1):min(j+1,M));
+                    ssh(i,j) = nanmean(ssh1(:));
+>>>>>>> ameda_v2
                 end
             end
         end
     end
+<<<<<<< HEAD
     mask1 = mask2;% enlarged mask
 end
 
@@ -221,21 +266,40 @@ if resol==1
     ssh = ssh0;
     mask = mask0;
     mask0 = mask1;
-else
-    % size for the interpolated grid
-    N = fix(resol*N0); % new size in lat
-    M = fix(resol*M0); % new size in lon
+=======
 
+>>>>>>> ameda_v2
+else
+
+<<<<<<< HEAD
     % elemental spacing for the interpolated grid
     dlat = diff(lat0(1:2,1))/resol;
     dlon = diff(lon0(1,1:2))/resol;
 >>>>>>> ameda_v2
+=======
+    disp(['Change resolution by computing 2D SPLINE INTERPOLATION ',...
+        'by a factor ',num2str(resol)])
+>>>>>>> ameda_v2
 
+    %----------------------------------------
+    % Increase resolution of the grid
+    % size for the interpolated grid
+    Ni = resol*(N-1)+1; % new size in lat
+    Mi = resol*(M-1)+1; % new size in lon
+    % elemental spacing for the interpolated grid with regular grid
+    dy = diff(y(1:2,1))/resol;
+    dx = diff(x(1,1:2))/resol;
     % interpolated grid
+<<<<<<< HEAD
     [xi,yi] = meshgrid([0:Mi-1]*dx+min(x(:)),[0:Ni-1]*dy+min(y(:)));
+=======
+    [xi,yi] = meshgrid((0:Mi-1)*dx+min(x(:)),(0:Ni-1)*dy+min(y(:)));
+>>>>>>> ameda_v2
 
+    %----------------------------------------
     % Increase resolution of the mask
     maski = interp2(x,y,mask,xi,yi);
+<<<<<<< HEAD
     maski(isnan(maski) | maski < 1) = 0;
     
     % Increase resolution of the ssh mask
@@ -254,10 +318,32 @@ else
     if type_detection>=2
         sshi = ui;
 =======
+=======
+    maski(isnan(maski) | maski < .5) = 0;
+    maski(maski >= .5) = 1;
+    % Enlarge mask into land by 1 pixel and compute ssh in the first land pixel if needed
+    maski1 = maski;% enlarged mask
+    disp('Enlarge coastal mask by adding 1 pixel of ocean to the coast ...')
+    for i=1:Ni
+        for j=1:Mi
+            if maski(i,j)==0 &&...
+                    sum(sum(maski(max(i-1,1):min(i+1,Ni),max(j-1,1):min(j+1,Mi))))~=0
+                maski1(i,j)=1;
+            end
+        end
+    end
+
+    %----------------------------------------
+    % Increase resolution of the fields
+    % fix fields to 0 in land
+    u(mask==0 | isnan(u)) = 0;
+    v(mask==0 | isnan(v)) = 0;
+>>>>>>> ameda_v2
     % Increase resolution of fields (interp2 with regular grid)
-    u = interp2(lon0,lat0,u0,lon,lat,'*spline');
-    v = interp2(lon0,lat0,v0,lon,lat,'*spline');
+    ui = interp2(x,y,u,xi,yi,'*spline');
+    vi = interp2(x,y,v,xi,yi,'*spline');
     if type_detection>=2
+<<<<<<< HEAD
         ssh = interp2(lon0,lat0,ssh0,lon,lat,'linear');
 >>>>>>> ameda_v2
     else
@@ -327,3 +413,27 @@ ssh=sshi;
 b=bi;
 bx=bxi;
 save([path_out,'fields_inter',runname],'x','y','mask','u','v','ssh','b','bx','Dx','Rd','gama','-v7.3')
+=======
+        ssh1 = get_missing_val_2d(x,y,ssh);
+        sshi = interp2(x,y,ssh1,xi,yi,'*spline');
+    else
+        sshi = [];
+    end
+    % Mask velocities and ssh with their enlarged mask
+    ui(maski1==0) = NaN;
+    vi(maski1==0) = NaN;
+    if type_detection>=2
+        sshi(maski1==0) = NaN;
+    end
+
+    %----------------------------------------
+    % Export interpolated fields
+    x = xi;
+    y = yi;
+    mask = maski;
+    u = ui;
+    v = vi;
+    ssh = sshi;
+
+end
+>>>>>>> ameda_v2

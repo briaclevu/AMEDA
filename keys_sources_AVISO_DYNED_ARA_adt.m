@@ -8,9 +8,9 @@
 %   - path_out: directory for the output files;
 %              (default is '..\Tracks\')
 %   - nc_u: full name of the netcdf file with the zonal component of
-%           velocity (ssu) and the time index (day)
+%           velocity (ssu) and the time index (step)
 %   - nc_v: full name of the netcdf file with the meridional component of
-%           velocity (ssv) and the time index (day)
+%           velocity (ssv) and the time index (step)
 %   - nc_dim: full name of the netcdf file with the domain coordinates 
 %            (longitude and latitude) and the velocity mask (land-points=0;
 %             ocean-points=1)
@@ -39,13 +39,15 @@
 %
 % All the variables are read from netcdf file.
 % The package requires 3 different input files:
-% 1) nc_dim with variables x(j,i),y(j,i),mask(j,i)
-% 2) nc_u with variable ssu(t,j,i), day(t)
-% 3) nc_v with variable ssv(t,j,i), day(t)
+% 1) nc_dim with variables x(j,i),y(j,i) and mask(y,x)
+% 2) nc_u with variable ssu(t,j,i) in m/s, step(t)
+% 3) nc_v with variable ssv(t,j,i) in m/s, step(t)
+% you can have also the sea level in an other file
+% 4) nc_ssh with variable ssh(t,j,i) in m, step(t)
 %
 % t is the temporal dimension (number of time steps)
-% y is the zonal dimension (number of grid points along latitude)
-% x is the meridional dimension (number of grid points along longitude)
+% j is the zonal dimension (number of grid points along y or latitude)
+% i is the meridional dimension (number of grid points along x or longitude)
 %
 % The grid is assumed to be rectangular, with orientation N-S and E-W. 
 % Grid indices correspond to geography, so that point (1,1) represents the
@@ -53,7 +55,15 @@
 % Latitudinal and longitudinal grid spacing can vary within the grid domain.
 %
 %-------------------------
-%   June 2016 Briac Le Vu
+%   Ver Jun 2018 Briac and Romain Pennel
+%   Ver Apr 2015 Briac Le Vu
+%   Ver. 2.1 Oct.2012
+%   Ver. 2.0 Jan.2012
+%   Ver. 1.3 Apr.2011
+%   Ver. 1.2 May.2010
+%   Ver. 1.1 Dec.2009
+%   Authors: Francesco Nencioli, francesco.nencioli@univ-amu.fr
+%            Charles Dong, cdong@atmos.ucla.edu
 %-------------------------
 %
 %=========================
@@ -65,11 +75,14 @@
 %% Experiment setings
 %----------------------------------------------
 
-% postfix name of the data
-postname = '2000_2015';
+% source of the input
+source='AVISO';
 
-% set name of the domain
-domain='MED';
+% postfix name of the data
+postname = '_2000_2015';
+
+% set name of the config
+config='DYNED_ARA';
 
 % use to diferenciate source field of surface height (adt, ssh, psi,...)
 sshtype='adt'; % adt or sla
@@ -78,16 +91,21 @@ sshtype='adt'; % adt or sla
 runname = '';
 
 % set the paths
-path_in=['/home/blevu/DATA/AVISO/',domain,'/'];
-path_out=['/home/blevu/Resultats/AVISO/',domain,'/',sshtype,'_',postname,'/',runname,'/'];
-path_tracks='/home/blevu/DATA/AVISO/nrt/adt/tracks/';
-path_data='/home/blevu/DATA/CORIOLIS/';
-path_rossby='/home/blevu/MATLAB/Rossby_radius/';
+path_in = ['/home/blevu/DATA/',source,'/',config,'/'];
+path_result = ['/home/blevu/Resultats/',source,'/',config,'/'];
+path_out = [path_result,sshtype,postname,'/',runname,'/'];
+path_tracks1 = '/home/blevu/DATA/',source,'/dt/phy/tracks/';
+path_tracks2 = '/home/blevu/DATA/',source,'/nrt/phy/tracks/';
+path_data = '/home/blevu/DATA/CORIOLIS/ARABIE/';
+path_rossby = '/home/blevu/MATLAB/Rossby_radius/';
 
 disp(['Compute from ',path_in])
 disp([' to ',path_out])
 
 if exist(path_out,'file')==0
+    system(['mkdir ',path_result]);
+    system(['mkdir ',path_result,sshtype,postname,'/']);
+    system(['mkdir ',path_result,sshtype,postname,'/',runname,'/']);
     system(['mkdir ',path_out]);
 end
 
@@ -95,13 +113,19 @@ end
 addpath(path_out)
 
 % input data file absolute name
-nc_dim=[path_in,'lon_lat_',sshtype,'_',domain,'.nc'];
-nc_u=[path_in,'ssu_',sshtype,'_',domain,'_',postname,'.nc'];
-nc_v=[path_in,'ssv_',sshtype,'_',domain,'_',postname,'.nc'];
-nc_ssh=[path_in,'ssh_',sshtype,'_',domain,'_',postname,'.nc'];
+nc_dim = [path_in,'lon_lat_',sshtype,'_',config,'.nc'];
+nc_u = [path_in,'ssu_',sshtype,'_',config,postname,'.nc'];
+nc_v = [path_in,'ssv_',sshtype,'_',config,postname,'.nc'];
+nc_ssh =[ path_in,'ssh_',sshtype,'_',config,postname,'.nc'];
 
 % Rossby deformation radius file
-mat_Rd = [path_rossby,'Rossby_radius'];
+mat_Rd = [path_rossby,'global_Rossby_radius'];
+name_Rd = 'Rd_Chelton';
+
+% searched eddies typical radius
+% eddies size will be restricted to 5 times this radius
+% eddies smaller than 1/4 this radius will be smoothed
+Rd_typ = 50; % km
 
 % variable names (could be automatised)
 y_name = 'lat';
@@ -124,6 +148,7 @@ disp(' ')
 % rotation period (T) per day and time step in days (dps)
 T = 3600*24; % day period in seconds
 dps = 1; % 24h time step
+level = 1; % vertical level (used only if any)
 
 % degradation factor to test the algorithm
 if ~exist('deg','var')
@@ -138,8 +163,13 @@ grid_ll = 1;
         % 0 : spatial grid in cartesian coordinates (x,y)
         % 1 : spatial grid in earth coordinates (lon,lat)
 
+% grid regular or not (like arakawa in NEMO)
+grid_reg = 1;
+        % 0 irregular 
+        % 1 regular 
+
 % choose the field use as streamlines
-type_detection = 3;
+type_detection = 1;
         % 1 : using velocity fields
         % 2 : using ssh
         % 3 : using both velocity fields and ssh, 

@@ -4,15 +4,15 @@ function [curve,err] = compute_best_fit(lines,rmax,velmax)
 % compute the best fit over an eddy profil V/Vmax = f(R/Rmax)
 % the curve to fit must be the form:
 %
-%   Vr = Ro.e( (1-Ro^mu) / mu )
+%   Vr = Ro.e( (1-Ro^alpha) / alpha )
 %
 % with  Vr = V / Vmax
 %       Ro = R / Rmax
-%       mu is the eddy degree (mu=2 for a gaussian) to be fitted
+%       alpha is the eddy degree (alpha=2 for a gaussian) to be fitted
 %
 % the curve is maximal for Vr = 1 (V=Vmax) at Ro = 1 (R=Rmax)
 %
-% Output the mu with error, R² and chi_square
+% Output the alpha with error, R² and chi_square
 %
 %-------------------------
 %    June 2016 Briac LV
@@ -32,7 +32,8 @@ vel = lines(:,4);
 tau = lines(:,5);
 
 % take part of the profil with no gap between point
-indx = find(diff(rmoy)>2*mean(diff(rmoy)),1); 
+% skip the potential gap at the beginning
+indx = find(diff(rmoy(2:end)) > 2*mean(diff(rmoy(2:end))),1)+1; 
 
 if isempty(indx)
     indx=length(rmoy);
@@ -55,7 +56,11 @@ if nc(indx)<2 && length(indx1)>6 && length(indx2)>0.25*length(indx1) &&...
     % change variable
     x=rmoy(1:indx)/rmax; %[0-2]*rmax
     y=vel(1:indx)/velmax; %[0-1]*velmax
-    
+
+    if size(x,2)~=1
+    	x=x';y=y';
+    end
+
     % define model function
     g = fittype(@(a,x) x.*exp((1-x.^a)/a),'depen','y','indep','x','coeff','a');
     
