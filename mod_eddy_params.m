@@ -5,15 +5,6 @@ function mod_eddy_params(keys_sources,stepF)
 %   and sets 2D fields of parameters
 %
 % Computed parameters:
-<<<<<<< HEAD
-%   - Dx: Meshgrid size
-%   - Rd: First Baroclinic Rossby Radius of Deformation
-%   - gama: resolution coefficient which is the number of pixels per Rd.
-%   - resol: factor of interpolation of the fields (velocity and ssh)
-%       to compute center detection. 2 or 3 seems reasonable in term of
-%       computation time for 1/8° AVISO fields.
-=======
->>>>>>> ameda_v2
 %   - b: parameter for the computation of LNAM and Local Okubo-Weiss
 %       (number of grid points in one of the 4 directions to define
 %       the length of the box area used normalize Angular Momentum
@@ -33,10 +24,7 @@ function mod_eddy_params(keys_sources,stepF)
 % Fixed parameters
 % (you can play with Dt and cut_off but don't touch too much others):
 %   - K: LNAM(LOW<0) threshold to detect the potential eddy centers
-<<<<<<< HEAD
-=======
 %   - V_eddy: center maximale speed during tracking of an eddy
->>>>>>> ameda_v2
 %   - Dt: delay in days for the tracking tolerance
 %   - cut_off: in days for eddies duration filtration after the tracking
 %           0 : use the turnover time from each eddies
@@ -173,13 +161,10 @@ dc_max = 3.5;
 
 % Tracking parameters:
 %----------------------------------------------
-<<<<<<< HEAD
-=======
 % typical eddy speed deplacement in a day
 % 0 to use <Vmax> for each eddy instead
 V_eddy = 6.5; % km/day
 
->>>>>>> ameda_v2
 % maximal delay after its last detection for tracking an eddy [1-15]
 % represent the temporal correlation depending on the coverage of an area
 % 2 steps for model, 3-5 steps for imagery experiment.
@@ -322,12 +307,6 @@ end
 save([path_out,'param_eddy_tracking'],...
     'postname','config','runname','sshtype','path_in','path_out','path_rossby','level',...
     'nc_dim','nc_u','nc_v','nc_ssh','x_name','y_name','m_name','u_name','v_name','s_name',...
-<<<<<<< HEAD
-    'grid_ll','type_detection','extended_diags','streamlines','daystreamfunction','periodic',...
-    'stepF','T','f','dps','deg','Dx','Rd','gama','resol','K','b','Rb','bx','Dt''D_stp','C_rad',...
-    'H','n_min','vel_epsil','k_vel_decay','ds_max','dc_max','R_lim','nrho_lim','aire_max')
-
-=======
     'grid_ll','grid_reg','type_detection','extended_diags','streamlines','daystreamfunction','periodic','nrt',...
     'deg','resol','level','Rd_typ','K','b','bx','Dx','Rd','gama','Rb','bi','bxi','Dxi','Rdi','gamai','Rb',...
     'stepF','T','f','f_i','g','dps','V_eddy','Dt','cut_off','D_stp','N_can','DH','nH_lim','n_min','lat_min',...
@@ -337,6 +316,5 @@ save([path_out,'param_eddy_tracking'],...
 if ~grid_reg
     save([path_out,'gridvel'], 'x', 'y', 'xi', 'yi')
 end
->>>>>>> ameda_v2
 
 

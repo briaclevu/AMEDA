@@ -1,37 +1,16 @@
-<<<<<<< HEAD
-function mod_eddy_shapes(update)
-%mod_eddy_shapes({,update})
-=======
 function [centers2,shapes1,shapes2,profil2,warn_shapes,warn_shapes2] = ...
-<<<<<<< HEAD
-    mod_eddy_shapes(source,stp,fields,centers,bxarea)
-%[centers2,shapes1,shapes2,profil2] =
-%       mod_eddy_shapes(source,stp,fields,centers {,bxarea})
->>>>>>> ameda_v2
-=======
     mod_eddy_shapes(source,stp,fields,centers)
 %[centers2,shapes1,shapes2,profil2,warn_shapes,warn_shapes2] =
 %       mod_eddy_shapes(source,stp,fields,centers)
->>>>>>> ameda_v2
 %
 %  Computes the shapes (if any) of eddies identified with their potential
 %  centers by mod_eddy_centers.m and stored as {centers(t)} in
 %  [path_out,'eddy_centers',runname]
 %
-<<<<<<< HEAD
-%  - update is a flag allowing to update an existing detection:
-%       update = number of time steps backward to consider
-%       update = 0 (default) to compute all the {centers} time serie
-=======
 % - 'source' is the type of netcdf data (AVISO, NEMO, ROMS,...) that
 %   determine which load_field_'source'is  used in the routine
 % - 'fields' is the step 'stp' of the detection_fields computed with
 %   mod_eddy_fields.m
-<<<<<<< HEAD
-% - 'bxarea' defines the area where the streamfunction (PSI) is firstly computed
->>>>>>> ameda_v2
-=======
->>>>>>> ameda_v2
 %
 %  For a description of the input parameters see mod_eddy_param.m
 
@@ -85,10 +64,7 @@ function [centers2,shapes1,shapes2,profil2,warn_shapes,warn_shapes2] = ...
 %  {warn_shapes2(t)}:
 %  - no_curve(n): 1 if no closed contour of PSI was found
 %    around the eddy center;
-<<<<<<< HEAD
-=======
 %  - f(n): Coriolis parameter value at the center
->>>>>>> ameda_v2
 %  - Rd(n): first baroclinic deformation radius of Rossby at the center
 %  - gama(n): resolution factor at the center (Rd/DX/deg*res)
 %  - bx(n): area where the shape is computed (bx*fac)
@@ -135,32 +111,9 @@ disp(' ')
 % load key_source and parameters
 load('param_eddy_tracking')
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-% No update by default
-if nargin==0
-    update = 0;
-end
-
-% load the computed field in mod_fields
-load([path_out,'fields_inter',runname]);
-% begin the log file
-diary([path_out,'log_eddy_shapes',runname,'.txt']);
-% load eddy centers
-load([path_out,'eddy_centers',runname]);
-=======
-% replace parameters by arguments
-=======
->>>>>>> ameda_v2
 %----------------------------------------
 % load 2D velocity fields (m/s) for step stp
-<<<<<<< HEAD
-%----------------------------------------
-eval(['[x,y,mask,uu,vv,sshh] = load_fields_',source,'(stp,1,deg);'])
->>>>>>> ameda_v2
-=======
 eval(['[x,y,mask,uu,vv,sshh] = load_fields_',source,'(stp,resol,deg);'])
->>>>>>> ameda_v2
 
 %----------------------------------------
 % initialise centers as structure
@@ -178,57 +131,6 @@ if streamlines
     struct1 = struct('alpha',[],'rsquare',[],'rmse',[]);
     names1 = [fieldnames(shapes1); fieldnames(struct1)];
     shapes1 = cell2struct([struct2cell(shapes1); struct2cell(struct1)], names1, 1);
-<<<<<<< HEAD
-
-<<<<<<< HEAD
-    switch extended_diags
-        case {0, 2}
-            if streamlines
-                shapes1 = struct('xy',{},'velmax',{},'taumin',{},'deta',{},'nrho',{},'rmax',{},'aire',{},...
-                    'xy_end',{},'vel_end',{},'deta_end',{},'r_end',{},'aire_end',{},...
-                    'alpha',{},'rsquare',{},'rmse',{});
-            else
-                shapes1 = struct('xy',{},'velmax',{},'taumin',{},'deta',{},'nrho',{},'rmax',{},'aire',{},...
-                    'xy_end',{},'vel_end',{},'deta_end',{},'r_end',{},'aire_end',{});
-            end
-            shapes2 = struct('xy',{},'velmax',{},'taumin',{},'deta',{},'nrho',{},'rmax',{},'aire',{});
-        case 1
-            if streamlines
-                shapes1 = struct('xy',{},'velmax',{},'taumin',{},'deta',{},'nrho',{},'rmax',{},'aire',{},...
-                    'xy_end',{},'vel_end',{},'deta_end',{},'r_end',{},'aire_end',{},...
-                    'alpha',{},'rsquare',{},'rmse',{},...
-                    'xbary',{},'ybary',{},'ellip',{},...
-                    'ke',{},'vort',{},'vortM',{},'OW',{},'LNAM',{});
-            else
-                shapes1 = struct('xy',{},'velmax',{},'taumin',{},'deta',{},'nrho',{},'rmax',{},'aire',{},...
-                    'xy_end',{},'vel_end',{},'deta_end',{},'r_end',{},'aire_end',{},...
-                    'xbary',{},'ybary',{},'ellip',{},...
-                    'ke',{},'vort',{},'vortM',{},'OW',{},'LNAM',{});
-            end
-            shapes2 = struct('xy',{},'velmax',{},'deta',{},'nrho',{},'rmax',{},'aire',{},...
-                'xbary',{},'ybary',{},'ellip',{});
-        otherwise
-            display('Wrong choice of extended_diags option')
-            stop
-    end
-    
-    centers2 = struct('step',{},'type',{},'x1',{},'y1',{},'x2',{},'y2',{},'dc',{},'ds',{});
-    
-    % shapes struct for the possible second shape with 2 centers
-    warn_shapes = struct('no_curve',{},'Rd',{},'gama',{},'bx',{},'calcul_curve',{},...
-	'large_curve1',{},'large_curve2',{},'too_large2',{});
-    warn_shapes2 = warn_shapes;
-    
-    if streamlines
-        profil2 = struct('step',{},'nc',{},'eta',{},'rmoy',{},'vel',{},'tau',{},'myfit',{});
-    end
-    
-    step0 = 1;
-    
-=======
->>>>>>> ameda_v2
-=======
->>>>>>> ameda_v2
 end
 
 if extended_diags==1
@@ -237,14 +139,10 @@ if extended_diags==1
     shapes1 = cell2struct([struct2cell(shapes1); struct2cell(struct1)], names1, 1);
 end
 
-<<<<<<< HEAD
-disp(['Determine contour shapes for ',runname])
-=======
 % shapes struct for the possible second shape with 2 centers
 warn_shapes = struct('no_curve',[],'f',[],'Rd',[],'gama',[],'bx',[],'calcul_curve',[],...
                 'large_curve1',[],'large_curve2',[],'too_weak2',[]);
 warn_shapes2 = warn_shapes;
->>>>>>> ameda_v2
 
 %----------------------------------------------
 % Compute eddy shape
@@ -275,25 +173,7 @@ n1 = find(strcmp(shapes_name,'xy_end'));
 % loop through all centers detected for a given step
 for ii=1:length(centers.type)
 
-<<<<<<< HEAD
-        % center indice
-        c_j = centers(i).j(ii);
-        c_i = centers(i).i(ii);
-        
-        % initialization
-        bound = 1; % flag that indicates that permit to increase the small area
-        fac = 0; % increase factor for the area where PSI is computed
-        tmp_large = ones(1,2); % flag on: No maximum found for single and double eddy
-        tmp_CD = nan(2,2); % centers coordinates in case of double eddy 
-        tmp_xy = cell(1,3); % contour for single (max and final) and double eddy
-        tmp_allines = []; % streamlines features to be tested every eddy_dim computation
-        tmp_velmax = zeros(1,3); % velocity to be tested every eddy_dim computation
-        tmp_tau = 9999; % turnover time
-        tmp_deta = zeros(1,3); % delta ssh 
-        tmp_nrho = nan(1,2); % local curvature along the single and double eddy 
-=======
     disp([' === Center ',num2str(ii),' ==='])
->>>>>>> ameda_v2
 
     % center indice
     c_j = centers.j(ii);
@@ -317,28 +197,12 @@ for ii=1:length(centers.type)
         % if eddy dimensions are too big (bound=1)
         fac = fac + 1; % this determine larger area
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-            % xy is the computed shape;
-            % the others are flags output by eddy_dim, and saved in 'warnings_shapes';
-            %----------------------------------------------
-            [CD,xy,allines,velmax,tau,deta,nrho,large,warn,calcul] =...
-                eddy_dim(uu,vv,sshh,mask,x,y,centers(i),ii,Rd(c_j,c_i),fac*bx(c_j,c_i));
-=======
-        % xy is the computed shape;
-        % the others are flags output by eddy_dim, and saved in 'warnings_shapes';
-        %----------------------------------------------
-        [CD,xy,allines,velmax,tau,deta,nrho,large,warn,calcul] =...
-            eddy_dim(uu,vv,sshh,mask,x,y,centers,ii,fac*bx);
->>>>>>> ameda_v2
-=======
         %----------------------------------------------
         % xy is the computed shape;
         % the others are flags output by eddy_dim, and saved in 'warnings_shapes';
         [CD,xy,allines,rmax,velmax,tau,deta,nrho,large,warn,calcul] =...
             eddy_dim(uu,vv,sshh,mask,x,y,centers,ii,f_i(c_j,c_i),...
             Rdi(c_j,c_i),fac*bxi(c_j,c_i));
->>>>>>> ameda_v2
 
         %----------------------------------------------
         % flags exploitation
@@ -611,31 +475,7 @@ for ii=1:length(centers.type)
         else
             shapes2.ellip(ii) = NaN;
         end
-<<<<<<< HEAD
-<<<<<<< HEAD
-        %----------------------------------------------------------
-        % warnings from shape computation
-        warn_shapes(i).no_curve(ii)     = warn;
-        warn_shapes(i).Rd(ii)           = Rd(c_j,c_i);
-        warn_shapes(i).gama(ii)         = gama(c_j,c_i);
-        warn_shapes(i).bx(ii)           = bx(c_j,c_i)*fac;
-        warn_shapes(i).calcul_curve(ii) = calcul;
-        warn_shapes(i).large_curve1(ii) = large(1);
-        warn_shapes(i).large_curve2(ii) = large(2);
-        warn_shapes(i).too_large2(ii)   = 0;
-
-    end % ii=last eddy
-
-    if isempty(centers2(i).type)
-        %----------------------------------------------------------
-        % Initialize warn_shape for eddies with shapes1
-        warn_shapes(i).no_curve = [];
-        warn_shapes2(i) = warn_shapes(i);
-=======
->>>>>>> ameda_v2
-=======
         shapes2.theta(ii) = theta;
->>>>>>> ameda_v2
     else
         names = fieldnames(centers2);
         for n=5:length(names)
@@ -702,32 +542,6 @@ else
         end
     end
 
-<<<<<<< HEAD
-        %----------------------------------------------------------
-        % Remove shapes2 too big or too weak (a first try):
-        % if 2 shapes1 exist
-        %   remove shapes 2 if double eddy too weak
-        %	calcul ds = distance between 2 shapes1 (rmax1 & rmax2)
-        %   remove shapes2 with ds > 1.5 (rmax1 + rmax2)/2
-        %   if 2 shapes2 exist remove the calculated and the weakest
-        % else
-        %	calcul dc = distance between 2 centers
-        %   remove shapes2 if dc > 3.5 * rmax
-        %   replace shapes1 by shapes2 if shapes2 small
-        % end
-        disp(' ')
-        for ii=1:length(shapes2(i).velmax)
-            % test shapes2(ii) exists
-            if ~isnan(shapes2(i).velmax(ii))
-                mv=0;
-                ll1 = shapes1(i).xy{ii}; % shapes1(ii)
-                % find indice of the other center
-                ind = find(centers2(i).x1==centers2(i).x2(ii) &...
-                       centers2(i).y1==centers2(i).y2(ii));
-                % check that double centers are different type
-                if centers2(i).type(ii)~=centers2(i).type(ind)
-                    disp(['   Double eddy ',num2str(ii),' mistaken around 2 different type of eddy !!!'])
-=======
     %----------------------------------------------------------
     % Remove shapes2 too weak:
     % if 2 shapes1 exist
@@ -762,20 +576,7 @@ else
             %----------------------------------------------------------
             % shapes1(ind) exists
             elseif ~isempty(ind)
-<<<<<<< HEAD
-                ll2 = shapes1.xy{ind}; % shapes1(ind)
-                % calcul distance between shapes1(ii) and shapes1(ind)
-                centers2.ds(ii) = min_dist_shapes(ll1,ll2,grid_ll);
-                % remove shapes2(ii) when shapes1(ind) gots higher velocity
-                %----------------------------------------------------------
-                if shapes2.velmax(ii) < shapes1.velmax(ind)
-                    disp(['   Double eddy ',num2str(ii),' weaker than eddy ',num2str(ind),' !!!'])
->>>>>>> ameda_v2
-                    mv=1;
-                % remove shapes2(ii) when shapes1 far one from the other
-=======
 
->>>>>>> ameda_v2
                 %----------------------------------------------------------
                 % shapes1(ind) exists and its speed or shapes1(ii) speed
                 % is lower than shapes2(ii) speed
@@ -823,38 +624,7 @@ else
                             end
 
                         end
-<<<<<<< HEAD
-<<<<<<< HEAD
-                    end
-                % if shapes1(ind) doesn't exist remove shapes2(ii) with centers
-                % very far from each ones and record small shapes2 as shapes1
-                else
-                    if centers2(i).dc(ii) > 5*shapes1(i).rmax(ii)
-                        disp(['   Double eddy ',num2str(ii),' too large distance between 2 centers !!!'])
-                        mv = 1;
-                    end
-                    if shapes2(i).aire(ii) < 2*shapes1(i).aire(ii) &&...
-                            shapes2(i).rmax(ii) < 5*warn_shapes2(i).Rd(ii) &&...
-                            shapes2(i).nrho(ii) < 0.33
-                        disp(['   Small double eddies ',num2str(ii),' replace by single eddy !!!'])
-                        name = fieldnames(centers2);
-                        for n=5:length(name)
-                            centers2(i).(name{n})(ii) = NaN;
-=======
-                        if mv
-                            disp(['   Double eddy ',num2str(ii),' weaker than double eddy ',num2str(ind),' !!!'])
->>>>>>> ameda_v2
-                        end
-                    else
-                        % remove shapes2(ii) if calculated
-                        %----------------------------------------------------------
-                        if warn_shapes2.calcul_curve(ii)==1
-                            disp(['   Calculated double eddy ',num2str(ii),' removed  !!!'])
-                            mv= 1 ;
-                        end
-=======
 
->>>>>>> ameda_v2
                     end
 
                 %----------------------------------------------------------
@@ -944,17 +714,5 @@ else
     disp(['-------------% End step ',num2str(stp)])
     disp(' ')
 
-<<<<<<< HEAD
-if streamlines
-    save([path_out,'eddy_shapes',runname],'shapes1','shapes2','warn_shapes','warn_shapes2','profil2')
-else
-    save([path_out,'eddy_shapes',runname],'shapes1','shapes2','warn_shapes','warn_shapes2')
 end
 
-% close log file
-diary off
-
-=======
-end
-
->>>>>>> ameda_v2

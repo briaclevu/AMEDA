@@ -1,10 +1,5 @@
-<<<<<<< HEAD
-function mod_fields(update)
-%mod_fields({update})
-=======
 function fields = mod_fields(source,stp,resolution)
 %fields = mod_fields(source,stp {,resolution})
->>>>>>> ameda_v2
 %
 %  Creates 2D fields of various computation by finite spatial element
 %  for the step 'stp' of the data of type 'source' (AVISO, NEMO,...) that
@@ -18,19 +13,12 @@ function fields = mod_fields(source,stp,resolution)
 
 %
 %  Computed 2-Dfields are saved/update in [path_out,'fields_',runname] as:
-<<<<<<< HEAD
-%  - detection_fields(t).ke: kinetic energy
-%  - detection_fields(t).div: divergence
-%  - detection_fields(t).vort: vorticity
-%  - detection_fields(t).OW: Okubo-Weiss
-=======
 %  - fields.ke: kinetic energy
 %  - fields.div: divergence
 %  - fields.vort: vorticity
 %  - fields.OW: Okubo-Weiss
 %  - fields.LOW: Local Okubo-Weiss
 %  - fields.LNAM: Local Normalised Angular Momentum
->>>>>>> ameda_v2
 %  (last 2 fields are calculated using b parameter which could include
 %  the interpolation factor 'resol')
 %
@@ -67,18 +55,6 @@ eval(['[x,y,mask,uu,vv,~] = load_fields_',source,'(stp,resol,deg);'])
 % Calculation of eddy kinetic energy
 ke = (uu.^2 + vv.^2)/2;
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-if update
-    step0 = stepF - update+1;
-    detection_fields = detection_fields(1:step0-1);
-else
-    detection_fields = struct('ke',{},'div',{},'vort',{},'OW',{});
-    step0 = 1;
-=======
-% Calculation of finite spatial element
-=======
->>>>>>> ameda_v2
 %----------------------------------------
 % Calculation of finite spatial element
 dx  = zeros(size(x));
@@ -101,7 +77,6 @@ if grid_ll
     % Calcul finite spatial element in km
     dx = dx*R.*cosd(y);
     dy = dy*R;
->>>>>>> ameda_v2
 end
 
 % in meters
@@ -115,86 +90,6 @@ duy(2:end-1,2:end-1) = (uu(3:end,2:end-1) - uu(1:end-2,2:end-1));
 dvx(2:end-1,2:end-1) = (vv(2:end-1,3:end) - vv(2:end-1,1:end-2));
 dvy(2:end-1,2:end-1) = (vv(3:end,2:end-1) - vv(1:end-2,2:end-1));
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-disp('Compute fields on native grid')
-
-% cycle through time steps
-for j=step0:stepF
-    
-    disp(['  Step ',num2str(j),' ... '])
-    
-    % load 2D velocity fields for stepj (m/s)
-    %----------------------------------------
-    uu = squeeze(u(:,:,j));
-    vv = squeeze(v(:,:,j));
-
-    % Calculation of eddy kinetic energy
-    %----------------------------------------
-    ke = (uu.^2 + vv.^2)/2;
-    
-    % Calculation of finite spatial element
-    %----------------------------------------
-    dx  = zeros(size(x));
-    dy  = dx;
-    dux = dx;
-    duy = dx;
-    dvx = dx;
-    dvy = dx;
-    
-    % Spatial element in deg if grid_ll==1 or in km otherwise
-    %----------------------------------------
-    dx(2:end-1,2:end-1) = x(2:end-1,3:end) - x(2:end-1,1:end-2); %#ok<*COLND>
-    dy(2:end-1,2:end-1) = y(3:end,2:end-1) - y(1:end-2,2:end-1);
-    
-    if grid_ll
-        % define constants
-        earth_radius = 6378.137; % km
-        % kilometer (km) per degree of latitude
-        R = earth_radius*pi/180; % 111.320m
-        % Calcul finite spatial element in km
-        dx = dx*R.*cosd(y);
-        dy = dy*R;
-    end
-    
-    % in meters
-    dx = dx*1000; % m
-    dy = dy*1000; % m
-
-    % Compute speed element in m/s
-    %----------------------------------------
-    dux(2:end-1,2:end-1) = (uu(2:end-1,3:end) - uu(2:end-1,1:end-2));
-    duy(2:end-1,2:end-1) = (uu(3:end,2:end-1) - uu(1:end-2,2:end-1));
-    dvx(2:end-1,2:end-1) = (vv(2:end-1,3:end) - vv(2:end-1,1:end-2));
-    dvy(2:end-1,2:end-1) = (vv(3:end,2:end-1) - vv(1:end-2,2:end-1));
-
-    % Calculation of Okubo-Weiss criteria
-    %----------------------------------------
-    sn = (dux./dx) - (dvy./dy); % shear "cisaillement"
-    ss = (dvx./dx) + (duy./dy); % strain "deformation"
-    om = (dvx./dx) - (duy./dy); % vorticity "vorticité"
-
-    okubo = sn.^2 + ss.^2 - om.^2; % in s-2
-
-    % Calculation of divergence
-    %----------------------------------------
-    div = (dux./dx) + (dvy./dy);
-
-    % Calculation of vorticity field (typically +/-10^-5 s-1)
-    %----------------------------------------
-    vorticity = om;
-
-    % save fields in struct array
-    %----------------------------------------
-    detection_fields(j).ke   = ke.*mask;
-    detection_fields(j).div  = div.*mask;
-    detection_fields(j).vort = vorticity.*mask;
-    detection_fields(j).OW   = okubo.*mask;
-
-=======
-% Calculation of Okubo-Weiss criteria
-=======
->>>>>>> ameda_v2
 %----------------------------------------
 % Calculation of Okubo-Weiss criteria
 sn = (dux./dx) - (dvy./dy); % shear "cisaillement"
@@ -281,20 +176,10 @@ L(isnan(L)) = 0;
 %----------------------------------------
 % export fields in struct array
 fields.step = stp;
-<<<<<<< HEAD
-if resol==1
-    fields.ke   = ke.*mask;
-    fields.div  = div.*mask;
-    fields.vort = vorticity.*mask;
-    fields.OW   = okubo.*mask;
->>>>>>> ameda_v2
-end
-=======
 fields.ke   = ke.*mask;
 fields.div  = div.*mask;
 fields.vort = vorticity.*mask;
 fields.OW   = okubo.*mask;
->>>>>>> ameda_v2
 fields.LOW  = LOW.*mask;
 
 % relative value of the LNAM (anticyclone <0 | cyclone >0)

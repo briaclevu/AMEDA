@@ -1,7 +1,6 @@
 % Eddy detection and tracking package
 %-------------------------
 %   Ver. 3.2 2016 by Le Vu et al.
-<<<<<<< HEAD
 %   Ver. 3.1 2014 LMD
 %   Ver. 2.1 Oct.2012
 %   Ver. 2.0 Jan.2012
@@ -10,9 +9,7 @@
 %   Ver. 1.1 Dec.2009
 %   Authors: Francesco Nencioli, francesco.nencioli@univ-amu.fr
 %            Charles Dong, cdong@atmos.ucla.edu
-=======
 %   Ver. 3.1 2014 LMD from Nencioli et al. routines
->>>>>>> ameda_v2
 %-------------------------
 %
 %===================%
@@ -30,13 +27,9 @@
 %  |--> mod_init.m
 %  |
 %  |
-<<<<<<< HEAD
-%  |--> mod_fields_inter.m, mod_fields.m
-=======
 %  |--> mod_fields.m
 %  |     |
 %  |     |--> load_fields.m
->>>>>>> ameda_v2
 %  |
 %  |
 %  |--> mod_eddy_centers.m
@@ -57,7 +50,6 @@
 %  |     |     |--> compute_psi.m
 %  |     |     |
 %  |     |     |--> max_curve.m
-<<<<<<< HEAD
 %  |     |     |     |
 %  |     |     |     |--> scan_lines.m
 %  |     |     |     |
@@ -68,7 +60,6 @@
 %  |     |     |     |--> compute_curve.m
 %  |     |     |     |     |
 %  |     |     |     |     |--> TaubinNTN.m
-=======
 %  |     |           |
 %  |     |           |--> scan_lines.m
 %  |     |           |
@@ -79,7 +70,6 @@
 %  |     |           |--> compute_curve.m
 %  |     |                 |
 %  |     |                 |--> TaubinNTN.m
->>>>>>> ameda_v2
 %  |     |
 %  |     |--> mean_radius.m
 %  |     |

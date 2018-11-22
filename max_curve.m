@@ -88,12 +88,6 @@ else
 end
 
 % rearrange all the contours in C to the structure array 'isolines'
-<<<<<<< HEAD
-%-----------------------------------------------------------
-[isolines,lvl] = scan_lines(C);
-
-=======
->>>>>>> ameda_v2
 %-----------------------------------------------------------
 [isolines,lvl] = scan_lines(C);
 
@@ -166,58 +160,6 @@ while i<=length(isolines)
                 % along this contour to get the averaged velocity
                 V = integrate_vel(x,y,u,v,xdata,ydata,grid_ll);
 
-<<<<<<< HEAD
-            % projection of velocities fields on a contour
-            % for ir/regular grid and integrate these fields
-            % along this contour to get the averaged velocity
-            V = integrate_vel(x,y,u,v,xdata,ydata,grid_ll);
-            
-            % compute the R circle of a similar area
-            R = mean_radius([xdata;ydata],grid_ll);
-            
-            % compute the local curvature (C) and the segment length (P)
-            [C,P] = compute_curve([xdata;ydata],Rd,grid_ll);
-            
-            % compute the revolution time (Tau)
-            T = sum(P(1:end-1))*1000/V/3600/24; % in days if vel is m/s
-            
-<<<<<<< HEAD
-            % part of the contour with negative curvature weighted by
-            % the discrete curvature
-=======
-            % part of the contour with negative curvature weighted by the
-            % discrete curvature
->>>>>>> ameda_v2
-            N = abs(sum(P(C<0).*C(C<0))/(2*pi));
-            
-            % record every streamlines features
-            lines = [lines;nc lvl(i) R(1) V T];
-
-            % in case of 1 center record the last shape
-            if nc==1
-                velmax(3) = V;
-                eddy_lim{3} = [xdata;ydata]; % save the last shape
-                eta(3) = lvl(i); % save the ssh contour
-            % in case of 2 centers record (x,y) of the centers
-            elseif nc==2
-                cd = [xy_ctsi(p);xy_ctsj(p)];
-            end
-            
-            % no closed contour met yet
-            if Vmax==0
-                
-                % test if the first contour contains only 1 center
-                % it is not too big or too much concave segment
-<<<<<<< HEAD
-                if nc==1 && R(1)<5*Rd && N<0.33
-=======
-                if nc==1 && R(1)<R_lim && N<nrho_lim
->>>>>>> ameda_v2
-                    % fix the test values
-                    Vmax = V; % first value of velmax
-                    Tmin = min(Tmin,T); % first value of Tau
-                    % record the first shape which can be the last
-=======
                 %-----------------------------------------------------------
                 % compute the R circle of a similar area
                 R = mean_radius([xdata;ydata],grid_ll);
@@ -243,44 +185,21 @@ while i<=length(isolines)
                 %-----------------------------------------------------------
                 % in case of 1 center record the last shape
                 if nc==1
->>>>>>> ameda_v2
                     velmax(3) = V;
                     rmax(3) = R(1);
                     eddy_lim{3} = [xdata;ydata]; % save the last shape
                     eta(3) = lvl(i); % save the ssh contour
-<<<<<<< HEAD
-                else
-                    return % stop the scan
-=======
                     tau(3) = T; % save the turnover time
                     nrho(3) = N; % save the curvature
                 % in case of 2 centers record (x,y) of the centers
                 elseif nc==2 && isnan(cd(1))
                     cd = [xy_ctsi(p);xy_ctsj(p)];
->>>>>>> ameda_v2
                 end
 
                 %-----------------------------------------------------------
                 % no closed contour met yet
                 if Vmax(1)==0
 
-<<<<<<< HEAD
-                    % replace previous contour
-                    large(nc) = 1; % largest contour
-                    % record eddy{1} only if R<Rlim and N<Nlim
-<<<<<<< HEAD
-                    if nc==2 || rmax<5*Rd && nrhomax<0.33
-=======
-                    if nc==2 || rmax<R_lim && nrhomax<nrho_lim
->>>>>>> ameda_v2
-                        velmax(nc) = Vmax;
-                        eddy_lim{nc} = linesmax; % save the shape
-                        tau = Tmin; % save the turnover time
-                        eta(nc) = etamax; % save the ssh contour
-                        nrho(nc) = nrhomax; % save the local curvature
-                    end                            
-                end
-=======
                     % test if the first contour contains only 1 center
                     % it is not too big
                     if nc==1 && R(1)<nR_lim*Rd
@@ -297,7 +216,6 @@ while i<=length(isolines)
                     else
                         return % stop the scan
                     end
->>>>>>> ameda_v2
 
                 %-----------------------------------------------------------
                 % closed contour already met and velocity is increasing
@@ -317,22 +235,11 @@ while i<=length(isolines)
                         nrhomax(nc) = N;
                     end
                     
-<<<<<<< HEAD
-                % test if Vmax is higher then the existing "true" maximum
-                elseif Vmax>velmax(nc) && velmax(nc)~=0
-                    % record eddy{1} only if R<Rlim and N<Nlim
-<<<<<<< HEAD
-                    if nc==2 || rmax<5*Rd && nrhomax<0.33
-=======
-                    if nc==2 || rmax<R_lim && nrhomax<nrho_lim
->>>>>>> ameda_v2
-=======
                     %-----------------------------------------------------------
                     % record bigger contour around the single or 2 centers
                     % if no "true" maximum met yet
                     if large(nc)~=0
 
->>>>>>> ameda_v2
                         % replace previous contour
                         large(nc) = 1; % largest contour for the first
                         % record eddy{1} only if R<Rlim and N<Nlim

@@ -1,15 +1,5 @@
-<<<<<<< HEAD
-<<<<<<< HEAD
-function mod_eddy_centers(K,update)
-%mod_eddy_centers(K {,update} )
-=======
-function [centers0,centers] = mod_eddy_centers(source,stp,fields,resolution)
-%[centers0,centers] = mod_eddy_centers(source,stp,fields {,resolution} )
->>>>>>> ameda_v2
-=======
 function [centers0,centers] = mod_eddy_centers(source,stp,fields)
 %[centers0,centers] = mod_eddy_centers(source,stp,fields)
->>>>>>> ameda_v2
 %
 %  Detect the potential eddy centers present in the domain,
 %  for each time step of the time serie of the 2-D velocity fields
@@ -25,19 +15,10 @@ function [centers0,centers] = mod_eddy_centers(source,stp,fields)
 % This routine will use:
 %  - K: the abs(LNAM(LOW<0)) threshold to delimit the contour of
 %       the potential eddy centers (one per contour)
-<<<<<<< HEAD
-%  - update is a flag allowing to update an existing detection:
-%       update = number of time steps backward to consider
-%       update = 0 (default) to compute all the mod_field serie
-=======
 %  - bx: used to define smaller areas around each center and find which
 %       ones are included (and alone) in a closed streamline. Must take into
 %       account the resolution factor!
-<<<<<<< HEAD
->>>>>>> ameda_v2
-=======
 %  - DH: delta isocontour of ssh
->>>>>>> ameda_v2
 %
 %  For a description of the input parameters see mod_eddy_param.m.
 
@@ -164,68 +145,6 @@ while j < size(CS,2)
         end
     end
 
-<<<<<<< HEAD
-    %----------------------------------------------
-    % compute each centers in a smaller area
-
-    for ii=1:length(centers_x)
-        
-        % fix the indice of the main center
-        C_I = centers_i(ii);
-        C_J = centers_j(ii);
-        % center coordinates
-        xy_ci = centers_x(ii);
-        xy_cj = centers_y(ii);
-
-        % resize coordinate and velocity matrix 
-        % (making sure not to go outside the domain)
-        xx = x(max(C_J-round(bx(C_J,C_I)/2),1):min(C_J+round(bx(C_J,C_I)/2),size(x,1)), ...
-            max(C_I-round(bx(C_J,C_I)/2),1):min(C_I+round(bx(C_J,C_I)/2),size(x,2)));
-        yy = y(max(C_J-round(bx(C_J,C_I)/2),1):min(C_J+round(bx(C_J,C_I)/2),size(y,1)), ...
-            max(C_I-round(bx(C_J,C_I)/2),1):min(C_I+round(bx(C_J,C_I)/2),size(y,2)));
-        mk = mask(max(C_J-round(bx(C_J,C_I)/2),1):min(C_J+round(bx(C_J,C_I)/2),size(mask,1)), ...
-            max(C_I-round(bx(C_J,C_I)/2),1):min(C_I+round(bx(C_J,C_I)/2),size(mask,2)));
-        vv = v(max(C_J-round(bx(C_J,C_I)/2),1):min(C_J+round(bx(C_J,C_I)/2),size(v,1)), ...
-            max(C_I-round(bx(C_J,C_I)/2),1):min(C_I+round(bx(C_J,C_I)/2),size(v,2)),i);
-        uu = u(max(C_J-round(bx(C_J,C_I)/2),1):min(C_J+round(bx(C_J,C_I)/2),size(u,1)), ...
-            max(C_I-round(bx(C_J,C_I)/2),1):min(C_I+round(bx(C_J,C_I)/2),size(u,2)),i);
-        
-        if type_detection==2 || type_detection==3
-            sshh = ssh(max(C_J-round(bx(C_J,C_I)/2),1):min(C_J+round(bx(C_J,C_I)/2),size(ssh,1)), ...
-                max(C_I-round(bx(C_J,C_I)/2),1):min(C_I+round(bx(C_J,C_I)/2),size(ssh,2)),i);
-        end
-        
-        % indice of the center in the small domain
-        [cj,ci] = find(yy==xy_cj & xx==xy_ci);
-        
-        % indices of all eddy centers in the smaller area
-        % (contains at least c_j and c_i)
-        cts_j = zeros(length(centers_y),1);
-        cts_i = cts_j;
-        for k=1:length(centers_y)
-            try
-                [cts_j(k),cts_i(k)] = find(yy==centers_y(k) & xx==centers_x(k));
-            catch
-            end
-        end
-        
-        % can be empty
-        zero_centers = find(cts_j==0 | cts_i==0);
-        cts_j(zero_centers) = [];
-        cts_i(zero_centers) = [];
-        
-        % centers position in the smaller area
-        if ~isempty(cts_i)
-            xy_ctsi = zeros(length(cts_i),1);
-            xy_ctsj = xy_ctsi;
-            for k=1:length(cts_i)
-                xy_ctsj(k) = yy(cts_j(k),cts_i(k));
-                xy_ctsi(k) = xx(cts_j(k),cts_i(k));
-            end
-        else
-            xy_ctsj = [];
-            xy_ctsi = [];
-=======
     % increment the counter
     j = j + n + 1; % series of coordinates of the next contour 
 end
@@ -294,20 +213,6 @@ for ii=1:length(centers0.x)
                 max(C_I-bx,1):min(C_I+bx,size(ssh,2)));
         end
 
-<<<<<<< HEAD
-    % indice of the center in the small domain
-    [cj,ci] = find(yy==xy_cj & xx==xy_ci);
-
-    % indices of all eddy centers in the smaller area
-    % (contains at least c_j and c_i)
-    cts_j = zeros(length(centers_y),1);
-    cts_i = cts_j;
-    for k=1:length(centers_y)
-        try
-            [cts_j(k),cts_i(k)] = find(yy==centers_y(k) & xx==centers_x(k));
-        catch
->>>>>>> ameda_v2
-=======
         % indice of the max LNAM in the small domain
         [cj,ci] = find(yy==xy_cj & xx==xy_ci);
 
@@ -320,7 +225,6 @@ for ii=1:length(centers0.x)
                 [cts_j(k),cts_i(k)] = find(yy==centers0.y(k) & xx==centers0.x(k));
             catch
             end
->>>>>>> ameda_v2
         end
 
         % can be empty
@@ -353,66 +257,6 @@ for ii=1:length(centers0.x)
 
             psi1 = double(compute_psi(xx,yy,mk,uu*f/g*1e3,vv*f/g*1e3,ci,cj,grid_ll));
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-        %----------------------------------------------
-        % concantene all streamlines
-        CS = [CS1,CS2];
-
-        % rearrange all the contours in C to the structure array 'isolines'
-        %-----------------------------------------------------------
-        [isolines,~] = scan_lines(CS);
-        
-        %----------------------------------------------
-        % scan streamlines and validate centers which are alone as potential centers
-
-        % Initialization
-        j = 1; % first coordinates of the contour scan
-
-        while j <= length(isolines)
-
-            xdata = isolines(j).x; % vortex x's
-            ydata = isolines(j).y; % vortex y's
-
-            % conditions to have determine a ptential center
-            % 1) a closed contour
-            % 2) detected the right eddy center inside the polygon
-
-            if xdata(1)==xdata(end) && ydata(1)==ydata(end) && ...
-                    inpolygon(xy_ci,xy_cj,xdata,ydata) && length(xdata)>=4
-
-                % searchs the coordinates of the centers in the contour 
-                IN = inpolygon(xy_ctsi,xy_ctsj,xdata,ydata);
-                [p,~] = find(IN==1); % index of the coordinates in the contour
-                nc = length(p); % number of center in the contour
-                
-                % only one center include in the streamline
-                if nc==1
-                    
-                    type1(ii) = centers_type(ii);
-                    x1(ii)    = xy_ci;
-                    y1(ii)    = xy_cj;
-                    j1(ii)    = C_J;
-                    i1(ii)    = C_I;
-                    
-                % the contour contains more than 1 centers
-                elseif nc>1
-                    
-                    j = length(isolines); % stop the scan
-                    
-                end
-            end
-            
-            % increment the counter
-            j = j + 1;
-=======
-        % test if the grid is regular or not
-        if min(xx(1,:)==xx(end,:)) && min(yy(:,1)==yy(:,end))
-            CS1 = contourc(xx(1,:),yy(:,1),psi,H/2);
-        else
-            figure('visible','off')
-            CS1 = contour(xx,yy,psi,H/2);
-=======
             % determine contour to be scan
             H = floor(nanmin(psi1(:))):DH:ceil(nanmax(psi1(:)));    
             % impose a limit
@@ -428,7 +272,6 @@ for ii=1:length(centers0.x)
                 CS1 = contour(xx,yy,psi1,H);
                 close(HF)
             end
->>>>>>> ameda_v2
         end
 
         %----------------------------------------------
@@ -437,15 +280,6 @@ for ii=1:length(centers0.x)
 
             psi2 = double(squeeze(sshh));
 
-<<<<<<< HEAD
-        % test if the grid is regular or not
-        if min(xx(1,:)==xx(end,:)) && min(yy(:,1)==yy(:,end))
-            CS2 = contourc(xx(1,:),yy(:,1),psi,H/2);
-        else
-            figure('visible','off')
-            CS2 = contour(xx,yy,psi,H/2);
->>>>>>> ameda_v2
-=======
             % determine contour to be scan
             Hs = floor(nanmin(psi2(:))):DH:ceil(nanmax(psi2(:)));    
             % impose a limit to the number of streamlines scanned
@@ -461,7 +295,6 @@ for ii=1:length(centers0.x)
                 CS2 = contour(xx,yy,psi2,Hs);
                 close(HF)
             end
->>>>>>> ameda_v2
         end
 
         %----------------------------------------------
@@ -672,8 +505,6 @@ else
     stop
 
 end
-<<<<<<< HEAD
-=======
 
 IND = sort(IND);
 centers.type = type1(IND);
@@ -682,12 +513,8 @@ centers.y    = y1(IND);
 centers.i    = i1(IND);
 centers.j    = j1(IND);
 
-<<<<<<< HEAD
->>>>>>> ameda_v2
-=======
 disp([' Potential eddy centers found step ',num2str(stp)])
 disp(['  -> ',num2str(length(IND)),' potential centers found'])
 disp(['    (',num2str(length(type1)-length(IND)),' max LNAM removed)'])
 
 disp(' ')
->>>>>>> ameda_v2
