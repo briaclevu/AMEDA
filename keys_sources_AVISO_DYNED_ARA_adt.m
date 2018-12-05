@@ -81,7 +81,7 @@ source='AVISO';
 % postfix name of the data
 postname = '_2000_2015';
 
-% set name of the config
+% set name of the domain
 config='DYNED_ARA';
 
 % use to diferenciate source field of surface height (adt, ssh, psi,...)
@@ -94,9 +94,9 @@ runname = '';
 path_in = ['/home/blevu/DATA/',source,'/',config,'/'];
 path_result = ['/home/blevu/Resultats/',source,'/',config,'/'];
 path_out = [path_result,sshtype,postname,'/',runname,'/'];
-path_tracks1 = '/home/blevu/DATA/',source,'/dt/phy/tracks/';
-path_tracks2 = '/home/blevu/DATA/',source,'/nrt/phy/tracks/';
-path_data = '/home/blevu/DATA/CORIOLIS/ARABIE/';
+path_tracks1 = ['/home/blevu/DATA/',source,'/dt/phy/tracks/'];
+path_tracks2 = ['/home/blevu/DATA/',source,'/nrt/phy/tracks/'];
+path_data = '/home/blevu/DATA/CORIOLIS/';
 path_rossby = '/home/blevu/MATLAB/Rossby_radius/';
 
 disp(['Compute from ',path_in])
@@ -116,16 +116,18 @@ addpath(path_out)
 nc_dim = [path_in,'lon_lat_',sshtype,'_',config,'.nc'];
 nc_u = [path_in,'ssu_',sshtype,'_',config,postname,'.nc'];
 nc_v = [path_in,'ssv_',sshtype,'_',config,postname,'.nc'];
-nc_ssh =[ path_in,'ssh_',sshtype,'_',config,postname,'.nc'];
+nc_ssh = [path_in,'ssh_',sshtype,'_',config,postname,'.nc'];
 
 % Rossby deformation radius file
 mat_Rd = [path_rossby,'global_Rossby_radius'];
 name_Rd = 'Rd_Chelton';
 
 % searched eddies typical radius
-% eddies size will be restricted to 5 times this radius
 % eddies smaller than 1/4 this radius will be smoothed
 Rd_typ = 50; % km
+
+% minimal size for rmax to be reasonably detected
+nRmin = 1/2; % half of the native Dx grid size
 
 % variable names (could be automatised)
 y_name = 'lat';
@@ -188,7 +190,9 @@ daystreamfunction = 1:stepF;
 % in case of periodic grid along x boundaries
 periodic = 0;
 
+% to keep firts and last detection after the tracking in NRT configuration
+nrt = 1;
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% End of user modification ---------------------------------------------
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-

@@ -55,16 +55,29 @@
 %
 %=========================
 
-start
+%start
 clear; clc;
+disp(version)
+addpath AMEDA
+addpath AMEDA/sources
+addpath AMEDA/tools
 
 %----------------------------------------
 % source of data driving the netcdf format
-source = 'AVISO';
+source = 'NEMO';
+%source = 'AVISO';
 
 %----------------------------------------
 % domaine
-keys = 'MED';
+keys = 'test';
+
+%----------------------------------------
+% inital and final year
+Yi = 2000; Yf = 2017;
+
+%----------------------------------------
+% Set parallel computation
+cpus=24;
 
 %----------------------------------------
 % Update option
@@ -73,18 +86,6 @@ update = 0; % the serie from the beginning
 %----------------------------------------
 % Possibility to shorter the serie
 %stepF = 10;
-
-%----------------------------------------
-% inital and final year
-Yi = 2000; Yf = 2015;
-
-%----------------------------------------
-% list of steps (from 2000 to 2015)
-% 2000 2001 2002 2003 2004 2005 2006 2007 2008 2009 2010 2011 2012 2013 2014 2015
- list=[1 367 732 1097 1462 1828 2193 2558 2923 3289 3654 4019 4384 4750 5115 5480 stepF+1];
-
-% Set parallel number of threads
-cpus=12;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Initialisation ---------------------------------------------
@@ -101,10 +102,15 @@ run(['keys_sources_',source,'_',keys])
 load('param_eddy_tracking','path_out','streamlines','resol','stepF');
 
 %----------------------------------------
-% Activate matlab pool
-if cpus>1
-    cpus=min([cpus,24]);%maximum of 24 procs
+% list of steps (from 2000 to 2015)
+list=[1 stepF+1];
+list=[1 367 732 1097 1462 1828 2193 2558 2923 3289 3654 4019 4384 4750 5115 5480 stepF+1];
 
+%----------------------------------------
+% Activate matlab pool
+cpus=min([cpus,32]);%maximum of 24 procs
+
+if cpus>1
     disp('Check that you have access to "Parallel Computing Toolbox" to use PARPOOL')
     disp('otherwise use MAIN_AMEDA_nopool')
     disp(' ')
@@ -112,11 +118,11 @@ if cpus>1
     myCluster = parcluster('local');
     delete(myCluster.Jobs)
     mypool = parpool(cpus);
-
 end
 
 %----------------------------------------
-% detection process in yearly loops od daily step
+% process detection in yearly loops
+
 for i=1:length(list)-1
     
     stepFF=list(i+1)-list(i);
@@ -125,7 +131,7 @@ for i=1:length(list)-1
     %----------------------------------------
     % Preallocate structure array and mat-file or prepare update
     % !! replace or reinitialise previous results !!
-    step0 = mod_init(stepFF,update);
+    step0 = mod_init(stepF,update);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Compute LNAM ---------------------------------------------
@@ -150,7 +156,7 @@ for i=1:length(list)-1
         else
             %----------------------------------------
             % Interpolated and non interpolated field are the same
-            disp(' === Interpolated LNAM is the same ===')
+            %disp(' === Interpolated LNAM is the same ===')
             detection_fields(stp) = detection_fields_ni(stp);
         end
     end
@@ -167,10 +173,10 @@ for i=1:length(list)-1
 %% Find centers ---------------------------------------------
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-    disp([' === Find potential centers ',num2str(1999+i),' ==='])
+    disp([' === Find potential centers ',num2str(Yi-1+i),' ==='])
     disp(' ')
 
-    load([path_out,'eddy_centers'],'centers0','centers')
+    load([path_out,'eddy_centers'])
 
     %----------------------------------------
     % Build I/O matfile
@@ -202,7 +208,7 @@ for i=1:length(list)-1
 
     %----------------------------------------
     % Build I/O matfile
-    fields_mat = matfile([path_out,'fields_inter_',num2str(Yi-1+i),'.mat']);
+    fields_mat = matfile([path_out,'fields_inter_',num2str(2000-1+i),'.mat']);
     centers_mat = matfile([path_out,'eddy_centers_',num2str(Yi-1+i),'.mat']);
 
     parfor stp = step0:stepFF
@@ -221,8 +227,9 @@ for i=1:length(list)-1
         else
             [centers2(stp),shapes1(stp),shapes2(stp),~,...
             warn_shapes(stp),warn_shapes2(stp)] = ...
-            mod_eddy_shapes(source,stp,fields,centers);
+            mod_eddy_shapes(source,stp+dstp,fields,centers);
         end
+
     end
 
     %----------------------------------------
@@ -237,15 +244,15 @@ for i=1:length(list)-1
     end
     clear centers2 shapes1 shapes2 profil2 warn_shapes warn_shapes2 struct1 struct2 struct3
 
-end % end loop for shapes
+end % end loop for years
 
 %----------------------------------------
 % Free workers
 delete(gcp('nocreate'))
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Track eddies ---------------------------------------------
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Track eddies ---------------------------------------------
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %----------------------------------------
 % concatenete years
@@ -254,6 +261,7 @@ concat_eddy(num2cell(Yi:Yf))
 %----------------------------------------
 % Tracking eddies and record interacting events
 name=['_',num2str(Yi),'_',num2str(Yf)];
+% mod_eddy_tracks_nopool(name,update);
 for i=1:length(list)-1
     update = list(end)-list(i);
     mod_eddy_tracks_nopool(name,update);

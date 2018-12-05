@@ -70,7 +70,7 @@ if buoy
 end
 
 if argo
-    input_dir = '/home/blevu/DATA/CORIOLIS/argo_profiles/med/coloc_anoms_Med_all_modes5.nc';
+    input_dir = '/home/blevu/DATA/CORIOLIS/argo_profiles/med/coloc_anoms_Med_all_modes.nc';
     time_1_argo = '01-Jan-2000';
     time_1_track = '01-Jan-2000';
     time_argo = floor(double(ncread(input_dir,'time_step')+datenum(time_1_argo)-1));

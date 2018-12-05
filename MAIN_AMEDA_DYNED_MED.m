@@ -118,7 +118,7 @@ end
 %----------------------------------------
 % process detection in yearly loops
 
-for i=17:(Yf-2000)+1%(Yi-2000)+1:(Yf-2000)+1
+for i=1:length(list)-1
     
     stepFF=list(i+1)-list(i);
     dstp = list(i)-1;
@@ -190,7 +190,7 @@ if i>17
 
     %----------------------------------------
     % Save centers
-    save([path_out,'eddy_centers_',num2str(2000-1+i)],'centers0','centers','centers2','-v7.3')
+    save([path_out,'eddy_centers_',num2str(2000-1+i)],'centers0','centers','-v7.3')
     clear centers0 centers
     
 end
@@ -201,7 +201,7 @@ end
     disp([' === Determine eddies shapes ',num2str(2000-1+i),' ==='])
     disp(' ')
 
-    load([path_out,'eddy_centers_',num2str(2000-1+i)],'centers2')
+    load([path_out,'eddy_centers'],'centers2')
     load([path_out,'eddy_shapes'])
 
     %----------------------------------------
@@ -271,7 +271,7 @@ concat_eddy(num2cell(Yi:Yf))
 %----------------------------------------
 % Tracking eddies and record interacting events
 name=['_',num2str(Yi),'_',num2str(Yf)];
-% mod_eddy_tracks_nopool(name,update);
+% mod_eddy_tracks_pool(name,update);
 for i=1:length(list)-1
     update = list(end)-list(i);
     mod_eddy_tracks_nopool(name,update);

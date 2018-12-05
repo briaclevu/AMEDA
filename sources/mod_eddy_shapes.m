@@ -342,14 +342,14 @@ for ii=1:length(centers.type)
             shapes1.(names{n})(ii) = NaN;
         end
         if streamlines
-            if find(daystreamfunction==stp)
+%            if find(daystreamfunction==stp)
                 names = fieldnames(profil2);
                 for n=2:length(names)-1
                     profil2.(names{n}){ii} = NaN;
                 end
                 profil2.myfit(ii).curve = NaN;
                 profil2.myfit(ii).err   = NaN;
-            end
+%            end
         end
     end
     
@@ -422,6 +422,16 @@ for ii=1:length(centers.type)
                     shapes1.rsquare(ii) = NaN;
                     shapes1.rmse(ii)    = NaN;
                 end
+            else
+                names = fieldnames(profil2);
+                for n=2:length(names)-1
+                    profil2.(names{n}){ii} = NaN;
+                end
+                profil2.myfit(ii).curve = NaN;
+                profil2.myfit(ii).err   = NaN;
+                shapes1.alpha(ii)   = NaN;
+                shapes1.rsquare(ii) = NaN;
+                shapes1.rmse(ii)    = NaN;
             end
         end
     else
@@ -534,12 +544,12 @@ else
         warn_shapes2.(names{n})(replace)=[];
     end
     if streamlines
-        if find(daystreamfunction==stp)
+%        if find(daystreamfunction==stp)
             names = fieldnames(profil2);
             for n=2:length(names)
                 profil2.(names{n})(replace)=[];
             end
-        end
+%        end
     end
 
     %----------------------------------------------------------

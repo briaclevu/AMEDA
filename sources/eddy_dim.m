@@ -92,7 +92,7 @@ u = u(max(C_J-bx,1):min(C_J+bx,size(u,1)), ...
 if type_detection==2 || type_detection==3
     ssh = ssh(max(C_J-bx,1):min(C_J+bx,size(ssh,1)), ...
             max(C_I-bx,1):min(C_I+bx,size(ssh,2)));
-    % determine contour to be scan
+    % determine contours to be scan
     Hs = floor(nanmin(ssh(:))):DH:ceil(nanmax(ssh(:)));
     % impose a limit to limit cpu time
     if length(Hs)>nH_lim
@@ -121,7 +121,7 @@ if type_detection==1 || type_detection==3
     % compute streamfunction field from u,v in m/s/100 -> units ssh (m?)
     psi = compute_psi(x,y,mask,u*f/g*1e3,v*f/g*1e3,ci,cj,grid_ll);
     
-    % determine contour to be scan
+    % determine contours to be scan
     H = floor(nanmin(psi(:))):DH:ceil(nanmax(psi(:)));
     
     % impose a limit to limit cpu time

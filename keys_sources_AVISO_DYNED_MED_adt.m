@@ -123,7 +123,6 @@ mat_Rd = [path_rossby,'Rossby_radius']; % for Med
 name_Rd = 'Rd_baroc1_extra';
 
 % searched eddies typical radius
-% eddies size will be restricted to 5 times this radius
 % eddies smaller than 1/4 this radius will be smoothed
 Rd_typ = 12; % km
 

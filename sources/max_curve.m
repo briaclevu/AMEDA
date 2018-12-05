@@ -79,7 +79,7 @@ end
 % C is a vector containing all the coordinates of PSI contours
 
 % test the regularity of the grid
-if min(x(1,:)==x(end,:)) && min(y(:,1)==y(:,end))
+if  min(x(1,:)==x(end,:)) && min(y(:,1)==y(:,end))
     C = contourc(x(1,:),y(:,1),double(psi),H);
 else
     HF = figure('visible','off');

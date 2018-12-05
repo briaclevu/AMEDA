@@ -5,28 +5,49 @@ clear all
 % configuration to be used has reference of the v1 of the atlas
 source = 'AVISO';
 %config = 'DYNED_MED_adt';
-config = 'DYNED_MED_cyclo';
+%config = 'DYNED_MED_cyclo';
+keys = 'DYNED_ARA_adt';
 
 % Definition of the parameters specific for the experiment is needed 
-run(['keys_sources_',source,'_',config])
+run(['keys_sources_',source,'_',keys])
 load('param_eddy_tracking')
 
 % load result from AMEDA tracking and merging/splitting
-load([path_out,'eddy_tracks2_2000_2017'])
-%load([path_out,'eddy_tracks2_2010_2011'])
-tracks=tracks2;
-if streamlines
-    load([path_out,'eddy_shapes_2000_2017'],'profil2')
-    %load([path_out,'eddy_shapes_2010_2011'],'profil2')
+if strcmp(config,'DYNED_MED_cyclo') || strcmp(config,'DYNED_MED')
+    
+    load([path_out,'eddy_tracks2_2000_2017'])
+    %load([path_out,'eddy_tracks2_2010_2011'])
+    tracks=tracks2;
+    if streamlines
+        load([path_out,'eddy_shapes_2000_2017'],'profil2')
+        %load([path_out,'eddy_shapes_2010_2011'],'profil2')
+    end
+
+    % date and length from "YYYY-MM-DDThh:mm:ssZ"
+    datei=datenum([2000 01 01]);
+    duralim=0;
+
+    % create folder for the experiment
+    path_out2=[path_out,'nc_tracks_2000_2017/'];
+    system(['mkdir ',path_out2]);
+    
+elseif strcmp(config,'DYNED_ARA') || strcmp(config,'DYNED_ARA_cyclo')
+    
+    load([path_out,'eddy_tracks2_2000_2015'])
+    tracks=tracks2;
+    if streamlines
+        load([path_out,'eddy_shapes_2000_2015'],'profil2')
+    end
+
+    % date and length from "YYYY-MM-DDThh:mm:ssZ"
+    datei=datenum([2000 01 01]);
+    duralim=0;
+
+    % create folder for the experiment
+    path_out2=[path_out,'nc_tracks_2000_2015/'];
+    system(['mkdir ',path_out2]);
+    
 end
-
-% date and length from "YYYY-MM-DDThh:mm:ssZ"
-datei=datenum([2000 01 01]);
-duralim=0;
-
-% create folder for the experiment
-path_out2=[path_out,'nc_tracks_2000_2017/'];
-system(['mkdir ',path_out2]);
 
 % load test to get _Fillvalue
 FV = double(ncread(['/home/blevu/Resultats/AVISO/MED/eddy_track_test.nc'],'x_max'));
@@ -45,18 +66,31 @@ for i=1:length(tracks)
     if tracks(i).step(end) - tracks(i).step(1)>=duralim
         
         % ID tracks
-        if i<10
-            ID=['0000',num2str(i)];
-        elseif i<100
-            ID=['000',num2str(i)];
-        elseif i<1000
-            ID=['00',num2str(i)];
-        elseif i<10000
-            ID=['0',num2str(i)];
-        else
-            ID=num2str(i);
-        end
-        
+        if strcmp(config,'DYNED_MED_cyclo') || strcmp(config,'DYNED_MED')
+            if i<10
+                ID=['0000',num2str(i)];
+            elseif i<100
+                ID=['000',num2str(i)];
+            elseif i<1000
+                ID=['00',num2str(i)];
+            elseif i<10000
+                ID=['0',num2str(i)];
+            else
+                ID=num2str(i);
+            end
+        elseif strcmp(config,'DYNED_ARA') || strcmp(config,'DYNED_ARA_cyclo')
+            if i<10
+                ID=['2000',num2str(i)];
+            elseif i<100
+                ID=['200',num2str(i)];
+            elseif i<1000
+                ID=['20',num2str(i)];
+            elseif i<10000
+                ID=['2',num2str(i)];
+            else
+                ID=num2str(i+20000);
+            end
+        end        
         % steps of tracking
         time=tracks(i).step;
                 
@@ -290,9 +324,15 @@ for i=1:length(tracks)
         %
         %  Create global attributes
         %
-        netcdf.putAtt(nc,netcdf.getConstant('NC_GLOBAL'),'history',[date,' make_netcdf_from_tracks.m routine on tracks2_2000_2015 with eddies longer than taumin']);
-        netcdf.putAtt(nc,netcdf.getConstant('NC_GLOBAL'),'title',['eddy tracks ID ',ID,' from AMEDA']);
-        netcdf.putAtt(nc,netcdf.getConstant('NC_GLOBAL'),'summary','This dataset contains AMEDA analysis of SSALTO/DUACS products over Mediterranean Sea (http://www.aviso.altimetry.fr)');
+        if strcmp(config,'DYNED_MED_cyclo') || strcmp(config,'DYNED_MED')
+            netcdf.putAtt(nc,netcdf.getConstant('NC_GLOBAL'),'history',[date,' make_netcdf_from_tracks.m routine on tracks2_2000_2017 with eddies longer than 2*taumin']);
+            netcdf.putAtt(nc,netcdf.getConstant('NC_GLOBAL'),'title',['eddy tracks ID ',ID,' from AMEDA']);
+            netcdf.putAtt(nc,netcdf.getConstant('NC_GLOBAL'),'summary','This dataset contains AMEDA analysis of 1/8° SSALTO/DUACS products over Mediterranean Sea (http://www.aviso.altimetry.fr)');
+        elseif strcmp(config,'DYNED_ARA') || strcmp(config,'DYNED_ARA_cyclo')
+            netcdf.putAtt(nc,netcdf.getConstant('NC_GLOBAL'),'history',[date,' make_netcdf_from_tracks.m routine on tracks2_2000_2015 with eddies longer than 2*taumin']);
+            netcdf.putAtt(nc,netcdf.getConstant('NC_GLOBAL'),'title',['eddy tracks ID ',ID,' from AMEDA']);
+            netcdf.putAtt(nc,netcdf.getConstant('NC_GLOBAL'),'summary','This dataset contains AMEDA analysis of 1/8° SSALTO/DUACS products over Arabian Sea (http://www.aviso.altimetry.fr)');
+        end
         netcdf.putAtt(nc,netcdf.getConstant('NC_GLOBAL'),'project','DYNED-Atlas');
         netcdf.putAtt(nc,netcdf.getConstant('NC_GLOBAL'),'institution','LMD');
         netcdf.putAtt(nc,netcdf.getConstant('NC_GLOBAL'),'contact','briac.le-vu@lmd.polytechnique.fr');

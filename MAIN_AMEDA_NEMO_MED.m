@@ -55,20 +55,25 @@
 %
 %=========================
 
-start
+%start
 clear; clc;
+disp(version)
+addpath AMEDA
+addpath AMEDA/sources
+addpath AMEDA/tools
 
 %----------------------------------------
 % source of data driving the netcdf format
-source = 'AVISO';
+source = 'NEMO';
+%source = 'AVISO';
 
 %----------------------------------------
 % domaine
-keys = 'MED';
+keys = 'test';
 
 %----------------------------------------
 % Update option
-update = 0; % the serie from the begenning
+update = 0; % the serie from the beginning
 
 %----------------------------------------
 % Possibility to shorter the serie
@@ -76,19 +81,18 @@ update = 0; % the serie from the begenning
 
 %----------------------------------------
 % Set parallel computation
-cpus=1;
+cpus=24;
 
-if cpus>1
-    cpus=min([cpus,24]);%maximum of 12 procs
+cpus=min([cpus,40]);%maximum of 40 procs
 
-    disp('Check that you have access to "Parallel Computing Toolbox" to use PARPOOL')
-    disp('otherwise use MAIN_AMEDA_nopool')
-    disp(' ')
+disp('Check that you have access to "Parallel Computing Toolbox" to use PARPOOL')
+disp('otherwise use MAIN_AMEDA_nopool')
+disp(' ')
 
-    myCluster = parcluster('local');
-    delete(myCluster.Jobs)
-    matlabpool(myCluster,cpus)
-end
+myCluster = parcluster; %('local');
+delete(myCluster.Jobs)
+mypool = parpool(cpus);
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Initialisation ---------------------------------------------
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -112,64 +116,54 @@ step0 = mod_init(stepF,update);
 %% Compute LNAM ---------------------------------------------
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-disp(' === Compute non interpolated LNAM ===')
+disp([' === Compute LNAM ==='])
 disp(' ')
 
 load([path_out,'fields'],'detection_fields')
+detection_fields_ni = detection_fields;
+
+load([path_out,'fields_inter.mat'],'detection_fields')
 
 parfor stp = step0:stepF
+%for stp = step0:stepF
     %----------------------------------------
     % Compute non interpolated fields for step stp
-    detection_fields(stp) = mod_fields(source,stp,1);
-end
-
-%----------------------------------------
-% Save non interpolated fields
-save([path_out,'fields'],'detection_fields','-append')
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Compute interpolated LNAM ---------------------------------------------
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-if resol>1
-    disp(' === Compute interpolated LNAM ===')
-    disp(' ')
-    
-    load([path_out,'fields_inter.mat'],'detection_fields')
-    
-    parfor stp = step0:stepF
+    detection_fields_ni(stp) = mod_fields(source,stp,1);
+    if resol>1
         %----------------------------------------
         % Compute interpolated fields for step stp
         detection_fields(stp) = mod_fields(source,stp,resol);
+    else
+        %----------------------------------------
+        % Interpolated and non interpolated field are the same
+        %disp(' === Interpolated LNAM is the same ===')
+        detection_fields(stp) = detection_fields_ni(stp);
     end
-    %----------------------------------------
-    % Save interpolated fields
-    save([path_out,'fields_inter'],'detection_fields','-append')
-else
-    %----------------------------------------
-    % Interpolated and non interpolated field are the same
-    disp(' === Interpolated LNAM is the same ===')
-    %----------------------------------------
-    % Save interpolated fields
-    system(['mv ',path_out,'fields.mat ',path_out,'field_inter.mat'],'detection_fields','-append')
 end
 
-clear detection_fields
+%----------------------------------------
+% Save fields
+save([path_out,'fields_inter'],'detection_fields','-v7.3')
+
+detection_fields = detection_fields_ni;
+save([path_out,'fields'],'detection_fields','-v7.3')
+clear detection_fields detection_fields_ni
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Find centers ---------------------------------------------
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-disp(' === Find potential centers ===')
+disp([' === Find potential centers ==='])
 disp(' ')
 
-load([path_out,'eddy_centers'],'centers0','centers')
+load([path_out,'eddy_centers'])
 
 %----------------------------------------
 % Build I/O matfile
 fields_mat = matfile([path_out,'fields_inter.mat']);
 
 parfor stp = step0:stepF
+%for stp = step0:stepF
     % load inter fields at step stp
     %----------------------------------------
     fields = fields_mat.detection_fields(:,stp);
@@ -180,14 +174,14 @@ end
 
 %----------------------------------------
 % Save centers
-save([path_out,'eddy_centers'],'centers0','centers','-append')
+save([path_out,'eddy_centers'],'centers0','centers','centers2','-v7.3')
 clear centers0 centers
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Find eddies ---------------------------------------------
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-disp(' === Determine eddies shapes ===')
+disp([' === Determine eddies shapes ==='])
 disp(' ')
 
 load([path_out,'eddy_centers'],'centers2')
@@ -195,9 +189,11 @@ load([path_out,'eddy_shapes'])
 
 %----------------------------------------
 % Build I/O matfile
-centers_mat = matfile([path_out,'eddy_centers.mat']);
+fields_mat = matfile([path_out,'fields_inter.mat']);
+centers_mat = matfile([path_out,'eddy_centers','.mat']);
 
 parfor stp = step0:stepF
+%for stp = step0:stepF
     %----------------------------------------
     % load fields at step stp
     fields = fields_mat.detection_fields(:,stp);
@@ -215,6 +211,7 @@ parfor stp = step0:stepF
         warn_shapes(stp),warn_shapes2(stp)] = ...
         mod_eddy_shapes(source,stp,fields,centers);
     end
+    
 end
 
 %----------------------------------------
@@ -222,29 +219,29 @@ end
 save([path_out,'eddy_centers'],'centers2','-append')
 if streamlines
     save([path_out,'eddy_shapes'],'shapes1','shapes2',...
-        'warn_shapes','warn_shapes2','profil2','-append')
+        'warn_shapes','warn_shapes2','profil2','-v7.3')
 else
     save([path_out,'eddy_shapes'],'shapes1','shapes2',...
-        'warn_shapes','warn_shapes2','-append')
+        'warn_shapes','warn_shapes2','-v7.3')
 end
 clear centers2 shapes1 shapes2 profil2 warn_shapes warn_shapes2 struct1 struct2 struct3
 
 %----------------------------------------
 % Free workers
-matlabpool close
+delete(gcp('nocreate'))
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Track eddies ---------------------------------------------
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-name='';
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Track eddies ---------------------------------------------
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %----------------------------------------
 % Tracking eddies and record interacting events
-mod_eddy_tracks(name,update)
+name=[''];
+mod_eddy_tracks_pool(name,update);
 
 %----------------------------------------
 % Resolve merging and spltting event and filter eddies shorter than cut_off
+% need a series longer than 2 turn over time (> 1 month)
 mod_merging_splitting(name);
 
 

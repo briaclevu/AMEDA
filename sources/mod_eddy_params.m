@@ -66,13 +66,20 @@ lon0 = double(ncread(nc_dim,x_name))';
 lat0 = double(ncread(nc_dim,y_name))';
 if strcmp(source,'NEMO')
     mask0 = squeeze(double(ncread(nc_dim,m_name,[1 1 level 1],[Inf Inf 1 1])))';
+elseif strcmp(source,'py')
+    mask0 = ones(size(lat0))';
 else
     mask0 = squeeze(double(ncread(nc_dim,m_name,[1 1],[Inf Inf])))';
 end
 
 % produce degraded field 
-x = lon0(1:deg:end,1:deg:end);
-y = lat0(1:deg:end,1:deg:end);
+if strcmp(source,'py')
+    x = lon0(1:deg:end,1:deg:end)/1000;
+    y = lat0(1:deg:end,1:deg:end)/1000;
+else
+    x = lon0(1:deg:end,1:deg:end);
+    y = lat0(1:deg:end,1:deg:end);
+end
 mask = mask0(1:deg:end,1:deg:end);
 
 [N,M] = size(x);
@@ -89,9 +96,14 @@ if grid_ll
         [xr, yr] = meshgrid(min(x(:)):dx:max(x(:)+dx),min(y(:)):dy:max(y(:))+dy);
         [N,M] = size(xr);
         Dx = get_Dx_from_ll(xr,yr);
+        % regridded mask
+        maskr = griddata(x,y,mask,xr,yr);
+        maskr(isnan(maskr) | maskr < .5) = 0;
+        maskr(maskr >= .5) = 1;
+        maskr(xr(:)<min(x(:)) | xr(:)>max(x(:)) | yr(:)<min(y(:)) | yr(:)>max(y(:))) = 0;
     end
 else
-    Dx = ( abs( diff(x,1,2) ) + abs( diff(y,1,1) ) )/2;
+    Dx = ( abs( [diff(x,1,2) x(:,end)-x(:,end-1)] ) + abs( [diff(y,1,1);y(end,:)-y(end-1,:)] ) )/2;
 end
 
 % Calculate coriolis parameter
@@ -169,14 +181,22 @@ V_eddy = 6.5; % km/day
 % represent the temporal correlation depending on the coverage of an area
 % 2 steps for model, 3-5 steps for imagery experiment.
 %!!! in case of AVISO this will be ajusted with the error map of aviso !!!
-Dt = 10; % in days
+if strcmp(source,'AVISO')
+    Dt = 10; % in days
+else
+    Dt = 2; % days
+end
 
 % minimal duration of recorded eddies [0-100]
 % 0 for keeping only eddies longer than twice their turnover time
 cut_off = 0; % in days
 
 % number of past steps to define the averaged eddy features during the tracking
-D_stp = 4; % in steps
+if strcmp(source,'AVISO')
+    D_stp = 4; % in steps
+else
+    D_stp = 2; % in steps
+end
 
 % number of candidats during the tracking (better to be high)
 N_can = 30;
@@ -192,11 +212,13 @@ if exist([mat_Rd,'.mat'],'file')
     eval([name_Rd,'(',name_Rd,'<',num2str(Rd_typ/3),')=',num2str(Rd_typ/3),';']);
     if grid_reg
         eval(['Rd0 = griddata(lon_Rd,lat_Rd,',name_Rd,',x,y);']) % 10km in average AVISO 1/8
+        Rd = Rd0;
+        Rd(mask==0)=nan;
     else
         eval(['Rd0 = griddata(lon_Rd,lat_Rd,',name_Rd,',xr,yr);']) % 10km in average AVISO 1/8
+        Rd = Rd0;
+        Rd(maskr==0)=nan;
     end
-    Rd = Rd0;
-    Rd(mask==0)=nan;
 end
 
 if ~exist([mat_Rd,'.mat'],'file') || isnan(nanmean(Rd(:))) || ~exist('Rd','var')
@@ -219,7 +241,7 @@ gama = Rd ./ Dx; % [0.1-1.5] for AVISO 1/8 (0.8 in average)
 % close to 3 pixels per Rd. resol can goes up to 3
 resol = max(1,min(3,round(3/nanmean(gama(:))))); % [1 - 3]
 
-% Detection parameters (cf. Le Vu et al. 2016 for test results):
+% Detection parameters (cf. Le Vu et al. 2018 for test results):
 %----------------------------------------------
 % K is LNAM(LOW<0) threshold to fixed contours where to detect potential center
 % (one per contour). After test: no sensibility to K between 0.2 and 0.7
@@ -250,9 +272,11 @@ if resol==1
     if grid_reg
         xi = x;
         yi = y;
+        maski = mask;
     else
         xi = xr;
         yi = yr;
+        maski = maskr;
     end
     f_i = f;
     bi = b;
@@ -279,6 +303,16 @@ else
     % interpolated grid
     [xi,yi] = meshgrid((0:Mi-1)*dx+min(x(:)),(0:Ni-1)*dy+min(y(:)));
 
+    % regridded mask
+    if grid_reg
+        maski = griddata(x,y,mask,xi,yi);
+    else
+        maski = griddata(xr,yr,maskr,xi,yi);
+        maski(xi(:)<min(x(:)) | xi(:)>max(x(:)) | yi(:)<min(y(:)) | yi(:)>max(y(:))) = 0;
+    end
+    maski(isnan(maski) | maski < .5) = 0;
+    maski(maski >= .5) = 1;
+    
     % Compute interpolated b and bx
     if grid_reg
         f_i = griddata(x,y,f,xi,yi)*resol;
@@ -314,7 +348,7 @@ save([path_out,'param_eddy_tracking'],...
 
 % save native grid on interpolated regular grid
 if ~grid_reg
-    save([path_out,'gridvel'], 'x', 'y', 'xi', 'yi')
+    save([path_out,'gridvel_deg',num2str(deg),'_resol',num2str(resol)], 'x', 'y','mask','xi', 'yi','maski')
 end
 
 

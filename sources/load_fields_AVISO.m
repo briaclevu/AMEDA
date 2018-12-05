@@ -18,7 +18,7 @@ function [x,y,mask,u,v,ssh] = load_fields_AVISO(stp,resolution,degra)
 %  fields size must be [lat,lon,time]
 %  output velocities must be in m/s and ssh in m
 %
-%  For a description of the input parameters see param_eddy_tracking.m
+%  For a description of the input parameters see mod_eddy_param.m
 %
 %-------------------------
 %  June 2016 Briac Le Vu

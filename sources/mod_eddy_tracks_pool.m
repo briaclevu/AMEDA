@@ -1,4 +1,4 @@
-function mod_eddy_tracks_nopool(name,update)
+function mod_eddy_tracks_pool(name,update)
 %mod_eddy_tracks(name {,update})
 %
 %  Computes eddy tracking from the eddies features, and saves them
@@ -132,6 +132,11 @@ flag about the merging and splitting
 
 load('param_eddy_tracking')
 
+% explicitly define constant for the parfor loop
+% !! parfor is slower above 1 or 2 years or detection !!
+extended_diags=extended_diags;grid_ll=grid_ll;
+dps=dps;Dt=Dt;D_stp=D_stp;T=T;f=f;g=g;V_eddy=V_eddy;N_can=N_can;
+
 % No update by default
 if nargin==1
     update = 0;
@@ -262,6 +267,8 @@ disp(' ')
 
 disp('Tracks eddies')
 
+% /!\ quick fix for multi years tracking
+% works only of daily steps !!!
 if stepF-step0 > 366
     stepF = step0 + 370;
 end
@@ -415,7 +422,7 @@ for i=step0:stepF
 
             %----------------------------------------------------------
             % loop all tracks from the previous time steps
-            for i2=1:length(tracks)
+            parfor i2=1:length(tracks)
                 
                 %------------------------------------------------------
                 % initialise 

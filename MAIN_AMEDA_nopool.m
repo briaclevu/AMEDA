@@ -64,7 +64,7 @@ source = 'AVISO';
 
 %----------------------------------------
 % domaine
-dom = 'MED';
+keys = 'MED';
 
 %----------------------------------------
 % Update option
@@ -81,17 +81,17 @@ update = 0; % the serie from the begenning
 %----------------------------------------
 % Produce default parameters in param_eddy_tracking
 if exist('stepF','var')
-    mod_eddy_params(['keys_sources_',source,'_',dom],stepF)
+    mod_eddy_params(['keys_sources_',source,'_',keys],stepF)
 else
-    mod_eddy_params(['keys_sources_',source,'_',dom])
+    mod_eddy_params(['keys_sources_',source,'_',keys])
 end
-run(['keys_sources_',source,'_',dom])
+run(['keys_sources_',source,'_',keys])
 load('param_eddy_tracking','path_out','streamlines','resol','stepF')
 
 %----------------------------------------
 % Preallocate structure array and mat-file or prepare update
 % !! replace or reinitialise previous results !!
-%step0 = mod_init(stepF,update);
+step0 = mod_init(stepF,update);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Main routines ---------------------------------------------
@@ -172,8 +172,13 @@ for stp = step0:stepF
 
     %----------------------------------------
     % Determination of eddy features for step stp
-    [centers2,shapes1,shapes2,profil2,warn_shapes,warn_shapes2] = ...
-        mod_eddy_shapes(source,stp,fields,centers);
+    if streamlines
+        [centers2,shapes1,shapes2,profil2,warn_shapes,warn_shapes2] = ...
+            mod_eddy_shapes(source,stp,fields,centers);
+    else
+        [centers2,shapes1,shapes2,~,warn_shapes,warn_shapes2] = ...
+            mod_eddy_shapes(source,stp,fields,centers);
+    end
     
     %----------------------------------------
     % Write in I/O matfile step stp
@@ -205,7 +210,7 @@ system(['cat ',path_out,'log/log_eddy_stp*.txt >> ',path_out,'log_eddy.txt']);
 
 %----------------------------------------
 % Tracking eddies and record interacting events
-mod_eddy_tracks('',update)
+mod_eddy_tracks_nopool('',update)
 
 %----------------------------------------
 % Resolve merging and spltting event and filter eddies shorter than cut_off

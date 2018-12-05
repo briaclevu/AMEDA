@@ -64,7 +64,7 @@ source = 'AVISO';
 
 %----------------------------------------
 % domaine
-config = 'DYNED_ARA_adt';
+keys = 'DYNED_ARA_adt';
 
 %----------------------------------------
 % Update option
@@ -76,11 +76,11 @@ update = 0; % the serie from the beginning
 
 %----------------------------------------
 % inital and final year
-Yi = 2010; Yf = 2011;
+Yi = 2000; Yf = 2015;
 
 %----------------------------------------
 % Set parallel computation
-cpus=6;
+cpus=24;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Initialisation ---------------------------------------------
@@ -89,11 +89,11 @@ cpus=6;
 %----------------------------------------
 % Produce default parameters in param_eddy_tracking
 if exist('stepF','var')
-    mod_eddy_params(['keys_sources_',source,'_',config],stepF)
+%    mod_eddy_params(['keys_sources_',source,'_',keys],stepF)
 else
-    mod_eddy_params(['keys_sources_',source,'_',config])
+%    mod_eddy_params(['keys_sources_',source,'_',keys])
 end
-run(['keys_sources_',source,'_',config])
+run(['keys_sources_',source,'_',keys])
 load('param_eddy_tracking','path_out','streamlines','resol','stepF');
 
 %----------------------------------------
@@ -118,7 +118,7 @@ end
 %----------------------------------------
 % process detection in yearly loops
 
-for i=(Yi-2000)+1:(Yf-2000)+1
+for i=1:length(list)-1
     
     stepFF=list(i+1)-list(i);
     dstp = list(i)-1;
@@ -132,7 +132,7 @@ for i=(Yi-2000)+1:(Yf-2000)+1
 %% Compute LNAM ---------------------------------------------
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-if i>8
+if i>1
         
     disp([' === Compute LNAM ',num2str(2000-1+i),' ==='])
     disp(' ')
@@ -166,6 +166,8 @@ if i>8
     save([path_out,'fields_',num2str(2000-1+i)],'detection_fields','-v7.3')
     clear detection_fields detection_fields_ni
 
+end
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Find centers ---------------------------------------------
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -190,11 +192,9 @@ if i>8
 
     %----------------------------------------
     % Save centers
-    save([path_out,'eddy_centers_',num2str(2000-1+i)],'centers0','centers','centers2','-v7.3')
+    save([path_out,'eddy_centers_',num2str(2000-1+i)],'centers0','centers','-v7.3')
     clear centers0 centers
    
-end
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Find eddies ---------------------------------------------
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -202,7 +202,7 @@ end
     disp([' === Determine eddies shapes ',num2str(2000-1+i),' ==='])
     disp(' ')
 
-    load([path_out,'eddy_centers_',num2str(2000-1+i)],'centers2')
+    load([path_out,'eddy_centers'],'centers2')
     load([path_out,'eddy_shapes'])
 
     %----------------------------------------
@@ -271,7 +271,7 @@ concat_eddy(num2cell(Yi:Yf))
 %----------------------------------------
 % Tracking eddies and record interacting events
 name=['_',num2str(Yi),'_',num2str(Yf)];
-% mod_eddy_tracks_nopool(name,update);
+% mod_eddy_tracks_pool(name,update);
 for i=1:length(list)-1
     update = list(end)-list(i);
     mod_eddy_tracks_nopool(name,update);
