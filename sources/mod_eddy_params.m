@@ -57,7 +57,7 @@ function mod_eddy_params(keys_sources,stepF)
 %% Load keys and paths file
 %----------------------------------------------
 run(keys_sources)
-resol=2;
+
 %% Calculate the meshgrid size at (x,y) coordinates
 %----------------------------------------------
 
