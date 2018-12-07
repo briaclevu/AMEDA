@@ -81,17 +81,7 @@ update = 0; % the serie from the beginning
 
 %----------------------------------------
 % Set parallel computation
-cpus=24;
-
-cpus=min([cpus,40]);%maximum of 40 procs
-
-disp('Check that you have access to "Parallel Computing Toolbox" to use PARPOOL')
-disp('otherwise use MAIN_AMEDA_nopool')
-disp(' ')
-
-myCluster = parcluster; %('local');
-delete(myCluster.Jobs)
-mypool = parpool(cpus);
+cpus=1;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Initialisation ---------------------------------------------
@@ -112,6 +102,20 @@ load('param_eddy_tracking','path_out','streamlines','resol','stepF');
 % !! replace or reinitialise previous results !!
 step0 = mod_init(stepF,update);
 
+%----------------------------------------
+% Activate matlab pool
+cpus=min([cpus,32]);%maximum of 24 procs
+
+if cpus>1
+    disp('Check that you have access to "Parallel Computing Toolbox" to use PARPOOL')
+    disp('otherwise use MAIN_AMEDA_nopool')
+    disp(' ')
+
+    myCluster = parcluster('local');
+    delete(myCluster.Jobs)
+    mypool = parpool(cpus);
+end
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Compute LNAM ---------------------------------------------
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -124,8 +128,7 @@ detection_fields_ni = detection_fields;
 
 load([path_out,'fields_inter.mat'],'detection_fields')
 
-parfor stp = step0:stepF
-%for stp = step0:stepF
+for stp = step0:stepF
     %----------------------------------------
     % Compute non interpolated fields for step stp
     detection_fields_ni(stp) = mod_fields(source,stp,1);
@@ -162,8 +165,7 @@ load([path_out,'eddy_centers'])
 % Build I/O matfile
 fields_mat = matfile([path_out,'fields_inter.mat']);
 
-parfor stp = step0:stepF
-%for stp = step0:stepF
+for stp = step0:stepF
     % load inter fields at step stp
     %----------------------------------------
     fields = fields_mat.detection_fields(:,stp);
@@ -192,8 +194,7 @@ load([path_out,'eddy_shapes'])
 fields_mat = matfile([path_out,'fields_inter.mat']);
 centers_mat = matfile([path_out,'eddy_centers','.mat']);
 
-parfor stp = step0:stepF
-%for stp = step0:stepF
+for stp = step0:stepF
     %----------------------------------------
     % load fields at step stp
     fields = fields_mat.detection_fields(:,stp);

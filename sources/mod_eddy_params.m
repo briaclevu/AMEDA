@@ -57,7 +57,7 @@ function mod_eddy_params(keys_sources,stepF)
 %% Load keys and paths file
 %----------------------------------------------
 run(keys_sources)
-
+resol=2;
 %% Calculate the meshgrid size at (x,y) coordinates
 %----------------------------------------------
 
@@ -211,11 +211,11 @@ if exist([mat_Rd,'.mat'],'file')
     load(mat_Rd)
     eval([name_Rd,'(',name_Rd,'<',num2str(Rd_typ/3),')=',num2str(Rd_typ/3),';']);
     if grid_reg
-        eval(['Rd0 = griddata(lon_Rd,lat_Rd,',name_Rd,',x,y);']) % 10km in average AVISO 1/8
+        eval(['Rd0 = interp2(lon_Rd,lat_Rd,',name_Rd,',x,y,''*linear'');']) % 10km in average AVISO 1/8
         Rd = Rd0;
         Rd(mask==0)=nan;
     else
-        eval(['Rd0 = griddata(lon_Rd,lat_Rd,',name_Rd,',xr,yr);']) % 10km in average AVISO 1/8
+        eval(['Rd0 = interp2(lon_Rd,lat_Rd,',name_Rd,',xr,yr,''*linear'');']) % 10km in average AVISO 1/8
         Rd = Rd0;
         Rd(maskr==0)=nan;
     end
@@ -305,9 +305,9 @@ else
 
     % regridded mask
     if grid_reg
-        maski = griddata(x,y,mask,xi,yi);
+        maski = interp2(x,y,mask,xi,yi,'*linear');
     else
-        maski = griddata(xr,yr,maskr,xi,yi);
+        maski = interp2(xr,yr,maskr,xi,yi,'*linear');
         maski(xi(:)<min(x(:)) | xi(:)>max(x(:)) | yi(:)<min(y(:)) | yi(:)>max(y(:))) = 0;
     end
     maski(isnan(maski) | maski < .5) = 0;
@@ -315,22 +315,22 @@ else
     
     % Compute interpolated b and bx
     if grid_reg
-        f_i = griddata(x,y,f,xi,yi)*resol;
-        bi = round(griddata(x,y,b,xi,yi))*resol;
-        bxi = round(griddata(x,y,bx,xi,yi))*resol;
+        f_i = interp2(x,y,f,xi,yi,'*linear')*resol;
+        bi = round(interp2(x,y,b,xi,yi,'*linear'))*resol;
+        bxi = round(interp2(x,y,bx,xi,yi,'*linear'))*resol;
     else
-        f_i = griddata(xr,yr,f,xi,yi)*resol;
-        bi = round(griddata(xr,yr,b,xi,yi))*resol;
-        bxi = round(griddata(xr,yr,bx,xi,yi))*resol;
+        f_i = interp2(xr,yr,f,xi,yi,'*linear')*resol;
+        bi = round(interp2(xr,yr,b,xi,yi,'*linear'))*resol;
+        bxi = round(interp2(xr,yr,bx,xi,yi,'*linear'))*resol;
     end
 
     % Dx, Rd, gama on interpolated grid
     if grid_reg
-        Rdi = griddata(x,y,Rd,xi,yi); % 10km in average AVISO 1/8
-        Dxi = griddata(x,y,Dx,xi,yi);
+        Rdi = interp2(x,y,Rd,xi,yi,'*linear'); % 10km in average AVISO 1/8
+        Dxi = interp2(x,y,Dx,xi,yi,'*linear');
     else
-        Rdi = griddata(xr,yr,Rd,xi,yi); % 10km in average AVISO 1/8
-        Dxi = griddata(xr,yr,Dx,xi,yi);
+        Rdi = interp2(xr,yr,Rd,xi,yi,'*linear'); % 10km in average AVISO 1/8
+        Dxi = interp2(xr,yr,Dx,xi,yi,'*linear');
     end
     gamai = Rdi ./ Dxi;
 

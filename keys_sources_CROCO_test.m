@@ -1,4 +1,4 @@
-% keys_sources_NEMO.m
+% keys_sources_CROCO.m
 %
 %   keys_sources sets user defined paths and user keys
 %
@@ -73,7 +73,7 @@
 
 %% Experiment setings
 %----------------------------------------------
-source = 'NEMO';
+source = 'CROCO';
 
 % name for the experiment
 config = 'test';
@@ -111,19 +111,20 @@ end
 addpath(path_out)
 
 % input data file absolute name
-nc_dim = [path_in,'2_mesh_mask_1.nc'];
-nc_u = [path_in,'2_MED108_1d_20120110_20120120_grid_U.nc'];
-nc_v = [path_in,'2_MED108_1d_20120110_20120120_grid_V.nc'];
-%nc_ssh = [path_in,'MEDRYS1V1_EAST_2005-2008.nc'];
+nc_dim = [path_in,'ameda_croco_sample.nc'];
+% nc_u = [path_in,'2_MED108_1d_20120110_20120120_grid_U.nc'];
+% nc_v = [path_in,'2_MED108_1d_20120110_20120120_grid_V.nc'];
+% nc_ssh = [path_in,'MEDRYS1V1_EAST_2005-2008.nc'];
 nc_ssh='';
+nc_u = nc_dim;nc_v = nc_dim;
 
 % variable names
-y_name  = 'nav_lat';
-x_name  = 'nav_lon';
-m_name = 'tmask';
-u_name = 'vozocrtx';
-v_name = 'vomecrty';
-s_name= 'sossheig';
+y_name  = 'nav_lat_rho';
+x_name  = 'nav_lon_rho';
+m_name = 'mask_rho';
+u_name = 'u';
+v_name = 'v';
+s_name= '';
 
 % Rossby deformation radius file
 mat_Rd = [path_rossby,'Rossby_radius']; % for Med
@@ -150,10 +151,10 @@ disp(' ')
 T = 3600*24; % day period in seconds
 
 % the daily time step (dps)
-dps = 1; % (in days per step) % 1/8 is 3h time step
+dps = 1/4; % (in days per step) % 1/8 is 3h time step
 
 % depth level analysed during the detection
-level = 30; % level to analyse (30=253 m)
+level = 1; % level to analyse (30=253 m)
 
 % degradation factor to test the algorithm
 if ~exist('deg','var')
@@ -169,7 +170,7 @@ grid_ll = 1;
         % 1 : spatial grid in earth coordinates (lon,lat)
 
 % grid regular or not (like arakawa in NEMO)
-grid_reg = 0;
+grid_reg = 1;
         % 0 irregular 
         % 1 regular 
 

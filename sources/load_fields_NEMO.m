@@ -44,16 +44,16 @@ end
 
 %----------------------------------------
 % load grid (use mod_eddy_params.m first)
+disp(['Load grid and mask at deg=',num2str(deg),' and resol=',num2str(resol)])
 load(['gridvel_deg',num2str(deg),'_resol',num2str(resol)])
 
 %----------------------------------------
 % get netcdf
-disp(['Get mask and velocities field at step ',num2str(stp),' ...'])
+disp(['Get velocities field at step ',num2str(stp),' ...'])
 disp('(resolution and degradation are as defined in mod_eddy_param)')
 
 ub = squeeze(permute(ncread(nc_u,u_name,[1,1,level,stp],[Inf,Inf,1,1]),[2,1,3,4]));
 vb = squeeze(permute(ncread(nc_v,v_name,[1,1,level,stp],[Inf,Inf,1,1]),[2,1,3,4]));
-
 if type_detection>=2
     ssh0 = squeeze(permute(ncread(nc_ssh,s_name,[1,1,stp],[Inf,Inf,1]),[2,1,3,4]));
 else
@@ -91,11 +91,15 @@ end
 [N,M] = size(x);
 
 %----------------------------------------
-% Increase resolution r factor by linear interpolation
+% Increase resolution r factor by interpolation
 if resol==1 && grid_reg
 
     disp('NO INTERPOLATION')
     
+    % fix fields to NaN in land 
+    u(mask==0) = NaN;
+    v(mask==0) = NaN;
+
     % Enlarge mask into land by 1 pixel and compute ssh in the first land pixel if needed
     disp('Enlarge coastal mask by adding 1 pixel of ocean to the coast ...')
     for i=1:N
@@ -115,7 +119,7 @@ if resol==1 && grid_reg
 elseif ( resol==1 && ~grid_reg ) || resol ~= 1
 
     if grid_reg
-        disp(['Change resolution by computing 2D CUBIC INTERPOLATION ',...
+        disp(['Change resolution by computing 2D SPLINE INTERPOLATION ',...
         'by a factor ',num2str(resol)])
     else
         disp('No change in resolution, REGRIDDING from Arakawa to regular grid')
@@ -143,7 +147,6 @@ elseif ( resol==1 && ~grid_reg ) || resol ~= 1
     end
 
     %----------------------------------------
-    % Increase resolution of fields (griddata with irregular grid)
     % fix fields to 0 in land 
     u(mask==0 | isnan(u)) = 0;
     v(mask==0 | isnan(v)) = 0;

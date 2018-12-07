@@ -22,10 +22,10 @@ source = 'AVISO';
 %----------------------------------------
 % configuration to be used has reference of the v1 of the atlas
 config = 'DYNED_ARA_adt';
-year='2010_2011';
+year='2000_2015';
 name={'Aden','Oman'};
-name='Indi';
-name='West';
+name={'Indi'};
+name={'West'};
 
 % Definition of the parameters specific for the experiment is needed 
 %mod_eddy_params(['keys_sources_',source,'_',config])
@@ -72,33 +72,45 @@ if buoy
 end
 
 if argo
-    input_dir = '/home/blevu/DATA/CORIOLIS/argo_profiles/med/coloc_anoms_Med_all_modes3.nc';
+    input_dir = '/home/blevu/DATA/CORIOLIS/argo_profiles/ara/coloc_anoms_Arabie_all_modes.nc';
     time_1_argo = '01-Jan-2000';
-    time_1_track = '01-Jan-2010';
+    time_1_track = '01-Jan-2000';
     time_argo = floor(double(ncread(input_dir,'time_step')+datenum(time_1_argo)-1));
     ID_traj = double(ncread(input_dir,'ID_track'));
     ID_float = double(ncread(input_dir,'ID_float'));
     IsInEddy = double(ncread(input_dir,'IsInEddy'));
     Xargo = double(ncread(input_dir,'Xargo'));
     Yargo = double(ncread(input_dir,'Yargo'));
+    %
+    list=unique(ID_float);
+    i=1;
+    clear argos
+    for j=1:length(list)
+        IND=find(ID_float==list(j));
+        argos(i).name=list(j);
+        argos(i).date=time_argo(IND);
+        argos(i).lon=Xargo(IND);
+        argos(i).lat=Yargo(IND);
+        i=i+1;
+    end
 
     %
-    dirdata=[path_data,'argo_trajs/'];
-    list=dir([dirdata,'*.mat']);
-    i=1;
-    for j=1:length(list)
-        file = [dirdata,list(j).name];
-        if exist(file,'file')
-            load(file)
-            if ~isempty(dateb)
-                argos(i).name=list(j).name(17:end-4);
-                argos(i).date=dateb;
-                argos(i).lat=latb;
-                argos(i).lon=lonb;
-                i=i+1;
-            end
-        end
-    end
+%     dirdata=[path_data,'argo_trajs/'];
+%     list=dir([dirdata,'*.mat']);
+%     i=1;
+%     for j=1:length(list)
+%         file = [dirdata,list(j).name];
+%         if exist(file,'file')
+%             load(file)
+%             if ~isempty(dateb)
+%                 argos(i).name=list(j).name(17:end-4);
+%                 argos(i).date=dateb;
+%                 argos(i).lat=latb;
+%                 argos(i).lon=lonb;
+%                 i=i+1;
+%             end
+%         end
+%     end
     % duration for the ruban
     nba=20;
 end
@@ -171,13 +183,13 @@ elseif strcmp(named{1},'West')
     tmax=[29 26 18 18 18 18 20];
     tmin=[21 19 12 12 12 12 12];
     sp=2;
-    coeff=5;
+    coeff=3;
 end
 system(['mkdir ',path_out,'/figures/',named{1}])
 system(['mkdir ',path_out,'/figures/',named{1},'_ID'])
 
 % set periode
-dayi=[2010 01 01 12 0 0];
+dayi=[2000 01 01 12 0 0];
 %dstp=datenum(dayi)-datenum([2000 01 01 12 0 0]);
 
 if temp
@@ -187,8 +199,8 @@ elseif movie
     stp_list =[1 367 732 1097 1462 1828 2193 2558 2923 3289 3654 4019 4384 4750 5115 5480 stepF+1];
 else
     stp_list =[stepF-12 stepF];    
-    stp_list =[1 367 732 1097 1462 1828 2193 2558 2923 3289 3654 4019 4384 4750 5115 5480 stepF+1];
     stp_list =[1 366 731 1097 stepF];
+    stp_list =[1 367 732 1097 1462 1828 2193 2558 2923 3289 3654 4019 4384 4750 5115 5480 stepF+1];
     fig_list =[640 666 815 849 854 881];
 end
 dstp=3653;
@@ -200,11 +212,11 @@ m_proj('Mercator','lat',[minlat maxlat],'lon',[minlon maxlon]);
 
 close all
 
-for n=1:2%:length(stp_list)-1
-    system(['mkdir ',path_out,'/figures/',named{1},'/',num2str(n+2009)])
-    system(['mkdir ',path_out,'/figures/',named{1},'_ID/',num2str(n+2009)])
+for n=1:length(stp_list)-1
+    system(['mkdir ',path_out,'/figures/',named{1},'/',num2str(n+1999)])
+    system(['mkdir ',path_out,'/figures/',named{1},'_ID/',num2str(n+1999)])
     %dstp = stp_list(n)-1; 
-    dstp = 3653;
+    dstp = 0;
     
     if movie
     % prepare fig
@@ -277,7 +289,7 @@ for n=1:2%:length(stp_list)-1
         % add quiver velocities
         hold on
         m_quiver(xnan(1:sp:end,1:sp:end),ynan(1:sp:end,1:sp:end),...
-            u1(1:sp:end,1:sp:end),v1(1:sp:end,1:sp:end),1,'color',[0.3 0.3 0.3])
+            u1(1:sp:end,1:sp:end),v1(1:sp:end,1:sp:end),coeff,'color',[0.3 0.3 0.3])
         % put a land mask
         if h_coast
             [X,~]=m_ll2xy(coast(:,1),coast(:,2),'clip','patch');
@@ -402,7 +414,7 @@ for n=1:2%:length(stp_list)-1
                         list=[tracks(i).interaction(ind) tracks(i).interaction2(ind)];
                         list=list(~isnan(list));
                         for j=list
-                            indj = find(tracks(j).step==day,1);
+                            indj = find(tracks(j).step==day+dstp,1);
                             if ~isempty(indj)
                                 col= [.1 .5 .1]; % interaction
                                 if tracks(i).split(ind)==1 || tracks(i).merge(ind)==1 ||...
@@ -438,15 +450,15 @@ for n=1:2%:length(stp_list)-1
         
         % add argo trajectory
         if argo
-            IND = find(time_argo==floor(datenum(dr)));
-            if ~isempty(IND)
-                for i=1:length(IND)
-                    if IsInEddy(IND(i))==1 || IsInEddy(IND(i))==-1
-                        m_plot(Xargo(IND(i)),Yargo(IND(i)),'dk','markerfacecolor',[1 1 0],...
-                        'markersize',8)
-                    end
-                end
-            end
+%             IND = find(time_argo==floor(datenum(dr)));
+%             if ~isempty(IND)
+%                 for i=1:length(IND)
+%                     if IsInEddy(IND(i))==1 || IsInEddy(IND(i))==-1
+%                         m_plot(Xargo(IND(i)),Yargo(IND(i)),'dk','markerfacecolor',[1 1 0],...
+%                         'markersize',8)
+%                     end
+%                 end
+%             end
             for i=1:length(argos)
                 dateb=datenum(argos(i).date)-datenum(dr);
                 lonb=argos(i).lon;
@@ -489,6 +501,7 @@ for n=1:2%:length(stp_list)-1
             elseif strcmp(config,'PRO2017_sla')
                set(get(h,'title'),'string','SLA (cm)','FontSize',8,'fontWeight','bold')
             end
+            set(get(h,'title'),'string','ADT (cm)','FontSize',8,'fontWeight','bold')
             m_text(minlon+.2,maxlat+.2,[datestr(dr,1)],...%' / degradation = ',num2str(deg)],...
                 'FontSize',10,'fontWeight','bold')
         end
@@ -504,7 +517,7 @@ for n=1:2%:length(stp_list)-1
             set(hfig,'PaperSize',[9.5,8.5])
             set(hfig,'PaperPosition',[-1.3,-0.4,10,7])
             set(hfig,'PaperSize',[7.5,6.5])
-            print(hfig,[path_out,'figures/',named{1},'/',num2str(n+2009),'/tracking_',config,'_',named{1},'_',datestr(dr,'yyyymmdd')],'-dpng','-r300')
+            print(hfig,[path_out,'figures/',named{1},'/',num2str(n+1999),'/tracking_',config,'_',named{1},'_',datestr(dr,'yyyymmdd')],'-dpng','-r300')
             %print(hfig,[path_out,'figures/png/tracking_',config,'_',named{1},'_',datestr(dr,'yyyymmdd')],'-dpng','-r300')
         end
         
@@ -523,6 +536,8 @@ for n=1:2%:length(stp_list)-1
                 set(hfig,'Position',[0 0 1000 900])
             end
         end
+        % reference day at 12:00
+        dr = datevec(datenum(dayi)+day-1);
         % put a land mask
         m_coast('color','k');
         % grid and fancy the map
@@ -534,7 +549,7 @@ for n=1:2%:length(stp_list)-1
         % add eddy center (use get_aviso_nrt.sh in DATA/nrt -> mk_nc_along.m)
         for i=1:length(tracks)
             ind=[];
-            ind=find(tracks(i).step==day,1);
+            ind=find(tracks(i).step==day+dstp,1);
             if ~isempty(ind)
                 CD = [(tracks(i).xbary1)';(tracks(i).ybary1)'];
                 dura = tracks(i).step(ind)-tracks(i).step(1)+1;
@@ -561,6 +576,25 @@ for n=1:2%:length(stp_list)-1
             end
         end
 
+        % add argo name
+        if argo
+            for i=1:length(argos)
+                dateb=datenum(argos(i).date)-datenum(dr);
+                lonb=argos(i).lon;
+                latb=argos(i).lat;
+                mrub=find(dateb(dateb<0)==max(dateb(dateb<0)));
+                ruban=find(dateb<0 & dateb>-nba &...
+                    diff([dateb;10000]) > 0.5 &...
+                    lonb<maxlon & lonb>minlon & latb<maxlat & latb>minlat);
+                if ~isempty(ruban)
+                    m_plot(lonb(ruban(1)),latb(ruban(1)),'dk','markerfacecolor',[1 0 1],...
+                        'markersize',6)
+                    m_text(lonb(ruban(1)),latb(ruban(1))+0.15,num2str(argos(i).name),...
+                        'color',[1 0 1],'FontSize',6,'fontWeight','bold')
+                end
+            end
+        end
+        
         % add legend on the map and information
         hold off
         % add legend on the map and information
@@ -570,7 +604,7 @@ for n=1:2%:length(stp_list)-1
         %prepare the print in a pdf
         set(hfig,'PaperPosition',[-1.3,-0.4,10,7])
         set(hfig,'PaperSize',[7.5,6.5])
-        print(hfig,[path_out,'figures/',named{1},'_ID/',num2str(n+2009),'/tracking_ID_',config,'_',named{1},'_',datestr(dr,'yyyymmdd')],'-dpng','-r150')
+        print(hfig,[path_out,'figures/',named{1},'_ID/',num2str(n+1999),'/tracking_ID_',config,'_',named{1},'_',datestr(dr,'yyyymmdd')],'-dpng','-r150')
 
     end
     

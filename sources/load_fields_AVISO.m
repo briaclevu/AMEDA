@@ -81,6 +81,10 @@ if resol==1
 
     disp('NO INTERPOLATION')
     
+    % fix fields to NaN in land 
+    u(mask==0) = NaN;
+    v(mask==0) = NaN;
+
     % Enlarge mask into land by 1 pixel and compute ssh in the first land pixel if needed
     disp('Enlarge coastal mask by adding 1 pixel of ocean to the coast ...')
     for i=1:N
@@ -115,7 +119,7 @@ else
 
     %----------------------------------------
     % Increase resolution of the mask
-    maski = interp2(x,y,mask,xi,yi);
+    maski = interp2(x,y,mask,xi,yi,'*linear');
     maski(isnan(maski) | maski < .5) = 0;
     maski(maski >= .5) = 1;
     % Enlarge mask into land by 1 pixel and compute ssh in the first land pixel if needed
