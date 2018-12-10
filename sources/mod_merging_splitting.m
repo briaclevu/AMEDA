@@ -41,6 +41,7 @@ disp('Load tracks ...')
 
 load([path_out,'eddy_tracks',name],'tracks','warn_tracks')
 
+stepI = min(tracks(1).step);
 stepF = max(tracks(end).step);
 
 %----------------------------------------------------------
@@ -212,6 +213,16 @@ for j=1:length(tracks)
         short(j) = (diff(delta) + 1)*dps < cut_off;
     end
     
+    % and keep the last and first tracks for NRT analysis
+    if ~isnan(nanmean(tau)) && nrt
+        if cut_off==0 && ( stepF - delta(1) + 1 )*dps < 2 * nanmean(tau) ||...
+                cut_off==0 && ( delta(end) - stepI + 1 )*dps < 2 * nanmean(tau) ||...
+                cut_off>0 && ( stepF - delta(1) +1 )*dps < cut_off ||...
+                cut_off>0 && ( delta(end) - stepI + 1 )*dps < cut_off
+            short(j) = false;
+        end 
+    end
+
 end
         
 disp(' ')
