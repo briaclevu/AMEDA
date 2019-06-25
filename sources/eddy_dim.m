@@ -93,7 +93,7 @@ if type_detection==2 || type_detection==3
     ssh = ssh(max(C_J-bx,1):min(C_J+bx,size(ssh,1)), ...
             max(C_I-bx,1):min(C_I+bx,size(ssh,2)));
     % determine contours to be scan
-    Hs = floor(nanmin(ssh(:))):DH:ceil(nanmax(ssh(:)));
+    Hs = floor(min(ssh(:))):DH:ceil(max(ssh(:)));
     % impose a limit to limit cpu time
     if length(Hs)>nH_lim
         Hs = nH_lim;
@@ -122,7 +122,7 @@ if type_detection==1 || type_detection==3
     psi = compute_psi(x,y,mask,u*f/g*1e3,v*f/g*1e3,ci,cj,grid_ll);
     
     % determine contours to be scan
-    H = floor(nanmin(psi(:))):DH:ceil(nanmax(psi(:)));
+    H = floor(min(psi(:))):DH:ceil(max(psi(:)));
     
     % impose a limit to limit cpu time
     if length(H)>nH_lim

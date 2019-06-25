@@ -34,4 +34,4 @@ for i=1:length(xy1)
 end
 
 % Minimal distance
-ds=nanmin(ds(:));
+ds=min(ds(:));

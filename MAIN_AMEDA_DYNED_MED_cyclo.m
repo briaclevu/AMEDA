@@ -280,5 +280,99 @@ end
 % Resolve merging and spltting event and filter eddies shorter than cut_off
 mod_merging_splitting(name);
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Compute Reliability Index ---------------------------------------------
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+% default set of parameter to compute density from satellite tracks
+dT=12; Tk=2*dT;
+D=4; Dk=3*D;
+
+%----------------------------------------
+%% build density tracks
+dens=build_density(source,keys,Dk,D,Tk,dT);
+save([path_out,'tracks_density_',config,'_T',num2str(dT),'_D',num2str(D)],'dens','-append','-v7.3')
+
+%----------------------------------------
+%% associate normalized density to tracks
+
+% source of data driving the netcdf format
+name=['_',num2str(Yi),'_',num2str(Yf)];
+load([path_out,'eddy_tracks',name])  
+tracksT=tracks;
+% path_out_IE='/home/blevu/DATA/IeraPetra/datafig/';
+% load([path_out_IE,'IEdt'])
+% tracksIEDT(1)=ied;
+% load([path_out_IE,'IEnrt'])
+% tracksIENRT(1)=ied;
+
+% tracks density adapted from Arhan and Colin de Verdière (1985)
+load([path_out,'tracks_density_',config,'_T',num2str(dT),'_D',num2str(D)],'dens')
+% i=datenum([2016 01 01])-datenum([2000 01 01])+1;
+% dens=dens(:,:,i:end);
+% save([path_out_IE,'tracks_density_',config,'_T',num2str(dT),'_D',num2str(D)'],'dens');
+
+% compute density for every eddy detection (tracksT structure)
+%dens_tracks_IEDT = associate_tracks_density(tracksIEDT,dens,D);
+dens_tracks = associate_tracks_density(source,keys,tracksT,dens,D);
+% save normalised density associate to detections
+% save([path_out_IE,'tracks_density_',config,'_T',...
+%         num2str(dT),'_D',num2str(D)],'dens_tracks_IEDT','-append')
+save([path_out,'tracks_density_',config,'_T',...
+        num2str(dT),'_D',num2str(D)],'dens_tracks','-append','-v7.3')
+
+% % compute density for every eddy detection (tracksT structure)
+% dens_tracks_IENRT = associate_tracks_density(tracksIENRT,dens,D);
+% % save normalised density associate to detections
+% save([path_out_IE,'tracks_density_',config,'_T',...
+%         num2str(dT),'_D',num2str(D)],'dens_tracks_IENRT','-append')
+
+%-------------------------------------------------------------------------
+%% Compute RI stats on tracks
+
+% probalistic function
+RT_seuil=24;% 30(A) / 25-27(C) from 16 to 34
+VT_seuil=0.08;% 0.12 independant pour partGhost(A) / 0.08-0.1(C)
+dRT=4;% 5(A) / 3(C) from 0 to 10
+dVT=0.04;% 0.04(a) / 0.03(C)
+
+% set paramters
+dT=12;
+D=4;
+
+% RI for DT
+load([path_out_IE,'tracks_density_',config,'_T',...
+        num2str(dT),'_D',num2str(D)],'dens_tracks_IEDT')
+    
+% read features
+rmax1=dens_tracks_IEDT.rmax1;
+velmax1=dens_tracks_IEDT.velmax1;
+DensN=dens_tracks_IEDT.dens_int';
+
+PHIR = 1/2*(tanh((rmax1-RT_seuil)/dRT)+1);
+PHIV = 1/2*(tanh((velmax1-VT_seuil)/dVT)+1);
+
+% Reliability index
+RI_IEDT = DensN.*PHIR.*PHIV;
+
+save([path_out_IE,'tracks_density_',config,'_T',...
+        num2str(dT),'_D',num2str(D)],'RI_IEDT','-append')
+
+% RI for NRT
+load([path_out_IE,'tracks_density_',config,'_T',...
+        num2str(dT),'_D',num2str(D)],'dens_tracks_IENRT')
+    
+% read features
+rmax1=dens_tracks_IENRT.rmax1;
+velmax1=dens_tracks_IENRT.velmax1;
+DensN=dens_tracks_IENRT.dens_int;
+
+PHIR = 1/2*(tanh((rmax1-RT_seuil)/dRT)+1);
+PHIV = 1/2*(tanh((velmax1-VT_seuil)/dVT)+1);
+
+% Reliability index
+RI_IENRT = DensN.*PHIR.*PHIV;
+
+save([path_out_IE,'tracks_density_',config,'_T',...
+        num2str(dT),'_D',num2str(D)],'RI_IENRT','-append')
 

@@ -14,6 +14,7 @@ track=0; % add satellite track (1)
 temp=0;% use sst AVHRR
 chlo=0;% use chlo composite
 buoy=0;argo=1;glider=0; % add buoy,argo,gldier trajectories
+export_out=0;% export results
 
 %----------------------------------------
 % source of data driving the netcdf format
@@ -23,7 +24,7 @@ source = 'AVISO';
 % configuration to be used has reference of the v1 of the atlas
 config = 'DYNED_MED_cyclo';
 year='2000_2017';
-name={'LEV','BWE'};
+name={'BWE'};
 
 % Definition of the parameters specific for the experiment is needed 
 %mod_eddy_params(['keys_sources_',source,'_',config])
@@ -80,26 +81,41 @@ if argo
     %IsInEddy = double(ncread(input_dir,'IsInEddy'));
     Xargo = double(ncread(input_dir,'Xargo'));
     Yargo = double(ncread(input_dir,'Yargo'));
+    %
+    list=unique(ID_float);
+    i=1;
+    clear argos
+    for j=1:length(list)
+        IND=find(ID_float==list(j));
+        argos(i).name = list(j);
+        argos(i).date = time_argo(IND);
+        argos(i).lon =Xargo(IND);
+        argos(i).lat = Yargo(IND);
+        [argos(i).date,I] = sort(argos(i).date);
+        argos(i).lon = argos(i).lon(I);
+        argos(i).lat = argos(i).lat(I);
+        i=i+1;
+    end
 
     %
-    dirdata=[path_data,'argo_trajs/'];
-    list=dir([dirdata,'*.mat']);
-    i=1;
-    for j=1:length(list)
-        file = [dirdata,list(j).name];
-        if exist(file,'file')
-            load(file)
-            if ~isempty(dateb)
-                argos(i).name=list(j).name(17:end-4);
-                argos(i).date=dateb;
-                argos(i).lat=latb;
-                argos(i).lon=lonb;
-                i=i+1;
-            end
-        end
-    end
+%     dirdata=[path_data,'argo_trajs/'];
+%     list=dir([dirdata,'*.mat']);
+%     i=1;
+%     for j=1:length(list)
+%         file = [dirdata,list(j).name];
+%         if exist(file,'file')
+%             load(file)
+%             if ~isempty(dateb)
+%                 argos(i).name=list(j).name(17:end-4);
+%                 argos(i).date=dateb;
+%                 argos(i).lat=latb;
+%                 argos(i).lon=lonb;
+%                 i=i+1;
+%             end
+%         end
+%     end
     % duration for the ruban
-    nba=20;
+    nba=15;
 end
 
 % load tracking result
@@ -163,8 +179,8 @@ elseif strcmp(named{1},'LYB')
     cmin=-25;
     cmax=25;
 end
-system(['mkdir ',path_out,'/figures/',named{1}])
-system(['mkdir ',path_out,'/figures/',named{1},'_ID'])
+mkdir([path_out,'/figures'],named{1})
+mkdir([path_out,'/figures'],[named{1},'_ID'])
 
 % set periode
 dayi=[2000 01 01 12 0 0];
@@ -190,9 +206,9 @@ m_proj('Mercator','lat',[minlat maxlat],'lon',[minlon maxlon]);
 
 close all
 
-for n=1:length(stp_list)-1
-    system(['mkdir ',path_out,'/figures/',named{1},'/',num2str(n+1999)])
-    system(['mkdir ',path_out,'/figures/',named{1},'_ID/',num2str(n+1999)])
+for n=11:length(stp_list)-1
+    mkdir([path_out,'/figures/',named{1}],num2str(n+1999))
+    mkdir([path_out,'/figures/',named{1},'_ID'],num2str(n+1999))
     %dstp = stp_list(n)-1; 
     dstp = 0;
     
@@ -253,6 +269,14 @@ for n=1:length(stp_list)-1
         eval(['[x,y,mask,u1,v1,~] = load_fields_',source,'(day+dstp,1,deg);'])
         eval(['[x1,y1,mask1,~,~,~] = load_fields_',source,'(day+dstp,1,3);'])
         ssh1 = squeeze(permute(ncread(nc_ssh,s_name,[1 1 day+dstp],[Inf Inf 1]),[2,1,3]));
+        % set the scale
+        if strcmp(named{1},'BWE')
+            u1(331,280)=1;
+            v1(331,280)=0;
+        elseif strcmp(named{1},'LEV')
+            u1(169,850)=1;
+            v1(169,850)=0;
+        end
         xnan=x;
         ynan=y;
         vel=sqrt(u1.^2+v1.^2);
@@ -267,7 +291,8 @@ for n=1:length(stp_list)-1
         % add quiver velocities
         hold on
         m_quiver(xnan(1:sp:end,1:sp:end),ynan(1:sp:end,1:sp:end),...
-            u1(1:sp:end,1:sp:end),v1(1:sp:end,1:sp:end),coeff,'color',[0.3 0.3 0.3])
+            u1(1:sp:end,1:sp:end)/coeff,v1(1:sp:end,1:sp:end)/coeff,...
+            'autoscale','off','color',[.3 .3 .3])
         % put a land mask
         if h_coast
             [X,~]=m_ll2xy(coast(:,1),coast(:,2),'clip','patch');
@@ -313,11 +338,9 @@ for n=1:length(stp_list)-1
                         'markersize',5)
                 end
             end
-            %m_text(maxlon-2.4,maxlat-0.65,['DRIFTER + and - ',num2str(nbb),' days (red)'],'FontSize',8)
             m_text(maxlon-5,maxlat+0.6,['DRIFTERS last ',num2str(nbb),' days (red circles)'],'FontSize',6)
         end
-        
-        
+            
         % satellite tracks of the day (use get_tracks.sh in DATA/nrt)
         % (time,lat,lon,flag,track,cycle)
         if track
@@ -361,13 +384,13 @@ for n=1:length(stp_list)-1
                 if tracks(i).step(end)-tracks(i).step(1)+1>=cut
                     if dura<=30
                         m_plot(CD(1,1:ind),CD(2,1:ind),'-','color',[0.4 0.4 0.4],'linewidth',1.5)
-                        m_plot(CD(1,1),CD(2,1),'sk','MarkerFaceColor','k','MarkerSize',4)
+                        m_plot(CD(1,1),CD(2,1),'sk','MarkerFaceColor','k','MarkerSize',3)
                     else
                         m_plot(CD(1,max(1,ind-30):ind),CD(2,max(1,ind-30):ind),'-','color',[0.4 0.4 0.4],'linewidth',1.5)
-                        m_plot(CD(1,max(1,ind-30)),CD(2,max(1,ind-30)),'sk','MarkerFaceColor',[0.3 0.3 0.3],'MarkerSize',4)
+                        m_plot(CD(1,max(1,ind-30)),CD(2,max(1,ind-30)),'sk','MarkerFaceColor',[0.3 0.3 0.3],'MarkerSize',3)
                     end
                     m_plot(CD(1,ind),CD(2,ind),'ok','MarkerFaceColor','k',...
-                        'MarkerSize',min(10,round(dura/90+4)))
+                        'MarkerSize',min(8,round(dura/120+3)))
                     %
                     lonlat3=tracks(i).shapes3{ind};
                     m_plot(lonlat3(1,:),lonlat3(2,:),'--k','linewidth',1)
@@ -415,54 +438,44 @@ for n=1:length(stp_list)-1
                     %
                     if CD(1,ind)<maxlon && CD(1,ind)>minlon && CD(2,ind)>minlat && CD(2,ind)<maxlat
                         m_text(CD(1,ind),CD(2,ind)-.1,['  ',num2str(dura)],...
-                            'color',[0 0 0],'FontSize',min(10,round(dura/90+4)),'fontWeight','bold')
+                            'color',[0 0 0],'FontSize',min(8,round(dura/120+4)),'fontWeight','bold')
                         %m_text(CD(1,ind),CD(2,ind)-.1,[num2str(i)],...
                          %   'color',[.5 .5 .5],'FontSize',8,'fontWeight','bold')
                     end
                 else
                     m_plot(CD(1,ind),CD(2,ind),'ok',...
-                        'MarkerFaceColor','w','MarkerSize',4)
+                        'MarkerFaceColor','w','MarkerSize',3)
                 end
             end
         end
         
         % add argo trajectory
         if argo
-%             IND = find(time_argo==floor(datenum(dr)));
-%             if ~isempty(IND)
-%                 for i=1:length(IND)
-%                     if IsInEddy(IND(i))==1 || IsInEddy(IND(i))==-1
-%                         m_plot(Xargo(IND(i)),Yargo(IND(i)),'dk','markerfacecolor',[1 1 0],...
-%                         'markersize',8)
-%                     end
-%                 end
-%             end
             for i=1:length(argos)
                 dateb=datenum(argos(i).date)-datenum(dr);
                 lonb=argos(i).lon;
                 latb=argos(i).lat;
-                mrub=find(dateb(dateb<0)==max(dateb(dateb<0)));
-                ruban=find(dateb<0 & dateb>-nba &...
+                mrub=find(dateb(dateb<=0)==max(dateb(dateb<=0)));
+                ruban=find(dateb<=0 & dateb>-nba &...
                     diff([dateb;10000]) > 0.5 &...
                     lonb<maxlon & lonb>minlon & latb<maxlat & latb>minlat);
                 if ~isempty(ruban)
                     L=[length(ruban(:)) i];
                     m_plot(lonb(ruban(:)),latb(ruban(:)),'-','color',[1 0 1],'linewidth',1)
                     m_plot(lonb(ruban(:)),latb(ruban(:)),'dk','markerfacecolor',[1 0 1],...
-                        'markersize',4)
+                        'markersize',3)
+                    m_plot(lonb(ruban(end)),latb(ruban(end)),'dk','markerfacecolor',[.5 0 .5],...
+                         'markersize',3)
                     %m_text(lonb(ruban(1)),latb(ruban(1))+0.1,argos(i).name)
                 end
                 if dateb(mrub)>-1
-                    m_plot(lonb(mrub(end)),latb(mrub(end)),'dk','markerfacecolor',[1 0 1],...
-                        'markersize',6)
+                    m_plot(lonb(mrub(end)),latb(mrub(end)),'dk','markerfacecolor',[.5 0 .5],...
+                        'markersize',5)
 
                 end
             end
-            %m_text(maxlon-2.8,maxlat-0.35,['ARGO + and - ',num2str(nba),' days (purple)'],'FontSize',8)
-            %m_text(maxlon-5,maxlat+0.4,['ARGO last ',num2str(nba),' days (pink diamonds)'],'FontSize',6)
+            m_text(maxlon-5,maxlat+0.4,['ARGO last ',num2str(nba),'days (pink diamonds)'],'FontSize',6)
         end
-        % add legend on the map and information
-        %set(get(h,'title'),'string','ADT (cm)','FontSize',8,'fontWeight','bold')
         
         hold off
         % add legend on the map and information
@@ -482,6 +495,12 @@ for n=1:length(stp_list)-1
             set(get(h,'title'),'string','ADT (cm)','FontSize',8,'fontWeight','bold')
             m_text(minlon+.2,maxlat+.2,[datestr(dr,1)],...%' / degradation = ',num2str(deg)],...
                 'FontSize',10,'fontWeight','bold')
+            m_text(maxlon-5,maxlat+0.2,'EDDIES last 30days trajectories (grey lines)','FontSize',6)
+            if strcmp(named,'BWE')
+                m_text(5.65,44,'1 m/s','fontsize',6,'fontweight','bold')
+            elseif strcmp(named,'LEV')
+                m_text(29.4,37.25,'1 m/s','fontsize',6,'fontweight','bold')
+            end
         end
 
         %prepare the print in a pdf
@@ -493,8 +512,8 @@ for n=1:length(stp_list)-1
         else
             set(hfig,'PaperPosition',[-1.3,-0.4,12,7])
             set(hfig,'PaperSize',[9.5,8.5])
-            set(hfig,'PaperPosition',[-1.3,-0.4,10,7])
-            set(hfig,'PaperSize',[7.5,6.5])
+            set(hfig,'PaperPosition',[0,-1,10,6.5])
+            set(hfig,'PaperSize',[8,6.5])
             %print(hfig,[path_out,'figures/',named{1},'/',num2str(n+1999),'/tracking_',config,'_',named{1},'_',datestr(dr,'yyyymmdd')],'-dpng','-r200')
             print(hfig,[path_out,'figures/',named{1},'/',num2str(n+1999),'/tracking_',config,'_',named{1},'_',datestr(dr,'yyyymmdd')],'-dpng','-r300')
         end
@@ -560,14 +579,14 @@ for n=1:length(stp_list)-1
                 dateb=datenum(argos(i).date)-datenum(dr);
                 lonb=argos(i).lon;
                 latb=argos(i).lat;
-                mrub=find(dateb(dateb<0)==max(dateb(dateb<0)));
-                ruban=find(dateb<0 & dateb>-nba &...
+                mrub=find(dateb(dateb<=0)==max(dateb(dateb<=0)));
+                ruban=find(dateb<=0 & dateb>-nba &...
                     diff([dateb;10000]) > 0.5 &...
                     lonb<maxlon & lonb>minlon & latb<maxlat & latb>minlat);
                 if ~isempty(ruban)
                     m_plot(lonb(ruban(1)),latb(ruban(1)),'dk','markerfacecolor',[1 0 1],...
                         'markersize',6)
-                    m_text(lonb(ruban(1)),latb(ruban(1))+0.15,argos(i).name,...
+                    m_text(lonb(ruban(1)),latb(ruban(1))+0.15,num2str(argos(i).name),...
                         'color',[1 0 1],'FontSize',6,'fontWeight','bold')
                 end
             end
@@ -586,8 +605,106 @@ for n=1:length(stp_list)-1
 
     end
     
+    crop([path_out,'/figures/',named{1},'/',num2str(n+1999)])
+    crop([path_out,'/figures/',named{1},'_ID/',num2str(n+1999)])
+    
     if movie, close(M); end
         
 end
 
 end
+
+if export_out
+
+%% export for Alex
+% load tracking result
+load([path_out,'eddy_tracks_',year])
+
+INDA=[];stpA=[];LifetimeA=[];TminA=[];RmaxA=[];VmaxA=[];detamaxA=[];ellip_maxA=[];VortMA=[];
+INDC=[];stpC=[];LifetimeC=[];TminC=[];RmaxC=[];VmaxC=[];detamaxC=[];ellip_maxC=[];VortMC=[];
+
+% add eddy tracking (use get_aviso_nrt.sh in DATA/nrt -> mk_nc_along.m)
+for i=1:length(tracks)
+    dura = tracks(i).step(end)-tracks(i).step(1)+1;
+    if tracks(i).type(1)==1
+        INDC = [INDC;ones(length(tracks(i).step),1)*i];
+        stpC = [stpC;tracks(i).step];
+        LifetimeC = [LifetimeC;ones(length(tracks(i).step),1)*dura];
+        TminC = [TminC;tracks(i).tau1];
+        RmaxC = [RmaxC;tracks(i).rmax1];
+        VmaxC = [VmaxC;tracks(i).velmax1];
+        detamaxC = [detamaxC;tracks(i).deta1];
+        ellip_maxC = [ellip_maxC;tracks(i).ellip1];
+        VortMC = [VortMC;tracks(i).vortM1];
+    else
+        INDA = [INDA;ones(length(tracks(i).step),1)*i];
+        stpA = [stpA;tracks(i).step];
+        LifetimeA = [LifetimeA;ones(length(tracks(i).step),1)*dura];
+        TminA = [TminA;tracks(i).tau1];
+        RmaxA = [RmaxA;tracks(i).rmax1];
+        VmaxA = [VmaxA;tracks(i).velmax1];
+        detamaxA = [detamaxA;tracks(i).deta1];
+        ellip_maxA = [ellip_maxA;tracks(i).ellip1];
+        VortMA = [VortMA;tracks(i).vortM1];
+    end
+end
+
+% plot distribution
+load([path_out,'Atlas_main_features_AC'])
+cut=15;
+tps=0:15:1500;% in days
+indA = LifetimeA>cut;
+indC = LifetimeC>cut;
+NLtA = histc(LifetimeA(indA),tps);
+NLtC = histc(LifetimeC(indC),tps);
+CSNA = cumsum(NLtA(end:-1:1));
+CSNC = cumsum(NLtC(end:-1:1));
+
+close all
+hfig=figure('visible','on');
+set(hfig,'Position',[0 0 1000 500])
+set(gcf,'color','w'); % set figure background to white
+subplot(1,2,1)
+semilogy(tps,NLtC,'color',[.9 0 0],'linewidth',2)
+hold on
+semilogy(tps,NLtA,'color',[0 0 .9],'linewidth',2)
+xlim([0 600])
+xlabel('Life Time (days)','fontweight','bold','Fontsize',12)
+ylabel('Number','fontweight','bold','Fontsize',12)
+grid on
+legend('Cyclones','Anticyclones')
+subplot(1,2,2)
+hold on
+plot(tps,NLtC./NLtA,'color',[.7 0 .7],'linewidth',2)
+plot(tps,CSNC(end:-1:1)./CSNA(end:-1:1),'color',[.5 .5 .5],'linewidth',2)
+plot([0 1500],[1 1],'-k','linewidth',.5)
+xlim([0 600])
+xlabel('Life Time (days)','fontweight','bold','Fontsize',12)
+ylabel('Cyclones / Anticyclones','fontweight','bold','Fontsize',12)
+legend('15days bins','Cumulating longer eddies')
+grid on
+box on
+%
+set(hfig,'PaperPosition',[0,0,10,5])
+print(hfig,[path_out,'figures/Distribution_Lifetime'],'-dpng','-r150')
+crop([path_out,'/figures/'])
+
+% Export Atlas linearised
+% TA=table(INDA,stpA,LifetimeA,round(TminA),round(RmaxA*100)/100,round(VmaxA*100),...
+%     round(detamaxA*100),round(ellip_maxA*100)/100,round(VortMA*10^7)/10^7,...
+%     'VariableNames',{'Anticyclone_indice','step','Life_Time','Turnover_time_in_days',...
+%         'Rmax_in_km','Vmax_in_cm_per_s','delta_ssh_in_cm','ellipticity','Maximal_vorticity'});
+% writetable(TA,[path_out,'Atlas_main_features_A.dat'])
+% %
+% TC=table(INDC,stpC,LifetimeC,round(TminC),round(RmaxC*100)/100,round(VmaxC*100),...
+%     round(detamaxC*100),round(ellip_maxC*100)/100,round(VortMC*10^7)/10^7,...
+%     'VariableNames',{'Cyclone_indice','step','Life_Time','Turnover_time_in_days',...
+%         'Rmax_in_km','Vmax_in_cm_per_s','delta_ssh_in_cm','ellipticity','Maximal_vorticity'});
+% writetable(TA,[path_out,'Atlas_main_features_C.dat'])
+%
+save([path_out,'Atlas_main_features_AC'],'INDA','INDC','stpA','stpC',...
+    'LifetimeA','LifetimeC','TminA','TminC','RmaxA','RmaxC','VmaxA','VmaxC',...
+    'detamaxA','detamaxC','ellip_maxA','ellip_maxC','VortMA','VortMC')
+
+end
+

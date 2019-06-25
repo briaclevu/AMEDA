@@ -94,8 +94,8 @@ runname = '';
 path_in = ['/home/blevu/DATA/',source,'/',config,'/'];
 path_result = ['/home/blevu/Resultats/',source,'/',config,'/'];
 path_out = [path_result,sshtype,postname,'/',runname,'/'];
-path_tracks1 = ['/home/blevu/DATA/',source,'/dt/adt/tracks/'];
-path_tracks2 = ['/home/blevu/DATA/',source,'/nrt/adt/tracks/'];
+path_tracks1 = ['/home/blevu/DATA/',source,'/dt/phy/tracks/'];
+path_tracks2 = ['/home/blevu/DATA/',source,'/nrt/phy/tracks/'];
 path_data = '/home/blevu/DATA/CORIOLIS/';
 path_rossby = '/home/blevu/MATLAB/Rossby_radius/';
 

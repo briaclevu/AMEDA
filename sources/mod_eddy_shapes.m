@@ -389,9 +389,9 @@ for ii=1:length(centers.type)
             shapes1.ke(ii)   = nansum(ke(:));
             shapes1.vort(ii) = nanmean(vort(:));
             if nanmean(vort(:)) > 0
-                shapes1.vortM(ii) = nanmax(vort);
+                shapes1.vortM(ii) = max(vort);
             elseif nanmean(vort(:)) < 0
-                shapes1.vortM(ii) = nanmin(vort);
+                shapes1.vortM(ii) = min(vort);
             else
                 display('!!! WARNING !!! vort==0 - check vorticity computation')
             end
@@ -725,4 +725,3 @@ else
     disp(' ')
 
 end
-

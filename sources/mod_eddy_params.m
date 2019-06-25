@@ -211,13 +211,19 @@ if exist([mat_Rd,'.mat'],'file')
     load(mat_Rd)
     eval([name_Rd,'(',name_Rd,'<',num2str(Rd_typ/3),')=',num2str(Rd_typ/3),';']);
     if grid_reg
+        ind=x>180;
+        x(ind) = x(ind)-360;
         eval(['Rd0 = interp2(lon_Rd,lat_Rd,',name_Rd,',x,y,''*linear'');']) % 10km in average AVISO 1/8
         Rd = Rd0;
         Rd(mask==0)=nan;
+        x(ind) = x(ind)+360;
     else
+        ind=xr>180;
+        xr(ind) = xr(ind)-360;
         eval(['Rd0 = interp2(lon_Rd,lat_Rd,',name_Rd,',xr,yr,''*linear'');']) % 10km in average AVISO 1/8
         Rd = Rd0;
         Rd(maskr==0)=nan;
+        xr(ind) = xr(ind)+360;
     end
 end
 
@@ -339,7 +345,7 @@ end
 %% Save parameters and paths
 %----------------------------------------------
 save([path_out,'param_eddy_tracking'],...
-    'postname','config','runname','sshtype','path_in','path_out','path_rossby','level',...
+    'source','postname','config','runname','sshtype','path_in','path_out','path_rossby','level',...
     'nc_dim','nc_u','nc_v','nc_ssh','x_name','y_name','m_name','u_name','v_name','s_name',...
     'grid_ll','grid_reg','type_detection','extended_diags','streamlines','daystreamfunction','periodic','nrt',...
     'deg','resol','level','Rd_typ','K','b','bx','Dx','Rd','gama','Rb','bi','bxi','Dxi','Rdi','gamai','Rb',...
@@ -350,5 +356,4 @@ save([path_out,'param_eddy_tracking'],...
 if ~grid_reg
     save([path_out,'gridvel_deg',num2str(deg),'_resol',num2str(resol)], 'x', 'y','mask','xi', 'yi','maski')
 end
-
 

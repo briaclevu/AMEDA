@@ -353,7 +353,6 @@ for j=1:length(tracks)
             
         end
     end
-        
 
 end % end loop on tracks j
 

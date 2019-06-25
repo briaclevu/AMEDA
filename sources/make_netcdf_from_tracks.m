@@ -24,7 +24,7 @@ if strcmp(config,'DYNED_MED_cyclo') || strcmp(config,'DYNED_MED')
     end
 
     % date and length from "YYYY-MM-DDThh:mm:ssZ"
-    datei=datenum([2000 01 01]);
+    datei=datenum([1999 12 31]);
     duralim=0;
 
     % create folder for the experiment
@@ -40,7 +40,7 @@ elseif strcmp(config,'DYNED_ARA') || strcmp(config,'DYNED_ARA_cyclo')
     end
 
     % date and length from "YYYY-MM-DDThh:mm:ssZ"
-    datei=datenum([2000 01 01]);
+    datei=datenum([1999 12 31]);
     duralim=0;
 
     % create folder for the experiment
@@ -331,7 +331,7 @@ for i=1:length(tracks)
         elseif strcmp(config,'DYNED_ARA') || strcmp(config,'DYNED_ARA_cyclo')
             netcdf.putAtt(nc,netcdf.getConstant('NC_GLOBAL'),'history',[date,' make_netcdf_from_tracks.m routine on tracks2_2000_2015 with eddies longer than 2*taumin']);
             netcdf.putAtt(nc,netcdf.getConstant('NC_GLOBAL'),'title',['eddy tracks ID ',ID,' from AMEDA']);
-            netcdf.putAtt(nc,netcdf.getConstant('NC_GLOBAL'),'summary','This dataset contains AMEDA analysis of 1/8° SSALTO/DUACS products over Arabian Sea (http://www.aviso.altimetry.fr)');
+            netcdf.putAtt(nc,netcdf.getConstant('NC_GLOBAL'),'summary','This dataset contains AMEDA analysis of 1/8^o SSALTO/DUACS products over Arabian Sea (http://www.aviso.altimetry.fr)');
         end
         netcdf.putAtt(nc,netcdf.getConstant('NC_GLOBAL'),'project','DYNED-Atlas');
         netcdf.putAtt(nc,netcdf.getConstant('NC_GLOBAL'),'institution','LMD');

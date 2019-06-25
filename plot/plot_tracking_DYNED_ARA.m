@@ -25,7 +25,7 @@ config = 'DYNED_ARA_adt';
 year='2000_2015';
 name={'Aden','Oman'};
 name={'Indi'};
-name={'West'};
+name={'Indi','West'};
 
 % Definition of the parameters specific for the experiment is needed 
 %mod_eddy_params(['keys_sources_',source,'_',config])
@@ -76,9 +76,9 @@ if argo
     time_1_argo = '01-Jan-2000';
     time_1_track = '01-Jan-2000';
     time_argo = floor(double(ncread(input_dir,'time_step')+datenum(time_1_argo)-1));
-    ID_traj = double(ncread(input_dir,'ID_track'));
+    %ID_traj = double(ncread(input_dir,'ID_track'));
     ID_float = double(ncread(input_dir,'ID_float'));
-    IsInEddy = double(ncread(input_dir,'IsInEddy'));
+    %IsInEddy = double(ncread(input_dir,'IsInEddy'));
     Xargo = double(ncread(input_dir,'Xargo'));
     Yargo = double(ncread(input_dir,'Yargo'));
     %
@@ -91,6 +91,9 @@ if argo
         argos(i).date=time_argo(IND);
         argos(i).lon=Xargo(IND);
         argos(i).lat=Yargo(IND);
+        [argos(i).date,I] = sort(argos(i).date);
+        argos(i).lon = argos(i).lon(I);
+        argos(i).lat = argos(i).lat(I);
         i=i+1;
     end
 
@@ -146,11 +149,11 @@ if strcmp(named{1},'Indi')
     minlon=33;%min(x(:));
     maxlon=max(x(:));
     cmin=30;
-    cmax=80;
+    cmax=100;
     tmax=[26 24 18 18 18 18 20];
     tmin=[20 17 12 12 12 12 12];
     sp=5;
-    coeff=3;
+    coeff=1;
 elseif strcmp(named{1},'Oman')
     minlat=22;
     maxlat=30;
@@ -183,7 +186,7 @@ elseif strcmp(named{1},'West')
     tmax=[29 26 18 18 18 18 20];
     tmin=[21 19 12 12 12 12 12];
     sp=2;
-    coeff=3;
+    coeff=2;
 end
 system(['mkdir ',path_out,'/figures/',named{1}])
 system(['mkdir ',path_out,'/figures/',named{1},'_ID'])
@@ -275,6 +278,14 @@ for n=1:length(stp_list)-1
         eval(['[x,y,mask,u1,v1,~] = load_fields_',source,'(day+dstp,1,deg);'])
         eval(['[x1,y1,mask1,~,~,~] = load_fields_',source,'(day+dstp,1,3);'])
         ssh1 = squeeze(permute(ncread(nc_ssh,s_name,[1 1 day+dstp],[Inf Inf 1]),[2,1,3]));
+        % set the scale
+        if strcmp(named{1},'Indi')
+            u1(221,231)=2;
+            v1(221,231)=0;
+        elseif strcmp(named{1},'West')
+            u1(175,199)=2;
+            v1(175,199)=0;
+        end
         xnan=x;
         ynan=y;
         vel=sqrt(u1.^2+v1.^2);
@@ -286,10 +297,6 @@ for n=1:length(stp_list)-1
         caxis([cmin cmax])
         colormap(soft(40,0.2))
         %colormap(cbrewer('seq','Oranges',20))
-        % add quiver velocities
-        hold on
-        m_quiver(xnan(1:sp:end,1:sp:end),ynan(1:sp:end,1:sp:end),...
-            u1(1:sp:end,1:sp:end),v1(1:sp:end,1:sp:end),coeff,'color',[0.3 0.3 0.3])
         % put a land mask
         if h_coast
             [X,~]=m_ll2xy(coast(:,1),coast(:,2),'clip','patch');
@@ -302,6 +309,11 @@ for n=1:length(stp_list)-1
         else
             m_coast('patch',[.9 .9 .9],'edgecolor','k');
         end
+        % add quiver velocities
+        hold on
+        m_quiver(xnan(1:sp:end,1:sp:end),ynan(1:sp:end,1:sp:end),...
+            u1(1:sp:end,1:sp:end)/coeff,v1(1:sp:end,1:sp:end)/coeff,...
+            'autoscale','off','color',[.3 .3 .3])
         % grid and fancy the map
         m_grid('tickdir','in','linewidth',1,'linestyle','none');
         set(gcf,'color','w'); % set figure background to white
@@ -335,7 +347,6 @@ for n=1:length(stp_list)-1
                         'markersize',5)
                 end
             end
-            %m_text(maxlon-2.4,maxlat-0.65,['DRIFTER + and - ',num2str(nbb),' days (red)'],'FontSize',8)
             m_text(maxlon-5,maxlat+0.6,['DRIFTERS last ',num2str(nbb),' days (red circles)'],'FontSize',6)
         end
         
@@ -389,7 +400,7 @@ for n=1:length(stp_list)-1
                         m_plot(CD(1,max(1,ind-30)),CD(2,max(1,ind-30)),'sk','MarkerFaceColor',[0.3 0.3 0.3],'MarkerSize',4)
                     end
                     m_plot(CD(1,ind),CD(2,ind),'ok','MarkerFaceColor','k',...
-                        'MarkerSize',min(10,round(dura/90+4)))
+                        'MarkerSize',min(10,round(dura/120+4)))
                     %
                     lonlat3=tracks(i).shapes3{ind};
                     m_plot(lonlat3(1,:),lonlat3(2,:),'--k','linewidth',1)
@@ -437,7 +448,7 @@ for n=1:length(stp_list)-1
                     %
                     if CD(1,ind)<maxlon && CD(1,ind)>minlon && CD(2,ind)>minlat && CD(2,ind)<maxlat
                         m_text(CD(1,ind),CD(2,ind)-.1,['  ',num2str(dura)],...
-                            'color',[0 0 0],'FontSize',min(10,round(dura/90+4)),'fontWeight','bold')
+                            'color',[0 0 0],'FontSize',min(10,round(dura/120+4)),'fontWeight','bold')
                         %m_text(CD(1,ind),CD(2,ind)-.1,[num2str(i)],...
                          %   'color',[.5 .5 .5],'FontSize',8,'fontWeight','bold')
                     end
@@ -450,21 +461,12 @@ for n=1:length(stp_list)-1
         
         % add argo trajectory
         if argo
-%             IND = find(time_argo==floor(datenum(dr)));
-%             if ~isempty(IND)
-%                 for i=1:length(IND)
-%                     if IsInEddy(IND(i))==1 || IsInEddy(IND(i))==-1
-%                         m_plot(Xargo(IND(i)),Yargo(IND(i)),'dk','markerfacecolor',[1 1 0],...
-%                         'markersize',8)
-%                     end
-%                 end
-%             end
             for i=1:length(argos)
                 dateb=datenum(argos(i).date)-datenum(dr);
                 lonb=argos(i).lon;
                 latb=argos(i).lat;
-                mrub=find(dateb(dateb<0)==max(dateb(dateb<0)));
-                ruban=find(dateb<0 & dateb>-nba &...
+                mrub=find(dateb(dateb<=0)==max(dateb(dateb<=0)));
+                ruban=find(dateb<=0 & dateb>-nba &...
                     diff([dateb;10000]) > 0.5 &...
                     lonb<maxlon & lonb>minlon & latb<maxlat & latb>minlat);
                 if ~isempty(ruban)
@@ -472,19 +474,18 @@ for n=1:length(stp_list)-1
                     m_plot(lonb(ruban(:)),latb(ruban(:)),'-','color',[1 0 1],'linewidth',1)
                     m_plot(lonb(ruban(:)),latb(ruban(:)),'dk','markerfacecolor',[1 0 1],...
                         'markersize',4)
+                    m_plot(lonb(ruban(end)),latb(ruban(end)),'dk','markerfacecolor',[.5 0 .5],...
+                         'markersize',4)
                     %m_text(lonb(ruban(1)),latb(ruban(1))+0.1,argos(i).name)
                 end
                 if dateb(mrub)>-1
-                    m_plot(lonb(mrub(end)),latb(mrub(end)),'dk','markerfacecolor',[1 0 1],...
+                    m_plot(lonb(mrub(end)),latb(mrub(end)),'dk','markerfacecolor',[.5 0 .5],...
                         'markersize',6)
 
                 end
             end
-            %m_text(maxlon-2.8,maxlat-0.35,['ARGO + and - ',num2str(nba),' days (purple)'],'FontSize',8)
-            %m_text(maxlon-5,maxlat+0.4,['ARGO last ',num2str(nba),' days (pink diamonds)'],'FontSize',6)
+            m_text(maxlon-10,maxlat+0.6,['ARGO last ',num2str(nba),' days (pink diamonds)'],'FontSize',6)
         end
-        % add legend on the map and information
-        %set(get(h,'title'),'string','ADT (cm)','FontSize',8,'fontWeight','bold')
         
         hold off
         % add legend on the map and information
@@ -502,8 +503,14 @@ for n=1:length(stp_list)-1
                set(get(h,'title'),'string','SLA (cm)','FontSize',8,'fontWeight','bold')
             end
             set(get(h,'title'),'string','ADT (cm)','FontSize',8,'fontWeight','bold')
-            m_text(minlon+.2,maxlat+.2,[datestr(dr,1)],...%' / degradation = ',num2str(deg)],...
+            m_text(minlon+.2,maxlat+.4,[datestr(dr,1)],...%' / degradation = ',num2str(deg)],...
                 'FontSize',10,'fontWeight','bold')
+            m_text(maxlon-10,maxlat+0.3,'EDDIES last 30days trajectories (grey lines)','FontSize',6)
+            if strcmp(named,'Indi')
+                m_text(59,28,'2 m/s','fontsize',6,'fontweight','bold')
+            elseif strcmp(named,'West')
+                m_text(54.95,22.1,'2 m/s','fontsize',6,'fontweight','bold')
+            end
         end
 
         %prepare the print in a pdf
@@ -518,7 +525,6 @@ for n=1:length(stp_list)-1
             set(hfig,'PaperPosition',[-1.3,-0.4,10,7])
             set(hfig,'PaperSize',[7.5,6.5])
             print(hfig,[path_out,'figures/',named{1},'/',num2str(n+1999),'/tracking_',config,'_',named{1},'_',datestr(dr,'yyyymmdd')],'-dpng','-r300')
-            %print(hfig,[path_out,'figures/png/tracking_',config,'_',named{1},'_',datestr(dr,'yyyymmdd')],'-dpng','-r300')
         end
         
         % figure with ID
@@ -582,14 +588,14 @@ for n=1:length(stp_list)-1
                 dateb=datenum(argos(i).date)-datenum(dr);
                 lonb=argos(i).lon;
                 latb=argos(i).lat;
-                mrub=find(dateb(dateb<0)==max(dateb(dateb<0)));
-                ruban=find(dateb<0 & dateb>-nba &...
+                mrub=find(dateb(dateb<=0)==max(dateb(dateb<=0)));
+                ruban=find(dateb<=0 & dateb>-nba &...
                     diff([dateb;10000]) > 0.5 &...
                     lonb<maxlon & lonb>minlon & latb<maxlat & latb>minlat);
                 if ~isempty(ruban)
                     m_plot(lonb(ruban(1)),latb(ruban(1)),'dk','markerfacecolor',[1 0 1],...
                         'markersize',6)
-                    m_text(lonb(ruban(1)),latb(ruban(1))+0.15,num2str(argos(i).name),...
+                    m_text(lonb(ruban(1))+.2,latb(ruban(1)),num2str(argos(i).name),...
                         'color',[1 0 1],'FontSize',6,'fontWeight','bold')
                 end
             end
@@ -598,7 +604,7 @@ for n=1:length(stp_list)-1
         % add legend on the map and information
         hold off
         % add legend on the map and information
-        m_text(minlon+.2,maxlat+.2,[datestr(dr,1)],...%' / degradation = ',num2str(deg)],...
+        m_text(minlon+.2,maxlat+.3,[datestr(dr,1)],...%' / degradation = ',num2str(deg)],...
             'FontSize',10,'fontWeight','bold')
 
         %prepare the print in a pdf
@@ -607,6 +613,9 @@ for n=1:length(stp_list)-1
         print(hfig,[path_out,'figures/',named{1},'_ID/',num2str(n+1999),'/tracking_ID_',config,'_',named{1},'_',datestr(dr,'yyyymmdd')],'-dpng','-r150')
 
     end
+    
+    crop([path_out,'/figures/',named{1},'/',num2str(n+1999)])
+    crop([path_out,'/figures/',named{1},'_ID/',num2str(n+1999)])
     
     if movie, close(M); end
         

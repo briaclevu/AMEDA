@@ -55,9 +55,10 @@
 %
 %=========================
 
-start
+run(['/home6/datahome/fdumas/MATLAB/start_datarmor'])
 clear; clc;
 disp(version)
+ver
 
 %----------------------------------------
 % source of data driving the netcdf format
@@ -66,7 +67,7 @@ source = 'CROCO';
 
 %----------------------------------------
 % domaine
-keys = 'test';
+keys = 'test_deg2';
 
 %----------------------------------------
 % Update option
@@ -125,7 +126,7 @@ detection_fields_ni = detection_fields;
 
 load([path_out,'fields_inter.mat'],'detection_fields')
 
-for stp = step0:stepF
+parfor stp = step0:stepF
     %----------------------------------------
     % Compute non interpolated fields for step stp
     detection_fields_ni(stp) = mod_fields(source,stp,1);
@@ -145,8 +146,11 @@ end
 % Save fields
 save([path_out,'fields_inter'],'detection_fields','-v7.3')
 
-detection_fields = detection_fields_ni;
-save([path_out,'fields'],'detection_fields','-v7.3')
+if resol>1
+    detection_fields = detection_fields_ni;
+    save([path_out,'fields'],'detection_fields','-v7.3')
+end
+
 clear detection_fields detection_fields_ni
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -235,13 +239,12 @@ delete(gcp('nocreate'))
 %----------------------------------------
 % Tracking eddies and record interacting events
 name=[''];
-mod_eddy_tracks_pool(name,update);
+mod_eddy_tracks_nopool(name,update);
 
 %----------------------------------------
 % Resolve merging and spltting event and filter eddies shorter than cut_off
 % need a series longer than 2 turn over time (> 1 month)
 mod_merging_splitting(name);
-
 
 
 

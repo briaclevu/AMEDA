@@ -263,7 +263,7 @@ for ii=1:length(centers0.x)
         psi1 = double(compute_psi(xx,yy,mk,uu*f/g*1e3,vv*f/g*1e3,ci,cj,grid_ll));
 
         % determine contour to be scan
-        H = floor(nanmin(psi1(:))):DH:ceil(nanmax(psi1(:)));    
+        H = floor(min(psi1(:))):DH:ceil(max(psi1(:)));    
         % impose a limit
         if length(H)>nH_lim
             H = nH_lim;
@@ -287,7 +287,7 @@ for ii=1:length(centers0.x)
         psi2 = double(squeeze(sshh));
 
         % determine contour to be scan
-        Hs = floor(nanmin(psi2(:))):DH:ceil(nanmax(psi2(:)));    
+        Hs = floor(min(psi2(:))):DH:ceil(max(psi2(:)));    
         % impose a limit to the number of streamlines scanned
         if length(Hs)>nH_lim
             Hs = nH_lim;
