@@ -181,7 +181,7 @@ V_eddy = 6.5; % km/day
 % represent the temporal correlation depending on the coverage of an area
 % 2 steps for model, 3-5 steps for imagery experiment.
 %!!! in case of AVISO this will be ajusted with the error map of aviso !!!
-if strcmp(source,'AVISO')
+if strcmp(source,'AVISO') | strcmp(source,'OSSE')
     Dt = 10; % in days
 else
     Dt = 2; % days
@@ -192,7 +192,7 @@ end
 cut_off = 0; % in days
 
 % number of past steps to define the averaged eddy features during the tracking
-if strcmp(source,'AVISO')
+if strcmp(source,'AVISO') | strcmp(source,'OSSE')
     D_stp = 4; % in steps
 else
     D_stp = 2; % in steps
@@ -321,11 +321,11 @@ else
     
     % Compute interpolated b and bx
     if grid_reg
-        f_i = interp2(x,y,f,xi,yi,'*linear')*resol;
+        f_i = interp2(x,y,f,xi,yi,'*linear');
         bi = round(interp2(x,y,b,xi,yi,'*linear'))*resol;
         bxi = round(interp2(x,y,bx,xi,yi,'*linear'))*resol;
     else
-        f_i = interp2(xr,yr,f,xi,yi,'*linear')*resol;
+        f_i = interp2(xr,yr,f,xi,yi,'*linear');
         bi = round(interp2(xr,yr,b,xi,yi,'*linear'))*resol;
         bxi = round(interp2(xr,yr,bx,xi,yi,'*linear'))*resol;
     end
@@ -345,10 +345,10 @@ end
 %% Save parameters and paths
 %----------------------------------------------
 save([path_out,'param_eddy_tracking'],...
-    'source','postname','config','runname','sshtype','path_in','path_out','path_rossby','level',...
+    'source','postname','config','runname','sshtype','path_in','path_out','path_rossby',...
     'nc_dim','nc_u','nc_v','nc_ssh','x_name','y_name','m_name','u_name','v_name','s_name',...
     'grid_ll','grid_reg','type_detection','extended_diags','streamlines','daystreamfunction','periodic','nrt',...
-    'deg','resol','level','Rd_typ','K','b','bx','Dx','Rd','gama','Rb','bi','bxi','Dxi','Rdi','gamai','Rb',...
+    'deg','resol','level','Rd_typ','K','b','bx','Dx','Rd','gama','Rb','bi','bxi','Dxi','Rdi','gamai',...
     'stepF','T','f','f_i','g','dps','V_eddy','Dt','cut_off','D_stp','N_can','DH','nH_lim','n_min','lat_min',...
     'epsil','k_vel_decay','dc_max','nRmin','nR_lim','Np','nrho_lim')
 
