@@ -71,16 +71,20 @@ source = 'NEMO';
 keys = 'test';
 
 %----------------------------------------
+% inital and final year
+Yi = 2000; Yf = 2017;
+
+%----------------------------------------
+% Set parallel computation
+cpus=24;
+
+%----------------------------------------
 % Update option
 update = 0; % the serie from the beginning
 
 %----------------------------------------
 % Possibility to shorter the serie
 %stepF = 10;
-
-%----------------------------------------
-% Set parallel computation
-cpus=1;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Initialisation ---------------------------------------------
@@ -97,9 +101,9 @@ run(['keys_sources_',source,'_',keys])
 load('param_eddy_tracking','path_out','streamlines','resol','stepF');
 
 %----------------------------------------
-% Preallocate structure array and mat-file or prepare update
-% !! replace or reinitialise previous results !!
-step0 = mod_init(stepF,update);
+% list of steps (from 2000 to 2015)
+list=[1 stepF+1];
+list=[1 367 732 1097 1462 1828 2193 2558 2923 3289 3654 4019 4384 4750 5115 5480 stepF+1];
 
 %----------------------------------------
 % Activate matlab pool
@@ -115,116 +119,131 @@ if cpus>1
     mypool = parpool(cpus);
 end
 
+%----------------------------------------
+% process detection in yearly loops
+
+for i=1:length(list)-1
+    
+    stepFF=list(i+1)-list(i);
+    dstp = list(i)-1;
+
+    %----------------------------------------
+    % Preallocate structure array and mat-file or prepare update
+    % !! replace or reinitialise previous results !!
+    step0 = mod_init(stepF,update);
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Compute LNAM ---------------------------------------------
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-disp([' === Compute LNAM ==='])
-disp(' ')
+    disp([' === Compute LNAM ',num2str(Yi-1+i),' ==='])
+    disp(' ')
 
-load([path_out,'fields'],'detection_fields')
-detection_fields_ni = detection_fields;
+    load([path_out,'fields'],'detection_fields')
+    detection_fields_ni = detection_fields;
 
-load([path_out,'fields_inter.mat'],'detection_fields')
+    load([path_out,'fields_inter.mat'],'detection_fields')
 
-for stp = step0:stepF
-    %----------------------------------------
-    % Compute non interpolated fields for step stp
-    detection_fields_ni(stp) = mod_fields(source,stp,1);
-    if resol>1
+    parfor stp = step0:stepFF
         %----------------------------------------
-        % Compute interpolated fields for step stp
-        detection_fields(stp) = mod_fields(source,stp,resol);
-    else
-        %----------------------------------------
-        % Interpolated and non interpolated field are the same
-        %disp(' === Interpolated LNAM is the same ===')
-        detection_fields(stp) = detection_fields_ni(stp);
+        % Compute non interpolated fields for step stp
+        detection_fields_ni(stp) = mod_fields(source,stp+dstp,1);
+        if resol>1
+            %----------------------------------------
+            % Compute interpolated fields for step stp
+            detection_fields(stp) = mod_fields(source,stp+dstp,resol);
+        else
+            %----------------------------------------
+            % Interpolated and non interpolated field are the same
+            %disp(' === Interpolated LNAM is the same ===')
+            detection_fields(stp) = detection_fields_ni(stp);
+        end
     end
-end
 
-%----------------------------------------
-% Save fields
-save([path_out,'fields_inter'],'detection_fields','-v7.3')
+    %----------------------------------------
+    % Save fields
+    save([path_out,'fields_inter_',num2str(Yi-1+i)],'detection_fields','-v7.3')
 
-detection_fields = detection_fields_ni;
-save([path_out,'fields'],'detection_fields','-v7.3')
-clear detection_fields detection_fields_ni
+    detection_fields = detection_fields_ni;
+    save([path_out,'fields_',num2str(Yi-1+i)],'detection_fields','-v7.3')
+    clear detection_fields detection_fields_ni
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Find centers ---------------------------------------------
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-disp([' === Find potential centers ==='])
-disp(' ')
+    disp([' === Find potential centers ',num2str(Yi-1+i),' ==='])
+    disp(' ')
 
-load([path_out,'eddy_centers'])
+    load([path_out,'eddy_centers'])
 
-%----------------------------------------
-% Build I/O matfile
-fields_mat = matfile([path_out,'fields_inter.mat']);
-
-for stp = step0:stepF
-    % load inter fields at step stp
     %----------------------------------------
-    fields = fields_mat.detection_fields(:,stp);
-    %----------------------------------------
-    % Detection of eddy centers for step stp
-    [centers0(stp),centers(stp)] = mod_eddy_centers(source,stp,fields);
-end
+    % Build I/O matfile
+    fields_mat = matfile([path_out,'fields_inter_',num2str(Yi-1+i),'.mat']);
 
-%----------------------------------------
-% Save centers
-save([path_out,'eddy_centers'],'centers0','centers','centers2','-v7.3')
-clear centers0 centers
+    parfor stp = step0:stepFF
+        % load inter fields at step stp
+        %----------------------------------------
+        fields = fields_mat.detection_fields(:,stp);
+        %----------------------------------------
+        % Detection of eddy centers for step stp
+        [centers0(stp),centers(stp)] = mod_eddy_centers(source,stp+dstp,fields);
+    end
+
+    %----------------------------------------
+    % Save centers
+    save([path_out,'eddy_centers_',num2str(Yi-1+i)],'centers0','centers','-v7.3')
+    clear centers0 centers
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Find eddies ---------------------------------------------
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-disp([' === Determine eddies shapes ==='])
-disp(' ')
+    disp([' === Determine eddies shapes ',num2str(Yi-1+i),' ==='])
+    disp(' ')
 
-load([path_out,'eddy_centers'],'centers2')
-load([path_out,'eddy_shapes'])
+    load([path_out,'eddy_centers'],'centers2')
+    load([path_out,'eddy_shapes'])
 
-%----------------------------------------
-% Build I/O matfile
-fields_mat = matfile([path_out,'fields_inter.mat']);
-centers_mat = matfile([path_out,'eddy_centers','.mat']);
+    %----------------------------------------
+    % Build I/O matfile
+    fields_mat = matfile([path_out,'fields_inter_',num2str(2000-1+i),'.mat']);
+    centers_mat = matfile([path_out,'eddy_centers_',num2str(Yi-1+i),'.mat']);
 
-for stp = step0:stepF
-    %----------------------------------------
-    % load fields at step stp
-    fields = fields_mat.detection_fields(:,stp);
-    %----------------------------------------
-    % load potential centers at step stp
-    centers = centers_mat.centers(:,stp);
-    %----------------------------------------
-    % Determination of eddy features for step stp
-    if streamlines
-        [centers2(stp),shapes1(stp),shapes2(stp),profil2(stp),...
-        warn_shapes(stp),warn_shapes2(stp)] = ...
-        mod_eddy_shapes(source,stp,fields,centers);
-    else
-        [centers2(stp),shapes1(stp),shapes2(stp),~,...
-        warn_shapes(stp),warn_shapes2(stp)] = ...
-        mod_eddy_shapes(source,stp,fields,centers);
+    parfor stp = step0:stepFF
+        %----------------------------------------
+        % load fields at step stp
+        fields = fields_mat.detection_fields(:,stp);
+        %----------------------------------------
+        % load potential centers at step stp
+        centers = centers_mat.centers(:,stp);
+        %----------------------------------------
+        % Determination of eddy features for step stp
+        if streamlines
+            [centers2(stp),shapes1(stp),shapes2(stp),profil2(stp),...
+            warn_shapes(stp),warn_shapes2(stp)] = ...
+            mod_eddy_shapes(source,stp+dstp,fields,centers);
+        else
+            [centers2(stp),shapes1(stp),shapes2(stp),~,...
+            warn_shapes(stp),warn_shapes2(stp)] = ...
+            mod_eddy_shapes(source,stp+dstp,fields,centers);
+        end
+
     end
-    
-end
 
-%----------------------------------------
-% save warnings, shapes and their centers
-save([path_out,'eddy_centers'],'centers2','-append')
-if streamlines
-    save([path_out,'eddy_shapes'],'shapes1','shapes2',...
-        'warn_shapes','warn_shapes2','profil2','-v7.3')
-else
-    save([path_out,'eddy_shapes'],'shapes1','shapes2',...
-        'warn_shapes','warn_shapes2','-v7.3')
-end
-clear centers2 shapes1 shapes2 profil2 warn_shapes warn_shapes2 struct1 struct2 struct3
+    %----------------------------------------
+    % save warnings, shapes and their centers
+    save([path_out,'eddy_centers_',num2str(Yi-1+i)],'centers2','-append')
+    if streamlines
+        save([path_out,'eddy_shapes_',num2str(Yi-1+i)],'shapes1','shapes2',...
+            'warn_shapes','warn_shapes2','profil2','-v7.3')
+    else
+        save([path_out,'eddy_shapes_',num2str(Yi-1+i)],'shapes1','shapes2',...
+            'warn_shapes','warn_shapes2','-v7.3')
+    end
+    clear centers2 shapes1 shapes2 profil2 warn_shapes warn_shapes2 struct1 struct2 struct3
+
+end % end loop for years
 
 %----------------------------------------
 % Free workers
@@ -235,13 +254,20 @@ delete(gcp('nocreate'))
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %----------------------------------------
+% concatenete years
+concat_eddy(num2cell(Yi:Yf))
+
+%----------------------------------------
 % Tracking eddies and record interacting events
-name=[''];
-mod_eddy_tracks_nopool(name,update);
+name=['_',num2str(Yi),'_',num2str(Yf)];
+% mod_eddy_tracks_nopool(name,update);
+for i=1:length(list)-1
+    update = list(end)-list(i);
+    mod_eddy_tracks_nopool(name,update);
+end
 
 %----------------------------------------
 % Resolve merging and spltting event and filter eddies shorter than cut_off
-% need a series longer than 2 turn over time (> 1 month)
 mod_merging_splitting(name);
 
 

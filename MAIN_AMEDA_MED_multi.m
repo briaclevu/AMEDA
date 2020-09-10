@@ -64,7 +64,7 @@ source = 'AVISO';
 
 %----------------------------------------
 % domaine
-keys = 'DYNED_MED_adt';
+keys = 'MED';
 
 %----------------------------------------
 % Update option
@@ -76,11 +76,19 @@ update = 0; % the serie from the beginning
 
 %----------------------------------------
 % inital and final year
-Yi = 2017; Yf = 2017;
+Yi = 2000; Yf = 2015;
 
 %----------------------------------------
-% Set parallel computation
-cpus=24;
+% list of firts step of each years (from Yi to Yf)
+datei=[Yi 1 1];
+list=datei;
+for i=1:Yf-Yi+1
+    list=[list;datei+[i 0 0]];
+end
+list=datenum(list)'-datenum(datei)+1;
+
+% Set parallel number of threads
+cpus=12;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Initialisation ---------------------------------------------
@@ -97,15 +105,10 @@ run(['keys_sources_',source,'_',keys])
 load('param_eddy_tracking','path_out','streamlines','resol','stepF');
 
 %----------------------------------------
-% list of steps (from 2000 to 2017)
-% 2000 2001 2002 2003 2004 2005 2006 2007 2008 2009 2010 2011 2012 2013 2014 2015 2016 2017
-list=[1 367 732 1097 1462 1828 2193 2558 2923 3289 3654 4019 4384 4750 5115 5480 5845 6211 stepF+1];
-
-%----------------------------------------
 % Activate matlab pool
-cpus=min([cpus,8]);%maximum of 8 procs
-
 if cpus>1
+    cpus=min([cpus,24]);%maximum of 24 procs
+
     disp('Check that you have access to "Parallel Computing Toolbox" to use PARPOOL')
     disp('otherwise use MAIN_AMEDA_nopool')
     disp(' ')
@@ -113,11 +116,11 @@ if cpus>1
     myCluster = parcluster('local');
     delete(myCluster.Jobs)
     mypool = parpool(cpus);
+
 end
 
 %----------------------------------------
-% process detection in yearly loops
-
+% detection process in yearly loops od daily step
 for i=1:length(list)-1
     
     stepFF=list(i+1)-list(i);
@@ -132,9 +135,7 @@ for i=1:length(list)-1
 %% Compute LNAM ---------------------------------------------
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-if i>0
-        
-    disp([' === Compute LNAM ',num2str(2000-1+i),' ==='])
+    disp([' === Compute LNAM ',num2str(Yi-1+i),' ==='])
     disp(' ')
 
     load([path_out,'fields'],'detection_fields')
@@ -160,24 +161,24 @@ if i>0
 
     %----------------------------------------
     % Save fields
-    save([path_out,'fields_inter_',num2str(2000-1+i)],'detection_fields','-v7.3')
+    save([path_out,'fields_inter_',num2str(Yi-1+i)],'detection_fields','-v7.3')
 
     detection_fields = detection_fields_ni;
-    save([path_out,'fields_',num2str(2000-1+i)],'detection_fields','-v7.3')
+    save([path_out,'fields_',num2str(Yi-1+i)],'detection_fields','-v7.3')
     clear detection_fields detection_fields_ni
-    
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Find centers ---------------------------------------------
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-    disp([' === Find potential centers ',num2str(2000-1+i),' ==='])
+    disp([' === Find potential centers ',num2str(Yi-1+i),' ==='])
     disp(' ')
 
-    load([path_out,'eddy_centers'])
+    load([path_out,'eddy_centers'],'centers0','centers')
 
     %----------------------------------------
     % Build I/O matfile
-    fields_mat = matfile([path_out,'fields_inter_',num2str(2000-1+i),'.mat']);
+    fields_mat = matfile([path_out,'fields_inter_',num2str(Yi-1+i),'.mat']);
 
     parfor stp = step0:stepFF
         % load inter fields at step stp
@@ -190,15 +191,14 @@ if i>0
 
     %----------------------------------------
     % Save centers
-    save([path_out,'eddy_centers_',num2str(2000-1+i)],'centers0','centers','-v7.3')
+    save([path_out,'eddy_centers_',num2str(Yi-1+i)],'centers0','centers','-v7.3')
     clear centers0 centers
-    
-end
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Find eddies ---------------------------------------------
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-    disp([' === Determine eddies shapes ',num2str(2000-1+i),' ==='])
+    disp([' === Determine eddies shapes ',num2str(Yi-1+i),' ==='])
     disp(' ')
 
     load([path_out,'eddy_centers'],'centers2')
@@ -206,8 +206,8 @@ end
 
     %----------------------------------------
     % Build I/O matfile
-    fields_mat = matfile([path_out,'fields_inter_',num2str(2000-1+i),'.mat']);
-    centers_mat = matfile([path_out,'eddy_centers_',num2str(2000-1+i),'.mat']);
+    fields_mat = matfile([path_out,'fields_inter_',num2str(Yi-1+i),'.mat']);
+    centers_mat = matfile([path_out,'eddy_centers_',num2str(Yi-1+i),'.mat']);
 
     parfor stp = step0:stepFF
         %----------------------------------------
@@ -220,29 +220,28 @@ end
         % Determination of eddy features for step stp
         if streamlines
             [centers2(stp),shapes1(stp),shapes2(stp),profil2(stp),...
-                warn_shapes(stp),warn_shapes2(stp)] = ...
-                mod_eddy_shapes(source,stp+dstp,fields,centers);
+            warn_shapes(stp),warn_shapes2(stp)] = ...
+            mod_eddy_shapes(source,stp+dstp,fields,centers);
         else
             [centers2(stp),shapes1(stp),shapes2(stp),~,...
-                warn_shapes(stp),warn_shapes2(stp)] = ...
-                mod_eddy_shapes(source,stp+dstp,fields,centers);
+            warn_shapes(stp),warn_shapes2(stp)] = ...
+            mod_eddy_shapes(source,stp,fields,centers);
         end
     end
 
     %----------------------------------------
     % save warnings, shapes and their centers
-    save([path_out,'eddy_centers_',num2str(2000-1+i)],'centers2','-append')
+    save([path_out,'eddy_centers_',num2str(Yi-1+i)],'centers2','-append')
     if streamlines
-        save([path_out,'eddy_shapes_',num2str(2000-1+i)],'shapes1','shapes2',...
+        save([path_out,'eddy_shapes_',num2str(Yi-1+i)],'shapes1','shapes2',...
             'warn_shapes','warn_shapes2','profil2','-v7.3')
     else
-        save([path_out,'eddy_shapes_',num2str(2000-1+i)],'shapes1','shapes2',...
+        save([path_out,'eddy_shapes_',num2str(Yi-1+i)],'shapes1','shapes2',...
             'warn_shapes','warn_shapes2','-v7.3')
     end
     clear centers2 shapes1 shapes2 profil2 warn_shapes warn_shapes2 struct1 struct2 struct3
 
-
-end % end loop for year
+end % end loop for shapes
 
 %----------------------------------------
 % Free workers
@@ -252,18 +251,6 @@ delete(gcp('nocreate'))
 %% Track eddies ---------------------------------------------
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% name='_2010';
-% 
-% %----------------------------------------
-% % Tracking eddies and record interacting events
-% mod_eddy_tracks_pool(name,update);
-% 
-% %----------------------------------------
-% % Resolve merging and spltting event and filter eddies shorter than cut_off
-% mod_merging_splitting(name);
-% 
-
-
 %----------------------------------------
 % concatenete years
 concat_eddy(num2cell(Yi:Yf))
@@ -271,7 +258,6 @@ concat_eddy(num2cell(Yi:Yf))
 %----------------------------------------
 % Tracking eddies and record interacting events
 name=['_',num2str(Yi),'_',num2str(Yf)];
-% mod_eddy_tracks_pool(name,update);
 for i=1:length(list)-1
     update = list(end)-list(i);
     mod_eddy_tracks_nopool(name,update);
@@ -280,6 +266,8 @@ end
 %----------------------------------------
 % Resolve merging and spltting event and filter eddies shorter than cut_off
 mod_merging_splitting(name);
+
+
 
 
 

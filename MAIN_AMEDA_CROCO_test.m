@@ -55,20 +55,18 @@
 %
 %=========================
 
-%start
+run(['/home6/datahome/fdumas/MATLAB/start_datarmor'])
 clear; clc;
 disp(version)
-addpath AMEDA
-addpath AMEDA/sources
-addpath AMEDA/tools
+ver
 
 %----------------------------------------
 % source of data driving the netcdf format
-source = 'NEMO';
+source = 'CROCO';
 
 %----------------------------------------
 % domaine
-keys = 'test';
+keys = 'test_deg2';
 
 %----------------------------------------
 % Update option
@@ -80,7 +78,7 @@ update = 0; % the serie from the beginning
 
 %----------------------------------------
 % Set parallel computation
-cpus=1;
+cpus=2;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Initialisation ---------------------------------------------
@@ -127,7 +125,7 @@ detection_fields_ni = detection_fields;
 
 load([path_out,'fields_inter.mat'],'detection_fields')
 
-for stp = step0:stepF
+parfor stp = step0:stepF
     %----------------------------------------
     % Compute non interpolated fields for step stp
     detection_fields_ni(stp) = mod_fields(source,stp,1);
@@ -147,8 +145,11 @@ end
 % Save fields
 save([path_out,'fields_inter'],'detection_fields','-v7.3')
 
-detection_fields = detection_fields_ni;
-save([path_out,'fields'],'detection_fields','-v7.3')
+if resol>1
+    detection_fields = detection_fields_ni;
+    save([path_out,'fields'],'detection_fields','-v7.3')
+end
+
 clear detection_fields detection_fields_ni
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -164,7 +165,7 @@ load([path_out,'eddy_centers'])
 % Build I/O matfile
 fields_mat = matfile([path_out,'fields_inter.mat']);
 
-for stp = step0:stepF
+parfor stp = step0:stepF
     % load inter fields at step stp
     %----------------------------------------
     fields = fields_mat.detection_fields(:,stp);
@@ -191,9 +192,9 @@ load([path_out,'eddy_shapes'])
 %----------------------------------------
 % Build I/O matfile
 fields_mat = matfile([path_out,'fields_inter.mat']);
-centers_mat = matfile([path_out,'eddy_centers','.mat']);
+centers_mat = matfile([path_out,'eddy_centers.mat']);
 
-for stp = step0:stepF
+parfor stp = step0:stepF
     %----------------------------------------
     % load fields at step stp
     fields = fields_mat.detection_fields(:,stp);
@@ -243,7 +244,6 @@ mod_eddy_tracks_nopool(name,update);
 % Resolve merging and spltting event and filter eddies shorter than cut_off
 % need a series longer than 2 turn over time (> 1 month)
 mod_merging_splitting(name);
-
 
 
 
