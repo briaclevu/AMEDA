@@ -105,7 +105,7 @@ disp([' to ',path_out])
 if exist(path_out,'file')==0
     system(['mkdir ',path_result]);
     system(['mkdir ',path_result,sshtype,postname,'/']);
-    system(['mkdir ',path_result,sshtype,postname,'/',runname,'/']);
+    system(['mkdir ',path_result,sshtype,postname,'/',sshtype,runname,'/']);
     system(['mkdir ',path_out]);
 end
 
