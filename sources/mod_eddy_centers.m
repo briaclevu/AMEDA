@@ -117,7 +117,7 @@ while j < size(CS,2)
     if n >= n_min
 
         % make a mask outside the contour
-        in = inpolygon(x,y,xv,yv);
+        in = InPolygon(x,y,xv,yv);
         maskin = mask;
         maskin(~in) = 0;
         maskin(in)  = 1;
@@ -330,10 +330,10 @@ for ii=1:length(centers0.x)
         % 3) keep the higher max LNAM center in case of 2 centers
 
         if xdata(1)==xdata(end) && ydata(1)==ydata(end) && ...
-                inpolygon(xy_ci,xy_cj,xdata,ydata) && length(xdata)>=n_min
+                InPolygon(xy_ci,xy_cj,xdata,ydata) && length(xdata)>=n_min
 
             % search the coordinates of the centers in the contour 
-            IN = inpolygon(xy_ctsi,xy_ctsj,xdata,ydata);
+            IN = InPolygon(xy_ctsi,xy_ctsj,xdata,ydata);
             [p,~] = find(IN==1); % index of the coordinates in the contour
             nc = length(p); % number of center in the contour
 

@@ -190,7 +190,7 @@ end
 % twice (cut_off=0).
 
 if cut_off==0
-    disp('Filter eddies shorter than their turnover time ...')
+    disp('Filter eddies shorter than twice their turnover time ...')
 else
     disp(['Filter eddies shorter than ',num2str(cut_off),' days ...'])
 end

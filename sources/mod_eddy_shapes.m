@@ -262,7 +262,7 @@ for ii=1:length(centers.type)
         if bound
             disp(['    Big eddy: going to fac = ',num2str(fac+1)])
         elseif fac > 1
-            disp(['    No bigger eddy nor interaction stop dezoom at fac ',num2str(fac)])
+            disp(['    No bigger eddy nor interaction stop dezoom by fac ',num2str(fac)])
             % take the last saved eddy_shape
             large   = tmp_large;
             CD      = tmp_CD;
@@ -381,7 +381,7 @@ for ii=1:length(centers.type)
         end
         shapes1.theta(ii) = theta;
         if extended_diags==1
-            in_eddy = inpolygon(x,y,xy{1}(1,:),xy{1}(2,:));
+            in_eddy = InPolygon(x,y,xy{1}(1,:),xy{1}(2,:));
             ke   = fields.ke(in_eddy~=0);
             vort = fields.vort(in_eddy~=0);
             OW   = fields.OW(in_eddy~=0);
@@ -459,7 +459,7 @@ for ii=1:length(centers.type)
             centers2.y2(ii) = CD(2,1);
         end
         if grid_ll
-            centers2.dc(ii) = sw_dist2(CD(2,:),CD(1,:),'km');
+            centers2.dc(ii) = sw_dist2(CD(2,:),CD(1,:));
         else
             centers2.dc(ii) = sqrt(diff(CD(1,:)).^2 + diff(CD(2,:)).^2); % km
         end

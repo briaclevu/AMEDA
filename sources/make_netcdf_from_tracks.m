@@ -1,12 +1,12 @@
 % create folder of netcdf files from traks structure
-start
-clear all
+%start
+%clear all
 
 % configuration to be used has reference of the v1 of the atlas
 source = 'AVISO';
-%config = 'DYNED_MED_adt';
-%config = 'DYNED_MED_cyclo';
-keys = 'DYNED_ARA_adt';
+%keys = 'DYNED_MED_adt';
+keys = 'DYNED_MED_cyclo';
+%keys = 'DYNED_ARA_adt';
 
 % Definition of the parameters specific for the experiment is needed 
 run(['keys_sources_',source,'_',keys])
@@ -15,20 +15,20 @@ load('param_eddy_tracking')
 % load result from AMEDA tracking and merging/splitting
 if strcmp(config,'DYNED_MED_cyclo') || strcmp(config,'DYNED_MED')
     
-    load([path_out,'eddy_tracks2_2000_2017'])
+    load([path_out,'eddy_tracks2_2000_2018'])
     %load([path_out,'eddy_tracks2_2010_2011'])
     tracks=tracks2;
     if streamlines
-        load([path_out,'eddy_shapes_2000_2017'],'profil2')
+        load([path_out,'eddy_shapes_2000_2018'],'profil2')
         %load([path_out,'eddy_shapes_2010_2011'],'profil2')
     end
 
     % date and length from "YYYY-MM-DDThh:mm:ssZ"
-    datei=datenum([1999 12 31]);
+    datei=datenum([2000 01 01]);
     duralim=0;
 
     % create folder for the experiment
-    path_out2=[path_out,'nc_tracks_2000_2017/'];
+    path_out2=[path_out,'nc_tracks_2000_2018/'];
     system(['mkdir ',path_out2]);
     
 elseif strcmp(config,'DYNED_ARA') || strcmp(config,'DYNED_ARA_cyclo')
@@ -40,7 +40,7 @@ elseif strcmp(config,'DYNED_ARA') || strcmp(config,'DYNED_ARA_cyclo')
     end
 
     % date and length from "YYYY-MM-DDThh:mm:ssZ"
-    datei=datenum([1999 12 31]);
+    datei=datenum([2000 01 01]);
     duralim=0;
 
     % create folder for the experiment
@@ -60,7 +60,7 @@ NV3 = [];
 % scan and record eddy longer than turnover time (tindracks2 and duralim==0)
 for i=1:length(tracks)
     
-    %display(['track ',num2str(i)])
+    display(['track ',num2str(i)])
     
     %if length(tracks(i).step)>nanmean(tracks(i).tau1)
     if tracks(i).step(end) - tracks(i).step(1)>=duralim
@@ -150,7 +150,7 @@ for i=1:length(tracks)
         %
         %  Create variables
         %
-        varid(1) = netcdf.defVar(nc,'time_step','float',dimid(1));
+        varid(1) = netcdf.defVar(nc,'time','float',dimid(1));
         varid(2) = netcdf.defVar(nc,'x_cen','double',dimid(1));
         varid(3) = netcdf.defVar(nc,'y_cen','double',dimid(1));
         varid(4) = netcdf.defVar(nc,'x_bar','double',dimid(1));
@@ -196,7 +196,7 @@ for i=1:length(tracks)
         netcdf.putAtt(nc,varid(1),'standard_name','time');
         netcdf.putAtt(nc,varid(1),'units',['days since ',datestr(datei,'yyyy-mm-ddTHH:MM:SSZ')]);
         netcdf.putAtt(nc,varid(1),'axis','T');
-        netcdf.putAtt(nc,varid(1),'long_name','time in AVISO files');
+        netcdf.putAtt(nc,varid(1),'long_name','time in DYNED files');
         %
         netcdf.putAtt(nc,varid(2),'standard_name','longitude');
         netcdf.putAtt(nc,varid(2),'units','degrees_east');
@@ -353,38 +353,18 @@ for i=1:length(tracks)
         serie=find(tracks(i).split==1);
         if ~isempty(serie)
             ind = unique(tracks(i).interaction(serie));
-            for j=1:length(ind)
-                serie2 = find(tracks(ind(j)).interaction==i);
-                if any(tracks(ind(j)).split(serie2)==1)
-                    netcdf.putAtt(nc,netcdf.getConstant('NC_GLOBAL'),'eddy_origin','0')
-                else
-                    netcdf.putAtt(nc,netcdf.getConstant('NC_GLOBAL'),'eddy_origin',num2str(ind(j)))
-                    break
-                end
-            end
-        else
-            netcdf.putAtt(nc,netcdf.getConstant('NC_GLOBAL'),'eddy_origin','0')
+            netcdf.putAtt(nc,netcdf.getConstant('NC_GLOBAL'),'eddy_origin',num2str(ind(1)))
         end
         % eddy death to be build
         serie=find(tracks(i).merge==1);
         if ~isempty(serie)
             ind = unique(tracks(i).interaction(serie));
-            for j=1:length(ind)
-                serie2 = find(tracks(ind(j)).interaction==i);
-                if any(tracks(ind(j)).split(serie2)==1)
-                    netcdf.putAtt(nc,netcdf.getConstant('NC_GLOBAL'),'eddy_death','0')
-                else
-                    netcdf.putAtt(nc,netcdf.getConstant('NC_GLOBAL'),'eddy_death',num2str(ind(j)))
-                    break
-                end
-            end
-        else
-            netcdf.putAtt(nc,netcdf.getConstant('NC_GLOBAL'),'eddy_death','0')
+            netcdf.putAtt(nc,netcdf.getConstant('NC_GLOBAL'),'eddy_death',num2str(ind(end)))
         end
         netcdf.putAtt(nc,netcdf.getConstant('NC_GLOBAL'),'number_of_detections',num2str(length(time)));
         netcdf.putAtt(nc,netcdf.getConstant('NC_GLOBAL'),'life_time',num2str(time(end)-time(1)+1));
-        netcdf.putAtt(nc,netcdf.getConstant('NC_GLOBAL'),'date_first_detection',datestr(time(1)+datei,'yyyy-mm-dd'));
-        netcdf.putAtt(nc,netcdf.getConstant('NC_GLOBAL'),'date_last_detection',datestr(time(end)+datei,'yyyy-mm-dd'));
+        netcdf.putAtt(nc,netcdf.getConstant('NC_GLOBAL'),'date_first_detection',datestr(time(1)+datei-1,'yyyy-mm-dd'));
+        netcdf.putAtt(nc,netcdf.getConstant('NC_GLOBAL'),'date_last_detection',datestr(time(end)+datei-1,'yyyy-mm-dd'));
         netcdf.putAtt(nc,netcdf.getConstant('NC_GLOBAL'),'center_lon_min',num2str(min(tracks(i).x1)));
         netcdf.putAtt(nc,netcdf.getConstant('NC_GLOBAL'),'center_lon_max',num2str(max(tracks(i).x1)));
         netcdf.putAtt(nc,netcdf.getConstant('NC_GLOBAL'),'center_lat_min',num2str(min(tracks(i).y1)));
@@ -432,7 +412,7 @@ for i=1:length(tracks)
         %
         % Write variables
         %
-        netcdf.putVar(nc,varid(1),time);
+        netcdf.putVar(nc,varid(1),time-1);
         netcdf.putVar(nc,varid(2),round(tracks(i).x1*1000)/1000);
         netcdf.putVar(nc,varid(3),round(tracks(i).y1*1000)/1000);
         netcdf.putVar(nc,varid(4),round(tracks(i).xbary1*1000)/1000);
@@ -657,7 +637,7 @@ for i=1:length(tracks)
         end
         %
         if any(tracks(i).alpha<=0)
-            ind=find(tracks(i).alpha<=0);
+            ind=find(tracks(i).alpha<=0 & tracks(i).alpha~=FV2);
             for j=1:length(ind)
                 disp(['ALPHA <0 tracks ',num2str(i),' step ',num2str(ind(j))])
                 tracks(i).alpha(ind(j)) = FV2;

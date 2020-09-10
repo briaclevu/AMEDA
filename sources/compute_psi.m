@@ -48,7 +48,7 @@ km_dj = nan(size(y,1)-1,size(y,2));
 
 for i=1:size(x,1)
     if grid_ll
-        km_di(i,:) = sw_dist2(y(i,:),x(i,:),'km');
+        km_di(i,:) = sw_dist2(y(i,:),x(i,:));
     else
         km_di(i,:) = sqrt(diff(x(i,:)).^2 + diff(y(i,:)).^2); % km
     end
@@ -56,7 +56,7 @@ end
 
 for i=1:size(y,2)
     if grid_ll
-        km_dj(:,i) = sw_dist2(y(:,i),x(:,i),'km');
+        km_dj(:,i) = sw_dist2(y(:,i),x(:,i));
     else
         km_dj(:,i) = sqrt(diff(x(:,i)).^2 + diff(y(:,i)).^2); % km
     end

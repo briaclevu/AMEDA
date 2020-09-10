@@ -23,15 +23,15 @@ function mod_eddy_tracks_pool(name,update)
 %  eddy, his mean radius averaged for the last 5 time steps tracked and
 %  rmaxi the new eddy raidus to be tested.
 %
-%  If no eddies are found at 't+Dt' the eddy is considered dissipated and
+%  If no eddies is connected after 't+Dt' the eddy is considered dissipated and
 %  the track closed.
 %
 %  In case two or more eddies are found within the same area, the track is
-%  connect the centers by minimizing the cost funtion of an assignment matrice
+%  connect to the centers by minimizing the cost funtion of an assignment matrice
 %  considering all the new centers at t. The cost function is a NxM matrix:
 %       C = sqrt ( d/D ² + dR/Rmax ² + dRo/Ro ² + dt/Dt/2 ²)
-%   with N in row is the number of eddies in t+dt
-%        M in colum is the number of new eddies at t
+%   with N in row is the number of eddies in the past
+%        M in colum is the number of new eddies
 %
 %  
 %  Non filtrated tracked eddies are saved/updated as the structure array {traks(n)}
@@ -269,9 +269,9 @@ disp('Tracks eddies')
 
 % /!\ quick fix for multi years tracking
 % works only of daily steps !!!
-if stepF-step0 > 366
-    stepF = step0 + 370;
-end
+% if stepF-step0 > 366
+%     stepF = step0 + 370;
+% end
 
 for i=step0:stepF
     

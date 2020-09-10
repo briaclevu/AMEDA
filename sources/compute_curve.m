@@ -25,7 +25,7 @@ end
 
 % segment length along contour xy
 if grid_ll
-    P = sw_dist2(xy2(2,:),xy2(1,:),'km');
+    P = sw_dist2(xy2(2,:),xy2(1,:));
 else
     P = sqrt(diff(xy2(2,:)).^2 + diff(xy2(1,:)).^2); % km
 end
@@ -55,8 +55,8 @@ for i = 1:N
             ys(2) = y(pt);
 
             % distances in km of every point from the barycenter
-            coord(1,pt) = sign(diff(xs)) * sw_dist2([My My],xs,'km');% dx
-            coord(2,pt) = sign(diff(ys)) * sw_dist2(ys,[Mx Mx],'km');% dy
+            coord(1,pt) = sign(diff(xs)) * sw_dist2([My My],xs);% dx
+            coord(2,pt) = sign(diff(ys)) * sw_dist2(ys,[Mx Mx]);% dy
         end
 
     else
@@ -73,7 +73,7 @@ for i = 1:N
         %R = Par(3);
         
         % In or ~IN the xy contour
-        IN = inpolygon(mean(x),mean(y),xy(1,:),xy(2,:));
+        IN = InPolygon(mean(x),mean(y),xy(1,:),xy(2,:));
         if IN
             C(i) = 1/R;
         else

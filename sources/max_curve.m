@@ -138,16 +138,16 @@ while i<=length(isolines)
     %-----------------------------------------------------------
     % check if contour is big enough
     if xdata(1)==xdata(end) && ydata(1)==ydata(end) && ...
-            inpolygon(xy_ci,xy_cj,xdata,ydata) && length(xdata) >= n_min
+            InPolygon(xy_ci,xy_cj,xdata,ydata) && length(xdata) >= n_min
      
         %-----------------------------------------------------------
         % stop scanning if contour close around an island or a part of the land
-        in_eddy = inpolygon(x,y,xdata,ydata);
+        in_eddy = InPolygon(x,y,xdata,ydata);
         if ~any(isnan(u(in_eddy)))
     
             %-----------------------------------------------------------
             % searchs the coordinates of the centers in the contour 
-            IN = inpolygon(xy_ctsi,xy_ctsj,xdata,ydata);
+            IN = InPolygon(xy_ctsi,xy_ctsj,xdata,ydata);
             [~,p] = find(IN==1); % index of the coordinates in the contour
             nc = length(p); % number of center in the contour
 

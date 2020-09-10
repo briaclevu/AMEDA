@@ -54,8 +54,8 @@ if lim >= 5
 
                 %----------------------------------------
                 % distances in km of every point from the barycenter
-                coord(1,pt) = sign(diff(xs)) * sw_dist2([ybary ybary],xs,'km');
-                coord(2,pt) = sign(diff(ys)) * sw_dist2(ys,[xbary xbary],'km');
+                coord(1,pt) = sign(diff(xs)) * sw_dist2([ybary ybary],xs);
+                coord(2,pt) = sign(diff(ys)) * sw_dist2(ys,[xbary xbary]);
             end
 
             [~, a, b, theta] = fitellipse(coord,'linear');

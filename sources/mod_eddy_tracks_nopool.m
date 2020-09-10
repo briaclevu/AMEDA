@@ -1,8 +1,8 @@
-function mod_eddy_tracks_nopool(name,update)
+function mod_eddy_tracks_nopool(name,update,dt)
 %mod_eddy_tracks(name {,update})
 %
 %  Computes eddy tracking from the eddies features, and saves them
-%  as {eddy_tracks(n)} in [path_out,'eddy_tracks_',name].
+%  as {eddy_tracks(n)} in [path_out,'eddy_tracks_',runname].
 %
 % This routine will use:
 %  - Dt (days) is the tolerance of time steps after eddy disapears
@@ -23,15 +23,15 @@ function mod_eddy_tracks_nopool(name,update)
 %  eddy, his mean radius averaged for the last 5 time steps tracked and
 %  rmaxi the new eddy raidus to be tested.
 %
-%  If no eddies are found at 't+Dt' the eddy is considered dissipated and
+%  If no eddies is connected after 't+Dt' the eddy is considered dissipated and
 %  the track closed.
 %
 %  In case two or more eddies are found within the same area, the track is
-%  connect the centers by minimizing the cost funtion of an assignment matrice
+%  connect to the centers by minimizing the cost funtion of an assignment matrice
 %  considering all the new centers at t. The cost function is a NxM matrix:
 %       C = sqrt ( d/D ² + dR/Rmax ² + dRo/Ro ² + dt/Dt/2 ²)
-%   with N in row is the number of eddies in t+dt
-%        M in colum is the number of new eddies at t
+%   with N in row is the number of eddies in the past
+%        M in colum is the number of new eddies
 %
 %  
 %  Non filtrated tracked eddies are saved/updated as the structure array {traks(n)}
@@ -135,6 +135,9 @@ load('param_eddy_tracking')
 % No update by default
 if nargin==1
     update = 0;
+    dt=366;
+elseif nargin==2
+    dt=366;
 end
 
 % begin the log file
@@ -263,9 +266,9 @@ disp(' ')
 disp('Tracks eddies')
 
 % /!\ quick fix for multi years tracking
-% works only of daily steps !!!
-if stepF-step0 > 366
-    stepF = step0 + 370;
+% works only for daily steps !!!
+if stepF-step0 > dt-1
+    stepF = step0 + dt-1;
 end
 
 for i=step0:stepF
@@ -546,9 +549,9 @@ for i=step0:stepF
 
                         if grid_ll
                             d1(i3) = sw_dist2([ind_new(i3,3) ind_old(3)],...
-                                        [ind_new(i3,2) ind_old(2)],'km');
+                                        [ind_new(i3,2) ind_old(2)]);
                             d2(i3) = sw_dist2([ind_new(i3,5) ind_old(5)],...
-                                        [ind_new(i3,4) ind_old(4)],'km');
+                                        [ind_new(i3,4) ind_old(4)]);
                         else
                             d1(i3) = sqrt((ind_new(i3,2) - ind_old(2)).^2 +...
                                     (ind_new(i3,3) - ind_old(3)).^2);
@@ -646,6 +649,10 @@ for i=step0:stepF
             % the optimal assigment of new to old eddies in case of
             % multiple assigment possible by minimizing the cost function.
             %----------------------------------------------------------
+
+            disp(' ')
+            disp(['Assigment at step ',num2str(stp)])
+            disp(' ')
             
             [assign,cost] = assignmentoptimal(C);
             
@@ -817,7 +824,7 @@ for i=step0:stepF
                     % disance between 2 centers
                     if grid_ll
                         d1 = sw_dist2([tracks(i2).y1(end) tracks(ind1).y1(end)],...
-                                    [tracks(i2).x1(end) tracks(ind1).x1(end)],'km');
+                                    [tracks(i2).x1(end) tracks(ind1).x1(end)]);
                     else
                         d1 = sqrt((tracks(i2).x1(end) - tracks(ind1).x1(end)).^2 +...
                                 (tracks(i2).y1(end) - tracks(ind1).y1(end)).^2);
@@ -864,7 +871,7 @@ for i=step0:stepF
                     % disance between 2 centers
                     if grid_ll
                         d2 = sw_dist2([tracks(i2).y1(end) tracks(ind2).y1(end)],...
-                                    [tracks(i2).x1(end) tracks(ind2).x1(end)],'km');
+                                    [tracks(i2).x1(end) tracks(ind2).x1(end)]);
                     else
                         d2 = sqrt((tracks(i2).x1(end) - tracks(ind2).x1(end)).^2 +...
                                 (tracks(i2).y1(end) - tracks(ind2).y1(end)).^2);

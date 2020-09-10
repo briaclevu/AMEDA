@@ -48,6 +48,11 @@ function [CD,xy,allines,rmax,velmax,tau,deta,nrho,large,warn,calcul] =...
 
 % load key_source and parameters
 %----------------------------------------------
+while ~exist('param_eddy_tracking.mat','file')
+  disp('can''t find param_eddy_tracking')
+  pause(1)
+end
+
 load('param_eddy_tracking')
 
 % replace parameters by arguments
@@ -105,9 +110,9 @@ end
 
 % coordinates of all eddy centers in the smaller area
 % (contains at least xy_cj and xy_ci)
-in = inpolygon(centers_x,centers_y,...
-    [x(1,1) x(1,end) x(end,end) x(end,1)],...
-    [y(1,1) y(1,end) y(end,end) y(end,1)]);
+in = InPolygon(centers_x,centers_y,...
+    [x(1,1) x(1,end) x(end,end) x(end,1) x(1,1)],...
+    [y(1,1) y(1,end) y(end,end) y(end,1) y(1,1)]);
 type_cts = type(in);
 xy_ctsj = centers_y(in);
 xy_ctsi = centers_x(in);
@@ -204,7 +209,7 @@ if ~isempty(eddy_lim{3})
     allines = lines;
     
     % compute deta3
-    in_eddy = inpolygon(x,y,xy{3}(1,:),xy{3}(2,:));
+    in_eddy = InPolygon(x,y,xy{3}(1,:),xy{3}(2,:));
     if type_c == -1 % anticylone case
         deta(3) = max(psi(in_eddy~=0))-eta(3);
     elseif type_c == 1 % cyclone case
@@ -213,7 +218,7 @@ if ~isempty(eddy_lim{3})
 
     % compute deta1
     if ~isempty(eddy_lim{1})
-        in_eddy = inpolygon(x,y,xy{1}(1,:),xy{1}(2,:));
+        in_eddy = InPolygon(x,y,xy{1}(1,:),xy{1}(2,:));
         if type_c == -1 % anticylone case
             deta(1) = max(psi(in_eddy~=0))-eta(1);
         elseif type_c == 1 % cyclone case
@@ -223,7 +228,7 @@ if ~isempty(eddy_lim{3})
     
     % compute deta2
     if ~isempty(eddy_lim{2})
-        in_eddy = inpolygon(x,y,xy{2}(1,:),xy{2}(2,:));
+        in_eddy = InPolygon(x,y,xy{2}(1,:),xy{2}(2,:));
         if type_c == -1 % anticylone case
             deta(2) = max(psi(in_eddy~=0))-eta(2);
         elseif type_c == 1 % cyclone case
