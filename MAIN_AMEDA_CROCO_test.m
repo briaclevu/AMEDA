@@ -55,7 +55,7 @@
 %
 %=========================
 
-run(['/home6/datahome/fdumas/MATLAB/start_datarmor'])
+start
 clear; clc;
 disp(version)
 ver
@@ -92,7 +92,7 @@ else
     mod_eddy_params(['keys_sources_',source,'_',keys])
 end
 run(['keys_sources_',source,'_',keys])
-load('param_eddy_tracking','path_out','streamlines','resol','stepF');
+load('param_eddy_tracking','path_in','path_out','streamlines','resol','stepF');
 
 %----------------------------------------
 % Preallocate structure array and mat-file or prepare update
@@ -245,7 +245,7 @@ mod_eddy_tracks_nopool(name,update);
 % need a series longer than 2 turn over time (> 1 month)
 mod_merging_splitting(name);
 
-
+exit
 
 
 

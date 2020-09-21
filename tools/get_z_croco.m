@@ -48,7 +48,8 @@ h=squeeze(ncread(ncname,'h'));
 [M,L]=size(h);
 
 % read zeta in hourly 3D output
-zeta=mean(ncread(nc_ssh,'ssh',[1,1,max(1,(tindex-1)*24)],[Inf,Inf,24]),3);
+%zeta=mean(ncread(nc_ssh,'ssh',[1,1,max(1,(tindex-1)*24)],[Inf,Inf,24]),3);
+zeta=ncread(nc_ssh,'zeta',[1,1,tindex],[Inf,Inf,1]);
 
 %
 % Set S-Curves in domain [-1 < sc < 0] at vertical W- and RHO-points.

@@ -30,7 +30,10 @@ function [x,y,mask,u,v,ssh] = load_fields_CROCO(stp, resolution, degra)
 % load keys_sources and parameters (use mod_eddy_params.m first)
 load('param_eddy_tracking')
 % critical depth during the simulation
-hc=350;% MEDIONE
+hc=double(ncread(nc_dim,'hc'));
+theta_s=double(ncread(nc_dim,'theta_s'));
+theta_b=double(ncread(nc_dim,'theta_b'));
+%hc = 350;theta_s=0;theta_b=0;% default MEDIONE
 
 %----------------------------------------
 % replace parameters by arguments
@@ -50,7 +53,7 @@ disp(['Get grid and velocities field at step ',num2str(stp),' ...'])
 lon0 = double(ncread(nc_dim,x_name))';
 lat0 = double(ncread(nc_dim,y_name))';
 mask0 = double(ncread(nc_dim,m_name))';
-z0 = get_z_croco(nc_u,nc_ssh,stp,0,0,hc,0,'r',[1,3,2]);
+z0 = get_z_croco(nc_u,nc_ssh,stp,theta_s,theta_b,hc,0,'r',[1,3,2]);
 
 %----------------------------------------
 % interpolate u and v
