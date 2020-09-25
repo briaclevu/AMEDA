@@ -44,12 +44,19 @@ DEG2NM  = 60;
 NM2KM   = 1.8520;    % Defined in Pond & Pickard p303.
 
 % BEGIN
-dlon = lon(2)-lon(1);
+npositions = length(lat);
+ind=1:npositions-1;     % index to first of position pairs
+
+dlon = diff(lon);
+if any(abs(dlon)>180)
+   flag = find(abs(dlon)>180);
+   dlon(flag)= -sign(dlon(flag)) .* (360 - abs(dlon(flag)) );
+end %if
 latrad = abs(lat*DEG2RAD);
-dep    = cos( (latrad(2)+latrad(1))./2 ) .* dlon;
-dlat   = lat(2)-lat(1);
+dep    = cos( (latrad(ind+1)+latrad(ind))./2 ) .* dlon;
+dlat   = diff(lat);
 dist   = DEG2NM*sqrt(dlat.^2 + dep.^2);  % in n.miles
 
-dist = dist * NM2KM;
+dist = dist * NM2KM;% in km
 
 return
