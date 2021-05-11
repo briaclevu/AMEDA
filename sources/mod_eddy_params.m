@@ -66,10 +66,20 @@ lon0 = double(ncread(nc_dim,x_name))';
 lat0 = double(ncread(nc_dim,y_name))';
 if strcmp(source,'NEMO')
     mask0 = squeeze(double(ncread(nc_dim,m_name,[1 1 level 1],[Inf Inf 1 1])))';
+elseif strcmp(source,'MERCATOR') || strcmp(source,'GOFS') || strcmp(source,'CMCC')
+    lon0 = repmat(lon0,[length(lat0) 1]);
+    lat0 = repmat(lat0',[1 length(lon0)]);
+    mask0 = squeeze(double(ncread(nc_ssh,s_name,[1 1 1],[Inf Inf 1])))'*0+1;
+    mask0(isnan(mask0)) = 0;
 elseif strcmp(source,'py')
     mask0 = ones(size(lat0))';
 else
+  if strcmp(m_name,'')
+    mask0 = squeeze(double(ncread(nc_u,u_name,[1 1 1],[Inf Inf 1])))'*0+1;
+    mask0(isnan(mask0)) = 0;
+  else
     mask0 = squeeze(double(ncread(nc_dim,m_name,[1 1],[Inf Inf])))';
+  end
 end
 
 % produce degraded field 

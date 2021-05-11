@@ -47,9 +47,14 @@ disp(['Get grid and velocities field at step ',num2str(stp),' ...'])
 
 lon0 = double(ncread(nc_dim,x_name))';
 lat0 = double(ncread(nc_dim,y_name))';
-mask0 = double(ncread(nc_dim,m_name))';
 u0 = double(squeeze(permute(ncread(nc_u,u_name,[1 1 stp],[Inf Inf 1]),[2,1,3])));
 v0 = double(squeeze(permute(ncread(nc_v,v_name,[1 1 stp],[Inf Inf 1]),[2,1,3])));
+if strcmp(m_name,'')
+    mask0 = u0*0+1;
+    mask0(isnan(mask0)) = 0;
+else
+    mask0 = double(ncread(nc_dim,m_name))';
+end
 if type_detection>=2
     ssh0 = double(squeeze(permute(ncread(nc_ssh,s_name,[1 1 stp],[Inf Inf 1]),[2,1,3])));
 else

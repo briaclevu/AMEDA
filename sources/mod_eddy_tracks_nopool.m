@@ -282,6 +282,8 @@ for i=step0:stepF
     disp([' Searching step ',num2str(stp),' %------------- '])
     
     disp(' ')
+
+    clear eddy
     
     for n=2:length(var_name1)
         eddy.(tracks_name{n}) = centers2(i).(var_name1{n});
@@ -299,8 +301,16 @@ for i=step0:stepF
     
     N = N + length(var_name3)-1;
     for n=1:length(var_name4)
-        eddy.(tracks_name{n+N}) = warn_shapes2(i).(var_name4{n});
+        if ~isempty(warn_shapes2(i).(var_name4{n}))
+           eddy.(tracks_name{n+N}) = warn_shapes2(i).(var_name4{n});
+        else
+            eddy.(tracks_name{n+N}) = nan(size(shapes1(i).velmax));
+        end
     end
+    eddy.calcul(isnan(eddy.calcul)) = 1;
+    eddy.Rd(isnan(eddy.Rd)) = nanmean(Rd(:));
+    eddy.gama(isnan(eddy.gama)) = nanmean(Rd(:))/nanmean(Dx(:));
+    eddy.f(isnan(eddy.f)) = nanmean(f(:));
     
     %----------------------------------------------------------
     % allocate interacting eddies indice

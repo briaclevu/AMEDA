@@ -19,9 +19,10 @@ if strcmp(config,'DYNED_MED_cyclo') || strcmp(config,'DYNED_MED')
     %load([path_out,'eddy_tracks2_2010_2011'])
     tracks=tracks2;
     if streamlines
-        load([path_out,'eddy_shapes_2000_2018'],'profil2')
+        load([path_out,'eddy_profil_2000_2018'],'profil2')
         %load([path_out,'eddy_shapes_2010_2011'],'profil2')
     end
+    load([path_out,'tracks_density_new_',config,'_T12_D4'],'tracks2_RI')
 
     % date and length from "YYYY-MM-DDThh:mm:ssZ"
     datei=datenum([2000 01 01]);
@@ -179,6 +180,8 @@ for i=1:length(tracks)
         varid(36) = netcdf.defVar(nc,'aire_end','double',dimid(1));
         varid(37) = netcdf.defVar(nc,'alpha','double',dimid(1));
         %
+        varid(38) =  netcdf.defVar(nc,'RI','double',dimid(1));
+        %
         if streamlines
             varid(40) = netcdf.defVar(nc,'n_pro','int',dimid(1));
             varid(41) = netcdf.defVar(nc,'v_pro','double',dimid(4));
@@ -250,7 +253,7 @@ for i=1:length(tracks)
         netcdf.putAtt(nc,varid(17),'long_name','ellipticity (1-b/a) fitted on the streamline with the maximum mean velocity');
         netcdf.putAtt(nc,varid(17),'_Fillvalue',FV2);
         %
-        netcdf.putAtt(nc,varid(18),'long_name','angle between the longer axe of the ellipse (a) with the longitude westward axe');
+        netcdf.putAtt(nc,varid(18),'long_name','angle between the longer axis of the ellipse (a) with the longitude westward axis');
         netcdf.putAtt(nc,varid(18),'_Fillvalue',FV2);
         %
         netcdf.putAtt(nc,varid(19),'long_name','is v_max a true maximum value with a 3% decrease between the streamline with the maximum mean velocity and the last streamline');
@@ -294,6 +297,8 @@ for i=1:length(tracks)
         netcdf.putAtt(nc,varid(37),'convention','v/v_max = r/r_max.exp( (1-(r/r_max)^alpha) / alpha )');
         netcdf.putAtt(nc,varid(37),'_Fillvalue',FV2);
         %
+        netcdf.putAtt(nc,varid(38),'long_name','Reliability Index from RIFOED V2');
+        netcdf.putAtt(nc,varid(38),'_Fillvalue',FV2);
         %
         if streamlines
             netcdf.putAtt(nc,varid(40),'long_name','number of values for the mean velocity (V) versus mean radius (R) profil');
@@ -651,6 +656,8 @@ for i=1:length(tracks)
             ' | Meansize ',num2str(nanmean(tracks(i).rmax1)),...
             ' | Alpharecord ',num2str(length(find(~isnan(tracks(i).alpha))))])
         end
+        %
+        netcdf.putVar(nc,varid(38),tracks2_RI(i).RI);
         %
         if streamlines
             netcdf.putVar(nc,varid(40),NV3);
