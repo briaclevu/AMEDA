@@ -77,6 +77,8 @@ else
   if strcmp(m_name,'')
     mask0 = squeeze(double(ncread(nc_u,u_name,[1 1 1],[Inf Inf 1])))'*0+1;
     mask0(isnan(mask0)) = 0;
+    lon0 = repmat(lon0,[length(lat0) 1]);
+    lat0 = repmat(lat0',[1 length(lon0)]);
   else
     mask0 = squeeze(double(ncread(nc_dim,m_name,[1 1],[Inf Inf])))';
   end

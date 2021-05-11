@@ -52,6 +52,8 @@ v0 = double(squeeze(permute(ncread(nc_v,v_name,[1 1 stp],[Inf Inf 1]),[2,1,3])))
 if strcmp(m_name,'')
     mask0 = u0*0+1;
     mask0(isnan(mask0)) = 0;
+    lon0 = repmat(lon0,[length(lat0) 1]);
+    lat0 = repmat(lat0',[1 length(lon0)]);
 else
     mask0 = double(ncread(nc_dim,m_name))';
 end
