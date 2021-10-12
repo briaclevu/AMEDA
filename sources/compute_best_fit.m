@@ -51,7 +51,7 @@ indx2 = find(rmoy(1:indx)>rmax); % point after rmax
 
 % choose profil with 1 center, long enough, with a decreasing part
 if nc(indx)<2 && length(indx1)>6 && length(indx2)>0.25*length(indx1) &&...
-    min(vel(indx2)) < 0.95*velmax && max(vel(indx2)) < velmax
+    min(vel(indx2)) < 0.95*velmax && max(vel(indx2)) < 1.01*velmax
 
     %----------------------------------------------------------
     % Curve fitting from streamlines scanning (stop the scan at 'indx')

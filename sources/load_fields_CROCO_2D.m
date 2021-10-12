@@ -30,7 +30,6 @@ function [x,y,mask,u,v,ssh] = load_fields_CROCO_2D(stp, resolution, degra)
 % load keys_sources and parameters (use mod_eddy_params.m first)
 load('param_eddy_tracking')
 
-
 %----------------------------------------
 % replace parameters by arguments
 if nargin==3

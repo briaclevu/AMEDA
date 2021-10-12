@@ -136,7 +136,7 @@ while j < size(CS,2)
                 xLmax = x(find(Lm==LC(1),1));
                 yLmax = y(find(Lm==LC(1),1));
 
-                if ~grid_ll || (grid_ll && yLmax > lat_min)
+                if ~grid_ll || (grid_ll && abs(yLmax) > lat_min)
                     
                     if ~any(centers0.x==xLmax & centers0.y==yLmax)
                         centers0.type(k) = sign(LC(1));

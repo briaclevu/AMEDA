@@ -37,7 +37,7 @@ function mod_eddy_params(keys_sources,stepF)
 %   - vel_epsil: minimal difference between 2 tests of the velocity
 %       to admit an increase
 %   - k_vel_decay: coefficient of velmax to detect a decrease
-%   - nR_lim: limite of the eddy size in temr of Rd
+%   - nR_lim: upper limit of the eddy size in term of Rd
 %   - Np: minimal number of point to calculate curvature along a segment
 %   - nrho_lim: limite of the negative curvature for a single eddy
 %       interaction (merging or splitting)
@@ -71,8 +71,13 @@ elseif strcmp(source,'MERCATOR') || strcmp(source,'GOFS') || strcmp(source,'CMCC
     lat0 = repmat(lat0',[1 length(lon0)]);
     mask0 = squeeze(double(ncread(nc_ssh,s_name,[1 1 1],[Inf Inf 1])))'*0+1;
     mask0(isnan(mask0)) = 0;
-elseif strcmp(source,'py')
+elseif strcmp(source,'py') || strcmp(source,'CROCO_WED')
     mask0 = ones(size(lat0))';
+elseif strcmp(source,'ASSIM')
+    mask0 = squeeze(double(ncread(nc_u,u_name,[1 1 1],[Inf Inf 1])))*0+1;
+    mask0(isnan(mask0)) = 0;
+    lon0 = repmat(lon0,[length(lat0) 1]);
+    lat0 = repmat(lat0',[1 length(lon0)]);
 else
   if strcmp(m_name,'')
     mask0 = squeeze(double(ncread(nc_u,u_name,[1 1 1],[Inf Inf 1])))'*0+1;
@@ -80,14 +85,14 @@ else
   else
     mask0 = squeeze(double(ncread(nc_dim,m_name,[1 1],[Inf Inf])))';
   end
-  if size(mask0,1) ~=size(lon0,1)
+  if size(mask0,1)~=size(lon0,1)
     lon0 = repmat(lon0,[length(lat0) 1]);
     lat0 = repmat(lat0',[1 length(lon0)]);
   end
 end
 
 % produce degraded field 
-if strcmp(source,'py')
+if strcmp(source,'py') || strcmp(source,'CROCO_WED')
     x = lon0(1:deg:end,1:deg:end)/1000;
     y = lat0(1:deg:end,1:deg:end)/1000;
 else
@@ -116,6 +121,8 @@ if grid_ll
         maskr(maskr >= .5) = 1;
         maskr(xr(:)<min(x(:)) | xr(:)>max(x(:)) | yr(:)<min(y(:)) | yr(:)>max(y(:))) = 0;
     end
+elseif strcmp(source,'py')
+    Dx = x*0+1/deg;
 else
     Dx = ( abs( [diff(x,1,2) x(:,end)-x(:,end-1)] ) + abs( [diff(y,1,1);y(end,:)-y(end-1,:)] ) )/2;
 end
@@ -150,7 +157,7 @@ DH = 0.002; % (m) ssh space
 nH_lim = 200;
 
 % these contours must contain a minimal number of dots ([4-6])
-n_min = 6; % minimal number of point to defined a contour as streamlines
+n_min = 6; % default 6 minimal number of point to defined a contour as streamlines
 
 % minimal difference increase ([1-2]%) between 2 tests of the velocity
 % or deta
@@ -171,7 +178,7 @@ Np = 3; % (segment i-Np:i+Np)
 % eddy from empirical determination based on ROMS, PIV and AVISO tests
 nrho_lim = 0.2; % [1/5-1/2]*2*pi*Rmax of the equivalent circle
 
-% minimal latitude used in terrestrial coordiante (grid_ll=1) needed
+% minimal latitude used in geographical coordinates (grid_ll=1) needed
 % to search for potential centers amon the LNAM extrema in mod_eddy_centers
 lat_min = 5; % [1-15]
 
@@ -195,7 +202,7 @@ V_eddy = 6.5; % km/day
 % represent the temporal correlation depending on the coverage of an area
 % 2 steps for model, 3-5 steps for imagery experiment.
 %!!! in case of AVISO this will be ajusted with the error map of aviso !!!
-if strcmp(source,'AVISO') | strcmp(source,'OSSE')
+if strcmp(source,'AVISO') | strcmp(source,'OSSE') | strcmp(source,'ASSIM')
     Dt = 10; % in days
 else
     Dt = 2; % days
@@ -221,23 +228,18 @@ N_can = 30;
 % Interpolate First Baroclinic Rossby Radius of Deformation
 % (taken from 2D file Rossby_radius computed using Chelton et al. 1998)
 %----------------------------------------------
+
 if exist([mat_Rd,'.mat'],'file')
     load(mat_Rd)
     eval([name_Rd,'(',name_Rd,'<',num2str(Rd_typ/3),')=',num2str(Rd_typ/3),';']);
     if grid_reg
-        ind=x>180;
-        x(ind) = x(ind)-360;
         eval(['Rd0 = interp2(lon_Rd,lat_Rd,',name_Rd,',x,y,''*linear'');']) % 10km in average AVISO 1/8
         Rd = Rd0;
         Rd(mask==0)=nan;
-        x(ind) = x(ind)+360;
     else
-        ind=xr>180;
-        xr(ind) = xr(ind)-360;
         eval(['Rd0 = interp2(lon_Rd,lat_Rd,',name_Rd,',xr,yr,''*linear'');']) % 10km in average AVISO 1/8
         Rd = Rd0;
         Rd(maskr==0)=nan;
-        xr(ind) = xr(ind)+360;
     end
 end
 
@@ -253,13 +255,19 @@ end
 
 % Resolution parameters:
 %----------------------------------------------
+% mask for resolution parameters
+IND = Rd<200 & ~isnan(Rd);
+
 % gama is resolution coefficient which is the number of pixels per Rd.
 % After test gama>2.4 is required to get the max number of eddies.
-gama = Rd ./ Dx; % [0.1-1.5] for AVISO 1/8 (0.8 in average)
+gama = nan(size(Rd));
+gama(IND) = Rd(IND) ./ Dx(IND); % [0.1-1.5] for AVISO 1/8 (0.8 in average)
 
 % resol is an integer used to improve the precision of centers detection
 % close to 3 pixels per Rd. resol can goes up to 3
-resol = max(1,min(3,round(3/nanmean(gama(:))))); % [1 - 3]
+if ~exist('resol','var')
+  resol = max(1,min(3,round(3/nanmean(gama(:))))); % [1 - 3]
+end
 
 % Detection parameters (cf. Le Vu et al. 2018 for test results):
 %----------------------------------------------

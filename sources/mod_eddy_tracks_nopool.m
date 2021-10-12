@@ -1,4 +1,4 @@
-function mod_eddy_tracks_nopool(name,update,dt)
+function mod_eddy_tracks_nopool(name,update,stepE)
 %mod_eddy_tracks(name {,update})
 %
 %  Computes eddy tracking from the eddies features, and saves them
@@ -9,6 +9,7 @@ function mod_eddy_tracks_nopool(name,update,dt)
 %  - update is a flag allowing to update an existing detection matrice:
 %       update = number of time steps backward to consider
 %       update = 0 (default) to compute all the {shapes} time serie
+%  - stepE is the step you want to stop the tracking (can be higher than 366)
 %  - V_eddy is the center maximal speed
 %  - D_stp, N_can: see mod_eddy_param for more details
 %
@@ -135,9 +136,9 @@ load('param_eddy_tracking')
 % No update by default
 if nargin==1
     update = 0;
-    dt=366;
+    stepE = 366;
 elseif nargin==2
-    dt=366;
+    stepE = 366;
 end
 
 % begin the log file
@@ -267,8 +268,8 @@ disp('Tracks eddies')
 
 % /!\ quick fix for multi years tracking
 % works only for daily steps !!!
-if stepF-step0 > dt-1
-    stepF = step0 + dt-1;
+if stepF-step0 > stepE-1
+    stepF = step0 + stepE-1;
 end
 
 for i=step0:stepF
