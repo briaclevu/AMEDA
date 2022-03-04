@@ -64,20 +64,27 @@ run(keys_sources)
 % Read grid
 lon0 = double(ncread(nc_dim,x_name))';
 lat0 = double(ncread(nc_dim,y_name))';
+LN=length(lon0);
+LT=length(lat0);
 if strcmp(source,'NEMO')
     mask0 = squeeze(double(ncread(nc_dim,m_name,[1 1 level 1],[Inf Inf 1 1])))';
 elseif strcmp(source,'MERCATOR') || strcmp(source,'GOFS') || strcmp(source,'CMCC')
-    lon0 = repmat(lon0,[length(lat0) 1]);
-    lat0 = repmat(lat0',[1 length(lon0)]);
+    lon0 = repmat(lon0,[LT 1]);
+    lat0 = repmat(lat0',[1 LN]);
     mask0 = squeeze(double(ncread(nc_ssh,s_name,[1 1 1],[Inf Inf 1])))'*0+1;
+    mask0(isnan(mask0)) = 0;
+elseif strcmp(source,'METOFFICE')
+    lon0 = repmat(lon0,[LT 1]);
+    lat0 = repmat(lat0',[1 LN]);
+    mask0 = squeeze(double(ncread(nc_u,u_name,[1 1 1 1],[Inf Inf 1 1])))'*0+1;
     mask0(isnan(mask0)) = 0;
 elseif strcmp(source,'py') || strcmp(source,'CROCO_WED')
     mask0 = ones(size(lat0))';
 elseif strcmp(source,'ASSIM')
     mask0 = squeeze(double(ncread(nc_u,u_name,[1 1 1],[Inf Inf 1])))*0+1;
     mask0(isnan(mask0)) = 0;
-    lon0 = repmat(lon0,[length(lat0) 1]);
-    lat0 = repmat(lat0',[1 length(lon0)]);
+    lon0 = repmat(lon0,[LT 1]);
+    lat0 = repmat(lat0',[1 LN]);
 else
   if strcmp(m_name,'')
     mask0 = squeeze(double(ncread(nc_u,u_name,[1 1 1],[Inf Inf 1])))'*0+1;
@@ -86,8 +93,8 @@ else
     mask0 = squeeze(double(ncread(nc_dim,m_name,[1 1],[Inf Inf])))';
   end
   if size(mask0,1)~=size(lon0,1)
-    lon0 = repmat(lon0,[length(lat0) 1]);
-    lat0 = repmat(lat0',[1 length(lon0)]);
+    lon0 = repmat(lon0,[LT 1]);
+    lat0 = repmat(lat0',[1 LN]);
   end
 end
 

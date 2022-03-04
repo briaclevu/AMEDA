@@ -50,7 +50,7 @@ lat0 = double(ncread(nc_dim,y_name))';
 u0 = double(squeeze(permute(ncread(nc_u,u_name,[1 1 stp],[Inf Inf 1]),[2,1,3])));
 v0 = double(squeeze(permute(ncread(nc_v,v_name,[1 1 stp],[Inf Inf 1]),[2,1,3])));
 if strcmp(m_name,'')
-    mask0 = u0*0+1;
+    mask0 = u0.*v0*0+1;
     mask0(isnan(mask0)) = 0;
 else
     mask0 = double(ncread(nc_dim,m_name))';
@@ -99,7 +99,7 @@ if resol==1
     for i=1:N
         for j=1:M
             if mask(i,j)==0 &&...
-                    sum(sum(mask(max(i-1,1):min(i+1,N),max(j-1,1):min(j+1,M))))~=0
+               sum(sum(mask(max(i-1,1):min(i+1,N),max(j-1,1):min(j+1,M))))~=0
                 u(i,j) = 0;
                 v(i,j) = 0;
                 if type_detection>=2 && isnan(ssh(i,j))
